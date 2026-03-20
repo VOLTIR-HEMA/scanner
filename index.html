@@ -7,27 +7,34 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background: #121212; color: white; padding: 20px; }
-        #reader { width: 100%; max-width: 400px; margin: auto; border-radius: 15px; overflow: hidden; border: 2px solid #007bff; }
-        .status { margin-top: 20px; font-size: 1.2em; color: #00ff00; }
+        #reader { width: 100%; max-width: 400px; margin: auto; border-radius: 15px; border: 2px solid #007bff; min-height: 250px; background: #1e1e1e; }
+        button { background: #007bff; color: white; padding: 15px; border: none; border-radius: 8px; font-size: 16px; margin: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
     <h3>سكانر صيدلية إبراهيم 🚀</h3>
     <div id="reader"></div>
-    <div id="result" class="status">جاهز للمسح...</div>
+    <button onclick="startScanner()">تشغيل الكاميرا</button>
+    <div id="result" style="margin-top:20px; color: #00ff00;">جاهز للمسح...</div>
 
     <script>
-        function onScanSuccess(decodedText) {
-            document.getElementById('result').innerText = "تم الإرسال: " + decodedText;
-            // إرسال الكود لخدمة ntfy المجانية
-            fetch('https://ntfy.sh/ibrahim_pharmacy_2026', {
-                method: 'POST',
-                body: decodedText
+        const html5QrCode = new Html5Qrcode("reader");
+
+        function startScanner() {
+            const config = { fps: 20, qrbox: { width: 250, height: 150 } };
+            
+            // طلب الكاميرا الخلفية مباشرة
+            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+                document.getElementById('result').innerText = "تم الإرسال: " + decodedText;
+                fetch('https://ntfy.sh/ibrahim_pharmacy_2026', {
+                    method: 'POST',
+                    body: decodedText
+                });
+                if (navigator.vibrate) navigator.vibrate(100);
+            }).catch(err => {
+                alert("خطأ: تأكد من إعطاء إذن الكاميرا للمتصفح");
             });
-            if (navigator.vibrate) navigator.vibrate(100);
         }
-        let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: {width: 250, height: 150} });
-        html5QrcodeScanner.render(onScanSuccess);
     </script>
 </body>
 </html>
