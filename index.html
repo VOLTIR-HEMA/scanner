@@ -2,47 +2,46 @@
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سكانر إبراهيم</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>سكانر إبراهيم الاحترافي</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #121212; color: white; padding: 10px; }
-        #reader { width: 100%; max-width: 450px; margin: auto; border-radius: 15px; border: 2px solid #007bff; background: #000; }
-        .result-box { margin-top: 20px; padding: 15px; background: #1e1e1e; border-radius: 10px; color: #00ff00; font-weight: bold; }
+        body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 10px; overflow: hidden; }
+        #reader { width: 100%; max-width: 600px; margin: auto; border: 2px solid #28a745; border-radius: 10px; overflow: hidden; }
+        .result-box { margin-top: 15px; padding: 10px; background: #1e1e1e; color: #00ff00; font-weight: bold; }
+        /* تحسين شكل الزراير اللي بتظهر جوه الأداة */
+        button { padding: 10px 20px; border-radius: 5px; border: none; background: #28a745; color: white; margin: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h3>سكانر صيدلية إبراهيم 🚀</h3>
-    
+    <h3 style="margin: 10px 0;">سكانر الصيدلية السريع ⚡</h3>
     <div id="reader"></div>
-    
-    <div id="result" class="result-box">في انتظار المسح...</div>
+    <div id="result" class="result-box">في انتظار الدواء...</div>
 
     <script>
-        function onScanSuccess(decodedText, decodedResult) {
+        function onScanSuccess(decodedText) {
             document.getElementById('result').innerText = "تم الإرسال: " + decodedText;
-            
-            // إرسال الكود فوراً
-            fetch('https://ntfy.sh/ibrahim_pharmacy_2026', {
-                method: 'POST',
-                body: decodedText
-            });
-
-            if (navigator.vibrate) navigator.vibrate(100);
+            fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: decodedText });
+            if (navigator.vibrate) navigator.vibrate(80);
         }
 
-        // إعدادات السكانر الأوتوماتيك
-        let html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", 
-            { 
-                fps: 20, 
-                qrbox: {width: 250, height: 150},
-                rememberLastUsedCamera: true,
-                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+        // إعدادات الكاميرا المتقدمة للتركيز والسرعة
+        const config = { 
+            fps: 60, // زيادة عدد الإطارات لسرعة القراءة
+            qrbox: function(viewfinderWidth, viewfinderHeight) {
+                // مستطيل عريض ليناسب الباركود الطويل بتاع علب الدواء
+                return { width: viewfinderWidth * 0.8, height: 150 };
             },
-            /* verbose= */ false
-        );
+            aspectRatio: 1.777778, // عرض الشاشة الكامل (16:9)
+            videoConstraints: {
+                facingMode: "environment",
+                focusMode: "continuous", // جعل التركيز مستمر (أهم سطر)
+                width: { min: 640, ideal: 1280, max: 1920 }, // طلب دقة عالية
+                height: { min: 480, ideal: 720, max: 1080 }
+            }
+        };
 
+        let html5QrcodeScanner = new Html5QrcodeScanner("reader", config, false);
         html5QrcodeScanner.render(onScanSuccess);
     </script>
 </body>
