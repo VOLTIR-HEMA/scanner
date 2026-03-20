@@ -3,46 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>سكانر إبراهيم المطور</title>
-    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+    <title>just scan</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 0; }
-        #interactive.viewport { width: 100%; height: 400px; position: relative; border-bottom: 3px solid #28a745; background: #000; }
-        #interactive.viewport > video, #interactive.viewport > canvas { width: 100%; height: 100%; object-fit: cover; }
-        .laser-line { position: absolute; top: 50%; left: 10%; width: 80%; height: 2px; background: rgba(255, 0, 0, 0.8); box-shadow: 0 0 15px red; z-index: 10; animation: scan 2s infinite; }
-        @keyframes scan { 0%, 100% { top: 30%; } 50% { top: 70%; } }
-        .status-box { padding: 25px; font-size: 1.4em; color: #00ff00; background: #111; font-weight: bold; }
-        .cooldown-msg { color: #ffcc00; font-size: 0.7em; margin-top: 5px; display: none; }
+        body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 10px; }
+        #reader { width: 100%; max-width: 500px; margin: auto; border-radius: 15px; border: 2px solid #28a745; overflow: hidden; background: #111; }
+        .result-box { margin-top: 20px; padding: 15px; background: #1e1e1e; border-radius: 10px; color: #00ff00; font-size: 1.3em; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div id="interactive" class="viewport">
-        <div class="laser-line"></div>
-    </div>
-    <div class="status-box">
-        <div id="result">جاهز للمسح...</div>
-        <div id="cooldown" class="cooldown-msg">إنتظار 3 ثواني...</div>
-    </div>
+    <h3 style="margin-bottom: 15px;">سكانر الصيدلية 🚀</h3>
+    <div id="reader"></div>
+    <div id="result" class="result-box">في انتظار الدواء...</div>
 
     <script>
-        // وظيفة الصوت (تم رفع الصوت وجعل النغمة أوضح)
+        // نغمة "بيب" قوية ومسموعة
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playBeep() {
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
             oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-            
-            oscillator.type = 'square'; // نغمة أقوى وأوضح للسمع عن بُعد
-            oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime); // تردد أعلى قليلاً
-            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime); // رفع مستوى الصوت
-            
+            oscillator.type = 'square'; // صوت خشن وواضح
+            oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime); 
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime); // رفع الصوت
             oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.15); // مدة أطول قليلاً
+            oscillator.stop(audioCtx.currentTime + 0.15);
         }
 
-        // إعدادات المحركات
-        Quagga.init({
-            inputStream: { name: "Live", type: "LiveStream", target: document.querySelector('#interactive'), constraints: { facingMode: "environment" } },
-            decoder: { readers: ["ean_reader", "ean_8_reader", "code_128_reader", "up
+        let lastScanTime = 0;
+        const COOLDOWN = 3000; // 3 ثواني انتظار بين كل علبة والتانية
+
+        function onScanSuccess(decodedText) {
+            const now = Date.now();
+            // لو المسحة دي حصلت في أقل من 3 ثواني من اللي قبلها.. طنشها
+            if (now - lastScanTime < COOLDOWN) return;
+
+            lastScanTime = now; // سجل وقت المسحة دي
+            playBeep();
+            if (navigator.vibrate) navigator.vibrate(100);
+
+            document.getElementById('result').innerText = "تم الإرسال: " + decodedText;
+            
+            // الإرسال للكمبيوتر
+            fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: decodedText });
+        }
+
+        // نفس إعدادات الكاميرا اللي اشتغلت معاك أول مرة بالظبط
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", { fps: 20, qrbox: {width: 300, height: 150} }
+        );
+        html5QrcodeScanner.render(onScanSuccess);
+    </script>
+</body>
+</html>
