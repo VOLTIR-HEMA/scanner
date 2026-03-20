@@ -3,55 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>سكانر إبراهيم السريع</title>
+    <title>سكانر إبراهيم الذكي</title>
     <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 0; }
-        #interactive.viewport { width: 100%; height: 300px; position: relative; border-bottom: 3px solid #28a745; }
+        #interactive.viewport { width: 100%; height: 350px; position: relative; border-bottom: 3px solid #28a745; background: #000; }
         #interactive.viewport > video, #interactive.viewport > canvas { width: 100%; height: 100%; object-fit: cover; }
-        .laser-line { position: absolute; top: 50%; left: 10%; width: 80%; height: 2px; background: red; box-shadow: 0 0 8px red; z-index: 10; animation: scan 2s infinite; }
+        .laser-line { position: absolute; top: 50%; left: 10%; width: 80%; height: 2px; background: rgba(255, 0, 0, 0.7); box-shadow: 0 0 10px red; z-index: 10; animation: scan 2s infinite; }
         @keyframes scan { 0%, 100% { top: 30%; } 50% { top: 70%; } }
-        .status-box { padding: 15px; font-size: 1.2em; color: #00ff00; background: #111; }
+        .status-box { padding: 20px; font-size: 1.2em; color: #00ff00; background: #111; font-weight: bold; }
+        .hint { font-size: 0.8em; color: #888; margin-top: 5px; }
     </style>
 </head>
 <body>
     <div id="interactive" class="viewport">
         <div class="laser-line"></div>
     </div>
-    <div class="status-box" id="result">وجه الكاميرا نحو الباركود...</div>
+    <div class="status-box">
+        <div id="result">وجه الكاميرا للباركود...</div>
+        <div class="hint">بار كود أو QR - صوت هادئ عند المسح</div>
+    </div>
 
     <script>
-        // إعدادات المسح للباركود (الخطوط)
+        // وظيفة إخراج صوت "بيب" رقيق
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBeep() {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.type = 'sine'; // موجة ناعمة لصوت رقيق
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // تردد النغمة
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); // مستوى الصوت (هادئ)
+            
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.1); // مدة قصيرة جداً
+        }
+
+        // تشغيل المحرك الأول للباركود (الخطوط)
         Quagga.init({
-            inputStream: { name: "Live", type: "LiveStream", target: document.querySelector('#interactive'), constraints: { facingMode: "environment", focusMode: "continuous" } },
-            decoder: { readers: ["ean_reader", "ean_8_reader", "code_128_reader", "upc_reader"] }
+            inputStream: { name: "Live", type: "LiveStream", target: document.querySelector('#interactive'), constraints: { facingMode: "environment" } },
+            decoder: { readers: ["ean_reader", "ean_8_reader", "code_128_reader", "upc_reader"] },
+            locate: true
         }, function(err) {
-            if (err) { console.log(err); return; }
+            if (err) return;
             Quagga.start();
         });
 
-        Quagga.onDetected(function(data) {
-            let code = data.codeResult.code;
-            sendResult(code);
-        });
+        Quagga.onDetected(data => sendResult(data.codeResult.code));
 
-        // إعدادات المسح للـ QR كخيار إضافي
+        // تشغيل المحرك الثاني للـ QR
         const html5QrCode = new Html5Qrcode("interactive");
-        const qrConfig = { fps: 10, qrbox: 250 };
-        html5QrCode.start({ facingMode: "environment" }, qrConfig, (qrCode) => { sendResult(qrCode); });
+        html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, qr => sendResult(qr));
 
         let lastCode = "";
         let lastTime = 0;
 
         function sendResult(code) {
             let now = Date.now();
-            if (code !== lastCode || (now - lastTime > 2000)) { // لمنع التكرار في نفس اللحظة
+            if (code !== lastCode || (now - lastTime > 2500)) {
                 lastCode = code;
                 lastTime = now;
+                
+                playBeep(); // إطلاق الصوت
+                if (navigator.vibrate) navigator.vibrate(50); // اهتزاز خفيف
+                
                 document.getElementById('result').innerText = "تم الإرسال: " + code;
                 fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: code });
-                if (navigator.vibrate) navigator.vibrate(100);
             }
         }
     </script>
