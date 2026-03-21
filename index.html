@@ -3,57 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>just scan</title>
+    <title>سكانر إبراهيم - نظام الفاتورة</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 10px; }
-        #reader { width: 100%; max-width: 500px; margin: auto; border-radius: 15px; border: 2px solid #28a745; overflow: hidden; background: #111; }
-        .result-box { margin-top: 20px; padding: 15px; background: #1e1e1e; border-radius: 10px; color: #00ff00; font-size: 1.3em; font-weight: bold; }
+        #reader { width: 100%; max-width: 500px; margin: auto; border-radius: 15px; border: 2px solid #28a745; overflow: hidden; position: relative; }
+        .controls { display: flex; justify-content: space-around; margin: 15px 0; }
+        button { padding: 12px 20px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; font-size: 0.9em; }
+        .btn-bill { background: #555; color: white; transition: 0.3s; }
+        .btn-bill.active { background: #ffcc00; color: #000; box-shadow: 0 0 10px #ffcc00; }
+        .btn-send { background: #28a745; color: white; display: none; width: 80%; margin: 10px auto; }
+        .result-box { margin-top: 15px; padding: 15px; background: #1e1e1e; border-radius: 10px; color: #00ff00; font-size: 1.1em; }
+        #flash-btn { position: absolute; top: 10px; right: 10px; z-index: 100; padding: 8px 12px; background: rgba(0,0,0,0.5); border: 1px solid #fff; color: #fff; border-radius: 5px; font-size: 0.7em; }
     </style>
 </head>
 <body>
-    <h3 style="margin-bottom: 15px;">سكانر الصيدلية 🚀</h3>
-    <div id="reader"></div>
+    <h3 style="margin-bottom: 10px;">سكانر صيدلية إبراهيم 🚀</h3>
+    
+    <div style="position: relative;">
+        <button id="flash-btn" onclick="toggleFlash()">🔦 كشاف</button>
+        <div id="reader"></div>
+    </div>
+
+    <div class="controls">
+        <button id="billModeBtn" class="btn-bill" onclick="toggleBillMode()">📑 وضع الفاتورة: مُغلق</button>
+    </div>
+
+    <button id="sendAllBtn" class="btn-send" onclick="sendAllItems()">📤 إرسال الفاتورة للكمبيوتر (<span id="count">0</span>)</button>
+
     <div id="result" class="result-box">في انتظار الدواء...</div>
 
     <script>
-        // نغمة "بيب" قوية ومسموعة
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playBeep() {
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            oscillator.type = 'square'; // صوت خشن وواضح
-            oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime); 
-            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime); // رفع الصوت
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.15);
-        }
-
         let lastScanTime = 0;
-        const COOLDOWN = 3000; // 3 ثواني انتظار بين كل علبة والتانية
+        const COOLDOWN = 2500;
+        let isBillMode = false;
+        let billItems = [];
+        let track = null;
+        let isFlashOn = false;
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBeep(freq = 880) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sine'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+        }
 
         function onScanSuccess(decodedText) {
             const now = Date.now();
-            // لو المسحة دي حصلت في أقل من 3 ثواني من اللي قبلها.. طنشها
             if (now - lastScanTime < COOLDOWN) return;
-
-            lastScanTime = now; // سجل وقت المسحة دي
+            lastScanTime = now;
             playBeep();
-            if (navigator.vibrate) navigator.vibrate(100);
+            if (navigator.vibrate) navigator.vibrate(80);
 
-            document.getElementById('result').innerText = "تم الإرسال: " + decodedText;
-            
-            // الإرسال للكمبيوتر
-            fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: decodedText });
+            if (isBillMode) {
+                billItems.push(decodedText);
+                document.getElementById('count').innerText = billItems.length;
+                document.getElementById('sendAllBtn').style.display = 'block';
+                document.getElementById('result').innerText = "تمت الإضافة للفاتورة: " + decodedText;
+            } else {
+                document.getElementById('result').innerText = "تم الإرسال فوراً: " + decodedText;
+                fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: decodedText });
+            }
         }
 
-        // نفس إعدادات الكاميرا اللي اشتغلت معاك أول مرة بالظبط
-        let html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", { fps: 20, qrbox: {width: 300, height: 150} }
-        );
+        function toggleBillMode() {
+            isBillMode = !isBillMode;
+            const btn = document.getElementById('billModeBtn');
+            if (isBillMode) {
+                btn.innerText = "📑 وضع الفاتورة: يجمع الآن";
+                btn.classList.add('active');
+                playBeep(1200);
+            } else {
+                btn.innerText = "📑 وضع الفاتورة: مُغلق";
+                btn.classList.remove('active');
+                billItems = [];
+                document.getElementById('sendAllBtn').style.display = 'none';
+            }
+        }
+
+        async function sendAllItems() {
+            const btn = document.getElementById('sendAllBtn');
+            btn.disabled = true;
+            btn.innerText = "جاري الإرسال بالتتابع...";
+            
+            for (let i = 0; i < billItems.length; i++) {
+                const code = billItems[i];
+                document.getElementById('result').innerText = `إرسال صنف ${i+1} من ${billItems.length}...`;
+                
+                await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: code });
+                
+                if (i < billItems.length - 1) {
+                    await new Promise(r => setTimeout(r, 2000)); // انتظار ثانيتين بين كل كود
+                }
+            }
+            
+            playBeep(1500);
+            alert("تم إرسال الفاتورة بالكامل للكمبيوتر ✅");
+            billItems = [];
+            document.getElementById('count').innerText = "0";
+            btn.style.display = 'none';
+            btn.disabled = false;
+            btn.innerText = "📤 إرسال الفاتورة للكمبيوتر";
+            document.getElementById('result').innerText = "جاهز للمسح القادم...";
+        }
+
+        let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: {width: 280, height: 150} });
         html5QrcodeScanner.render(onScanSuccess);
+
+        async function toggleFlash() {
+            const video = document.querySelector('video');
+            if (!video || !video.srcObject) return;
+            track = video.srcObject.getVideoTracks()[0];
+            if (track && track.getCapabilities().torch) {
+                isFlashOn = !isFlashOn;
+                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+                document.getElementById('flash-btn').innerText = isFlashOn ? "❌ إطفاء" : "🔦 كشاف";
+            }
+        }
     </script>
 </body>
 </html>
