@@ -13,19 +13,21 @@
         .btn-bill { background: #555; color: white; transition: 0.3s; }
         .btn-bill.active { background: #ffcc00; color: #000; box-shadow: 0 0 10px #ffcc00; }
         .btn-send { background: #28a745; color: white; display: none; width: 80%; margin: 10px auto; }
-        .result-box { margin-top: 15px; padding: 15px; background: #1e1e1e; border-radius: 10px; color: #00ff00; font-size: 1.1em; }
+        .result-box { margin-top: 15px; padding: 15px; background: #1e1e1e; border-radius: 10px; color: #00ff00; font-size: 1.1em; min-height: 50px; }
         #flash-btn { position: absolute; top: 10px; right: 10px; z-index: 100; padding: 8px 12px; background: rgba(0,0,0,0.5); border: 1px solid #fff; color: #fff; border-radius: 5px; font-size: 0.7em; }
+        .btn-cmd { position: absolute; top: 10px; z-index: 100; padding: 8px 12px; border: 1px solid #fff; color: #fff; border-radius: 5px; font-size: 0.8em; font-weight: bold; }
     </style>
 </head>
 <body>
     <h3 style="margin-bottom: 10px;">سكانر صيدلية إبراهيم 🚀</h3>
     
-   <div style="position: relative;">
-    <button id="add-btn" onclick="sendAddCommand()" style="position: absolute; top: 10px; left: 10px; z-index: 100; padding: 8px 12px; background: #007bff; border: 1px solid #fff; color: #fff; border-radius: 5px; font-size: 0.8em; font-weight: bold;">➕ إضافة</button>
-    
-    <button id="flash-btn" onclick="toggleFlash()">🔦 كشاف</button>
-    <div id="reader"></div>
-</div>
+    <div style="position: relative;">
+        <button id="add-btn" class="btn-cmd" onclick="sendAddCommand()" style="left: 10px; background: #007bff;">➕ إضافة</button>
+        <button id="save-btn" class="btn-cmd" onclick="sendSaveCommand()" style="left: 85px; background: #28a745;">💾 حفظ</button>
+        
+        <button id="flash-btn" onclick="toggleFlash()">🔦 كشاف</button>
+        <div id="reader"></div>
+    </div>
 
     <div class="controls">
         <button id="billModeBtn" class="btn-bill" onclick="toggleBillMode()">📑 وضع الفاتورة: مُغلق</button>
@@ -51,6 +53,32 @@
             osc.type = 'sine'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
             gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
             osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+        }
+
+        // إرسال إضافة (F8 + Enter)
+        async function sendAddCommand() {
+            const res = document.getElementById('result');
+            res.innerText = "جاري إرسال: F8...";
+            await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: 'F8' });
+            playBeep(600);
+            await new Promise(r => setTimeout(r, 1000));
+            res.innerText = "جاري إرسال: Enter...";
+            await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: 'Enter' });
+            playBeep(1000);
+            res.innerText = "تم تنفيذ أمر الإضافة ✅";
+        }
+
+        // إرسال حفظ (F9 + Enter)
+        async function sendSaveCommand() {
+            const res = document.getElementById('result');
+            res.innerText = "جاري إرسال: F9...";
+            await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: 'F9' });
+            playBeep(700);
+            await new Promise(r => setTimeout(r, 1000));
+            res.innerText = "جاري إرسال: Enter...";
+            await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: 'Enter' });
+            playBeep(1200);
+            res.innerText = "تم حفظ الفاتورة بنجاح ✅";
         }
 
         function onScanSuccess(decodedText) {
@@ -90,26 +118,16 @@
             const btn = document.getElementById('sendAllBtn');
             btn.disabled = true;
             btn.innerText = "جاري الإرسال بالتتابع...";
-            
             for (let i = 0; i < billItems.length; i++) {
-                const code = billItems[i];
-                document.getElementById('result').innerText = `إرسال صنف ${i+1} من ${billItems.length}...`;
-                
-                await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: code });
-                
-                if (i < billItems.length - 1) {
-                    await new Promise(r => setTimeout(r, 1000)); // انتظار ثانيتين بين كل كود
-                }
+                await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: billItems[i] });
+                if (i < billItems.length - 1) await new Promise(r => setTimeout(r, 2000));
             }
-            
             playBeep(1500);
-            alert("تم إرسال الفاتورة بالكامل للكمبيوتر ✅");
+            alert("تم إرسال الفاتورة بالكامل ✅");
             billItems = [];
             document.getElementById('count').innerText = "0";
             btn.style.display = 'none';
             btn.disabled = false;
-            btn.innerText = "📤 إرسال الفاتورة للكمبيوتر";
-            document.getElementById('result').innerText = "جاهز للمسح القادم...";
         }
 
         let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: {width: 280, height: 150} });
@@ -125,25 +143,6 @@
                 document.getElementById('flash-btn').innerText = isFlashOn ? "❌ إطفاء" : "🔦 كشاف";
             }
         }
-        // وظيفة زرار الإضافة (F8 ثم Enter بعد ثانية)
-async function sendAddCommand() {
-    const resultDiv = document.getElementById('result');
-    
-    // إرسال F8
-    resultDiv.innerText = "جاري إرسال: F8...";
-    await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: 'F8' });
-    playBeep(600); 
-
-    // انتظار ثانية
-    await new Promise(r => setTimeout(r, 1000));
-
-    // إرسال Enter
-    resultDiv.innerText = "جاري إرسال: Enter...";
-    await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: 'Enter' });
-    playBeep(1000); 
-    
-    resultDiv.innerText = "تم تنفيذ أمر الإضافة ✅";
-}
     </script>
 </body>
 </html>
