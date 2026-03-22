@@ -1,97 +1,96 @@
-// --- إعدادات الربط (نفس نظام سكريبتك القديم) ---
+// الإعدادات الشاملة (10 أزرار + IP)
 let config = JSON.parse(localStorage.getItem('ibrahimConfig')) || {
-    pc_ip: "192.168.1.5", // اكتب الـ IP بتاعك هنا من الموبايل
+    pc_ip: "192.168.1.5",
     pc_port: "8080",
-    plus: { name: 'فاتورة', key: 'F5', autoEnter: true },
-    smart: { count: 2, interval: 400 }
+    smart: { count: 2, interval: 400 },
+    btns: {
+        t1: { name: 'فاتورة', key: 'F5', ae: true },
+        t2: { name: 'حذف', key: 'Delete', ae: false },
+        b3: { name: 'B3', key: 'F1', ae: false },
+        b4: { name: 'B4', key: 'F2', ae: false },
+        b5: { name: 'B5', key: 'F3', ae: false }
+    }
 };
 
-// --- منطق الإرسال (زي السكريبت القديم بالظبط) ---
+const scanner = {
+    reader: new ZXing.BrowserMultiFormatReader(),
+    async start() {
+        try {
+            const devices = await this.reader.listVideoInputDevices();
+            const backCam = devices.find(d => d.label.toLowerCase().includes('back')) || devices[devices.length - 1];
+            this.reader.decodeFromVideoDevice(backCam.deviceId, 'video', (res) => {
+                if (res) { logic.send(res.text); ui.feedback(); }
+            });
+        } catch (e) { console.error(e); }
+    },
+    async toggleFlash() {
+        const track = document.getElementById('video').srcObject.getVideoTracks()[0];
+        if (track.getCapabilities().torch) track.applyConstraints({ advanced: [{ torch: !track.getSettings().torch }] });
+    }
+};
+
 const logic = {
     send(data) {
-        console.log("إرسال للكمبيوتر:", data);
-        // الرابط ده هو اللي سكريبت الجافا بتاعك بيفهمه
         const url = `http://${config.pc_ip}:${config.pc_port}/send?cmd=${encodeURIComponent(data)}`;
-        
-        fetch(url, { mode: 'no-cors' })
-            .catch(err => console.log("تأكد من تشغيل سكريبت الجافا على الكمبيوتر"));
+        fetch(url, { mode: 'no-cors' }).catch(() => {});
     },
-    // ... باقي الوظائف (الزراير والإنتر الذكي) هتفضل شغالة عادي
-    execBtn(type) {
-        const conf = config[type];
-        this.send(conf.key);
-        if (conf.autoEnter) setTimeout(() => this.send('Enter'), 150);
+    execBtn(id) {
+        const b = config.btns[id];
+        this.send(b.key);
+        if (b.ae) setTimeout(() => this.send('Enter'), 200);
     },
     execSmartEnter() {
-        let count = 0;
-        const timer = setInterval(() => {
+        let i = 0;
+        const t = setInterval(() => {
             this.send('Enter');
-            count++;
-            if (count >= config.smart.count) clearInterval(timer);
+            if (++i >= config.smart.count) clearInterval(t);
         }, config.smart.interval);
     }
 };
 
-// --- تشغيل الكاميرا (نفس المكتبة القديمة) ---
-const scanner = {
-    reader: new ZXing.BrowserMultiFormatReader(),
-    async start() {
-        const devices = await this.reader.listVideoInputDevices();
-        const backCam = devices.find(d => d.label.toLowerCase().includes('back')) || devices[devices.length - 1];
-        this.reader.decodeFromVideoDevice(backCam.deviceId, 'video', (result) => {
-            if (result) {
-                logic.send(result.text); // بيبعت الباركود لبرنامج الجافا بتاعك
-                ui.feedback();
-            }
-        });
-    }
-};
-
-// ... (باقي كود الـ UI ومود الفاتورة بيفضل زي ما هو)
 const ui = {
     feedback() {
-        const box = document.getElementById('scanner-box');
-        box.style.borderColor = '#00ff00';
-        setTimeout(() => box.style.borderColor = '', 300);
+        const s = document.getElementById('scanner-box').style;
+        s.borderColor = '#00ff00'; setTimeout(() => s.borderColor = '', 300);
     },
-    toggleBatch(show) {
-        document.getElementById('batch-container').classList.toggle('hidden', !show);
-        if (show) document.getElementById('batch-input').focus();
+    toggleBatch(s) {
+        document.getElementById('batch-container').classList.toggle('hidden', !s);
+        if (s) document.getElementById('batch-input').focus();
     },
+    focusKeyboard() { this.toggleBatch(true); },
     openSettings() {
-        const list = document.getElementById('config-list');
-        list.innerHTML = `
-            <div style="background:#333; padding:10px; border-radius:8px; margin-bottom:10px;">
-                <h4>إعدادات الربط</h4>
-                IP الكمبيوتر: <input id="set-pc-ip" type="text" value="${config.pc_ip}">
-            </div>
-            <div style="background:#333; padding:10px; border-radius:8px;">
-                <h4>زر الزائد (+)</h4>
-                الاسم: <input id="set-plus-name" type="text" value="${config.plus.name}">
-                الأمر: <input id="set-plus-key" type="text" value="${config.plus.key}">
-            </div>
-        `;
+        document.getElementById('set-ip').value = config.pc_ip;
+        let html = '';
+        for (let id in config.btns) {
+            let b = config.btns[id];
+            html += `<div class="setting-card">
+                <h4>تعديل زر ${id.toUpperCase()}</h4>
+                الاسم: <input id="n-${id}" value="${b.name}">
+                الأمر: <input id="k-${id}" value="${b.key}">
+                <label><input type="checkbox" id="ae-${id}" ${b.ae?'checked':''}> Auto-Enter</label>
+            </div>`;
+        }
+        document.getElementById('config-list').innerHTML = html;
         document.getElementById('settings-page').classList.remove('hidden');
     },
     saveSettings() {
-        config.pc_ip = document.getElementById('set-pc-ip').value;
-        config.plus.name = document.getElementById('set-plus-name').value;
-        config.plus.key = document.getElementById('set-plus-key').value;
+        config.pc_ip = document.getElementById('set-ip').value;
+        for (let id in config.btns) {
+            config.btns[id].name = document.getElementById(`n-${id}`).value;
+            config.btns[id].key = document.getElementById(`k-${id}`).value;
+            config.btns[id].ae = document.getElementById(`ae-${id}`).checked;
+            document.getElementById(`btn-${id}`).innerText = config.btns[id].name;
+        }
         localStorage.setItem('ibrahimConfig', JSON.stringify(config));
         document.getElementById('settings-page').classList.add('hidden');
-        document.getElementById('btn-plus').innerText = config.plus.name;
     }
 };
 
 document.getElementById('batch-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        logic.send(e.target.value);
-        logic.send('Enter');
-        e.target.value = '';
-    }
+    if (e.key === 'Enter') { logic.send(e.target.value); logic.send('Enter'); e.target.value = ''; }
 });
 
 window.onload = () => {
     scanner.start();
-    document.getElementById('btn-plus').innerText = config.plus.name;
+    for (let id in config.btns) document.getElementById(`btn-${id}`).innerText = config.btns[id].name;
 };
