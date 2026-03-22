@@ -3,43 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Just Scan Pro</title>
+    <title>إبراهيم برو سكانر - النسخة النهائية</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/@zxing/library@latest"></script>
 </head>
 <body>
-
     <video id="video" autoplay playsinline></video>
-    <div class="scan-region" id="scanner-box">
-        <div class="laser"></div>
-    </div>
+    <div class="scan-region" id="scanner-box"><div class="laser"></div></div>
 
     <div class="controls top-bar">
         <button class="btn" onclick="ui.openSettings()">⚙️</button>
-        <button class="btn" id="flash-btn" onclick="scanner.toggleFlash()">⚡</button>
-        <button class="btn main-btn" id="btn-plus" onclick="logic.execBtn('plus')">+</button>
-        <button class="btn main-btn" id="btn-del" onclick="logic.execBtn('del')">🗑️</button>
-        <button class="btn" id="btn-smart-enter" onclick="logic.execSmartEnter()">⏎</button>
+        <button class="btn" onclick="scanner.toggleFlash()">⚡</button>
+        <button class="btn main-btn" id="btn-t1" onclick="logic.execBtn('t1')">T1</button>
+        <button class="btn main-btn" id="btn-t2" onclick="logic.execBtn('t2')">T2</button>
+        <button class="btn" onclick="logic.execSmartEnter()">⏎</button>
     </div>
 
     <div id="batch-container" class="hidden">
-        <input type="text" id="batch-input" placeholder="ادخل البيانات هنا...">
+        <input type="text" id="batch-input" placeholder="اكتب البيانات هنا...">
         <button class="close-btn" onclick="ui.toggleBatch(false)">✕</button>
     </div>
 
     <div class="controls bottom-bar">
-        <button class="btn wide-btn" onclick="ui.toggleBatch(true)">📄 مود الفاتورة المجمعة</button>
-        <button class="btn" onclick="ui.focusKeyboard()">⌨️</button>
+        <button class="btn" id="btn-b1" onclick="ui.toggleBatch(true)">📄</button>
+        <button class="btn" id="btn-b2" onclick="ui.focusKeyboard()">⌨️</button>
+        <button class="btn" id="btn-b3" onclick="logic.execBtn('b3')">B3</button>
+        <button class="btn" id="btn-b4" onclick="logic.execBtn('b4')">B4</button>
+        <button class="btn" id="btn-b5" onclick="logic.execBtn('b5')">B5</button>
     </div>
 
     <div id="settings-page" class="overlay hidden">
         <div class="settings-content">
-            <h2>إعدادات التحكم</h2>
+            <h2 style="text-align:center">لوحة تحكم إبراهيم</h2>
+            <div class="setting-item">IP الكمبيوتر: <input id="set-ip"></div>
+            <hr>
             <div id="config-list"></div>
-            <button class="save-btn" onclick="ui.saveSettings()">حفظ وإغلاق</button>
+            <button class="save-btn" onclick="ui.saveSettings()">حفظ التغييرات</button>
         </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
