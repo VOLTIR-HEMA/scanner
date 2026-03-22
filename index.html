@@ -1,84 +1,128 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Ibrahim</title>
-    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <title>سكانر إبراهيم - نظام الفاتورة</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; }
-        #video { width: 100vw; height: 100vh; object-fit: cover; }
-        .scan-region { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 150px; border: 2px solid #fff; border-radius: 10px; box-shadow: 0 0 0 5000px rgba(0,0,0,0.5); pointer-events: none; }
-        .controls { position: absolute; width: 100%; display: flex; justify-content: space-around; z-index: 10; padding: 15px 0; }
-        .top-bar { top: 0; background: rgba(0,0,0,0.4); }
-        .bottom-bar { bottom: 0; background: rgba(0,0,0,0.4); padding-bottom: 30px; }
-        .btn { background: #444; color: white; border: 1px solid #666; padding: 10px; border-radius: 8px; min-width: 50px; cursor: pointer; }
-        .hidden { display: none; }
-        #batch-container { position: absolute; top: 120px; width: 90%; left: 5%; z-index: 20; }
-        #batch-input { width: 100%; padding: 15px; border-radius: 10px; border: none; font-size: 18px; }
+        body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 10px; }
+        #reader { width: 100%; max-width: 500px; margin: auto; border-radius: 15px; border: 2px solid #28a745; overflow: hidden; position: relative; }
+        .controls { display: flex; justify-content: space-around; margin: 15px 0; }
+        button { padding: 12px 20px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; font-size: 0.9em; }
+        .btn-bill { background: #555; color: white; transition: 0.3s; }
+        .btn-bill.active { background: #ffcc00; color: #000; box-shadow: 0 0 10px #ffcc00; }
+        .btn-send { background: #28a745; color: white; display: none; width: 80%; margin: 10px auto; }
+        .result-box { margin-top: 15px; padding: 15px; background: #1e1e1e; border-radius: 10px; color: #00ff00; font-size: 1.1em; }
+        #flash-btn { position: absolute; top: 10px; right: 10px; z-index: 100; padding: 8px 12px; background: rgba(0,0,0,0.5); border: 1px solid #fff; color: #fff; border-radius: 5px; font-size: 0.7em; }
     </style>
 </head>
 <body>
-
-    <video id="video" autoplay playsinline></video>
-    <div class="scan-region"></div>
-
-    <div class="controls top-bar">
-        <button class="btn" onclick="alert('قريباً الضبط')">⚙️</button>
-        <button class="btn" onclick="toggleFlash()">⚡</button>
-        <button class="btn" id="t1" onclick="sendToPC('F5')">+</button> <button class="btn" id="t2" onclick="sendToPC('Delete')">🗑️</button>
-        <button class="btn" onclick="sendToPC('Enter')">⏎</button>
+    <h3 style="margin-bottom: 10px;">سكانر صيدلية إبراهيم 🚀</h3>
+    
+    <div style="position: relative;">
+        <button id="flash-btn" onclick="toggleFlash()">🔦 كشاف</button>
+        <div id="reader"></div>
     </div>
 
-    <div id="batch-container" class="hidden">
-        <input type="text" id="batch-input" placeholder="اكتب هنا وادوس انتر...">
+    <div class="controls">
+        <button id="billModeBtn" class="btn-bill" onclick="toggleBillMode()">📑 وضع الفاتورة: مُغلق</button>
     </div>
 
-    <div class="controls bottom-bar">
-        <button class="btn" onclick="document.getElementById('batch-container').classList.toggle('hidden')">📄</button>
-        <button class="btn" onclick="document.getElementById('batch-input').focus()">⌨️</button>
-        <button class="btn">B3</button>
-        <button class="btn">B4</button>
-        <button class="btn">B5</button>
-    </div>
+    <button id="sendAllBtn" class="btn-send" onclick="sendAllItems()">📤 إرسال الفاتورة للكمبيوتر (<span id="count">0</span>)</button>
 
-    <audio id="beep" src="https://www.soundjay.com/buttons/beep-07.wav" preload="auto"></audio>
+    <div id="result" class="result-box">في انتظار الدواء...</div>
 
     <script>
-        const pc_ip = "192.168.1.5"; // غير الـ IP بتاعك هنا مؤقتاً
-        const codeReader = new ZXing.BrowserMultiFormatReader();
-        const beep = document.getElementById('beep');
+        let lastScanTime = 0;
+        const COOLDOWN = 2500;
+        let isBillMode = false;
+        let billItems = [];
+        let track = null;
+        let isFlashOn = false;
 
-        // دالة الإرسال اللي الجافا بيفهمها
-        function sendToPC(data) {
-            fetch(`http://${pc_ip}:8080/send?cmd=${encodeURIComponent(data)}`, {mode: 'no-cors'})
-            .catch(e => console.log("خطأ في الاتصال"));
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBeep(freq = 880) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sine'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.15);
         }
 
-        // تشغيل الكاميرا والسكانر (القديم الشغال)
-        codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
-            if (result) {
-                beep.play(); // الصوت اشتغل
-                sendToPC(result.text); // بعت للجافا
-                console.log(result.text);
-            }
-        });
+        function onScanSuccess(decodedText) {
+            const now = Date.now();
+            if (now - lastScanTime < COOLDOWN) return;
+            lastScanTime = now;
+            playBeep();
+            if (navigator.vibrate) navigator.vibrate(80);
 
-        // تشغيل الفلاش
-        function toggleFlash() {
-            const track = document.getElementById('video').srcObject.getVideoTracks()[0];
-            const settings = track.getSettings();
-            track.applyConstraints({advanced: [{torch: !settings.torch}]});
+            if (isBillMode) {
+                billItems.push(decodedText);
+                document.getElementById('count').innerText = billItems.length;
+                document.getElementById('sendAllBtn').style.display = 'block';
+                document.getElementById('result').innerText = "تمت الإضافة للفاتورة: " + decodedText;
+            } else {
+                document.getElementById('result').innerText = "تم الإرسال فوراً: " + decodedText;
+                fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: decodedText });
+            }
         }
 
-        // مود الفاتورة (الكيبورد)
-        document.getElementById('batch-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendToPC(e.target.value);
-                setTimeout(() => sendToPC('Enter'), 200);
-                e.target.value = '';
+        function toggleBillMode() {
+            isBillMode = !isBillMode;
+            const btn = document.getElementById('billModeBtn');
+            if (isBillMode) {
+                btn.innerText = "📑 وضع الفاتورة: يجمع الآن";
+                btn.classList.add('active');
+                playBeep(1200);
+            } else {
+                btn.innerText = "📑 وضع الفاتورة: مُغلق";
+                btn.classList.remove('active');
+                billItems = [];
+                document.getElementById('sendAllBtn').style.display = 'none';
             }
-        });
+        }
+
+        async function sendAllItems() {
+            const btn = document.getElementById('sendAllBtn');
+            btn.disabled = true;
+            btn.innerText = "جاري الإرسال بالتتابع...";
+            
+            for (let i = 0; i < billItems.length; i++) {
+                const code = billItems[i];
+                document.getElementById('result').innerText = `إرسال صنف ${i+1} من ${billItems.length}...`;
+                
+                await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: code });
+                
+                if (i < billItems.length - 1) {
+                    await new Promise(r => setTimeout(r, 2000)); // انتظار ثانيتين بين كل كود
+                }
+            }
+            
+            playBeep(1500);
+            alert("تم إرسال الفاتورة بالكامل للكمبيوتر ✅");
+            billItems = [];
+            document.getElementById('count').innerText = "0";
+            btn.style.display = 'none';
+            btn.disabled = false;
+            btn.innerText = "📤 إرسال الفاتورة للكمبيوتر";
+            document.getElementById('result').innerText = "جاهز للمسح القادم...";
+        }
+
+        let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: {width: 280, height: 150} });
+        html5QrcodeScanner.render(onScanSuccess);
+
+        async function toggleFlash() {
+            const video = document.querySelector('video');
+            if (!video || !video.srcObject) return;
+            track = video.srcObject.getVideoTracks()[0];
+            if (track && track.getCapabilities().torch) {
+                isFlashOn = !isFlashOn;
+                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+                document.getElementById('flash-btn').innerText = isFlashOn ? "❌ إطفاء" : "🔦 كشاف";
+            }
+        }
     </script>
 </body>
 </html>
