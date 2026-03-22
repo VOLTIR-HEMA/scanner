@@ -3,44 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>إبراهيم برو سكانر - النسخة النهائية</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Scanner Ibrahim</title>
     <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <style>
+        body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; }
+        #video { width: 100vw; height: 100vh; object-fit: cover; }
+        .scan-region { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 150px; border: 2px solid #fff; border-radius: 10px; box-shadow: 0 0 0 5000px rgba(0,0,0,0.5); pointer-events: none; }
+        .controls { position: absolute; width: 100%; display: flex; justify-content: space-around; z-index: 10; padding: 15px 0; }
+        .top-bar { top: 0; background: rgba(0,0,0,0.4); }
+        .bottom-bar { bottom: 0; background: rgba(0,0,0,0.4); padding-bottom: 30px; }
+        .btn { background: #444; color: white; border: 1px solid #666; padding: 10px; border-radius: 8px; min-width: 50px; cursor: pointer; }
+        .hidden { display: none; }
+        #batch-container { position: absolute; top: 120px; width: 90%; left: 5%; z-index: 20; }
+        #batch-input { width: 100%; padding: 15px; border-radius: 10px; border: none; font-size: 18px; }
+    </style>
 </head>
 <body>
+
     <video id="video" autoplay playsinline></video>
-    <div class="scan-region" id="scanner-box"><div class="laser"></div></div>
+    <div class="scan-region"></div>
 
     <div class="controls top-bar">
-        <button class="btn" onclick="ui.openSettings()">⚙️</button>
-        <button class="btn" onclick="scanner.toggleFlash()">⚡</button>
-        <button class="btn main-btn" id="btn-t1" onclick="logic.execBtn('t1')">T1</button>
-        <button class="btn main-btn" id="btn-t2" onclick="logic.execBtn('t2')">T2</button>
-        <button class="btn" onclick="logic.execSmartEnter()">⏎</button>
+        <button class="btn" onclick="alert('قريباً الضبط')">⚙️</button>
+        <button class="btn" onclick="toggleFlash()">⚡</button>
+        <button class="btn" id="t1" onclick="sendToPC('F5')">+</button> <button class="btn" id="t2" onclick="sendToPC('Delete')">🗑️</button>
+        <button class="btn" onclick="sendToPC('Enter')">⏎</button>
     </div>
 
     <div id="batch-container" class="hidden">
-        <input type="text" id="batch-input" placeholder="اكتب البيانات هنا...">
-        <button class="close-btn" onclick="ui.toggleBatch(false)">✕</button>
+        <input type="text" id="batch-input" placeholder="اكتب هنا وادوس انتر...">
     </div>
 
     <div class="controls bottom-bar">
-        <button class="btn" id="btn-b1" onclick="ui.toggleBatch(true)">📄</button>
-        <button class="btn" id="btn-b2" onclick="ui.focusKeyboard()">⌨️</button>
-        <button class="btn" id="btn-b3" onclick="logic.execBtn('b3')">B3</button>
-        <button class="btn" id="btn-b4" onclick="logic.execBtn('b4')">B4</button>
-        <button class="btn" id="btn-b5" onclick="logic.execBtn('b5')">B5</button>
+        <button class="btn" onclick="document.getElementById('batch-container').classList.toggle('hidden')">📄</button>
+        <button class="btn" onclick="document.getElementById('batch-input').focus()">⌨️</button>
+        <button class="btn">B3</button>
+        <button class="btn">B4</button>
+        <button class="btn">B5</button>
     </div>
 
-    <div id="settings-page" class="overlay hidden">
-        <div class="settings-content">
-            <h2 style="text-align:center">لوحة تحكم إبراهيم</h2>
-            <div class="setting-item">IP الكمبيوتر: <input id="set-ip"></div>
-            <hr>
-            <div id="config-list"></div>
-            <button class="save-btn" onclick="ui.saveSettings()">حفظ التغييرات</button>
-        </div>
-    </div>
-    <script src="script.js"></script>
+    <audio id="beep" src="https://www.soundjay.com/buttons/beep-07.wav" preload="auto"></audio>
+
+    <script>
+        const pc_ip = "192.168.1.5"; // غير الـ IP بتاعك هنا مؤقتاً
+        const codeReader = new ZXing.BrowserMultiFormatReader();
+        const beep = document.getElementById('beep');
+
+        // دالة الإرسال اللي الجافا بيفهمها
+        function sendToPC(data) {
+            fetch(`http://${pc_ip}:8080/send?cmd=${encodeURIComponent(data)}`, {mode: 'no-cors'})
+            .catch(e => console.log("خطأ في الاتصال"));
+        }
+
+        // تشغيل الكاميرا والسكانر (القديم الشغال)
+        codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+            if (result) {
+                beep.play(); // الصوت اشتغل
+                sendToPC(result.text); // بعت للجافا
+                console.log(result.text);
+            }
+        });
+
+        // تشغيل الفلاش
+        function toggleFlash() {
+            const track = document.getElementById('video').srcObject.getVideoTracks()[0];
+            const settings = track.getSettings();
+            track.applyConstraints({advanced: [{torch: !settings.torch}]});
+        }
+
+        // مود الفاتورة (الكيبورد)
+        document.getElementById('batch-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendToPC(e.target.value);
+                setTimeout(() => sendToPC('Enter'), 200);
+                e.target.value = '';
+            }
+        });
+    </script>
 </body>
 </html>
