@@ -6,46 +6,15 @@
     <title>Ibrahim Scanner Pro</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 0; overflow: hidden; }
-        
-        /* Top Bar */
-        .top-bar { 
-            display: flex; justify-content: space-around; align-items: center; 
-            background: #1a1a1a; padding: 5px; border-bottom: 1px solid #333;
-        }
-        .top-bar button { 
-            background: #333; color: white; border: 1px solid #555; 
-            padding: 6px 10px; border-radius: 6px; font-size: 0.75em; 
-        }
+        body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 0; overflow-x: hidden; }
+        .top-bar { display: flex; justify-content: space-around; align-items: center; background: #1a1a1a; padding: 5px; border-bottom: 1px solid #333; }
+        .top-bar button { background: #333; color: white; border: 1px solid #555; padding: 6px 10px; border-radius: 6px; font-size: 0.75em; }
         .top-bar button.active { background: #ffcc00; color: #000; font-weight: bold; }
-
-        /* Compact Scanner */
-        #reader-container { 
-            width: 100%; max-width: 400px; margin: 5px auto; 
-            border-radius: 10px; overflow: hidden; border: 1px solid #28a745;
-            height: 180px; /* صغرنا الارتفاع جداً */
-        }
-        
-        /* Result Box - Very Compact */
-        .result-box { 
-            margin: 5px 10px; padding: 5px; background: #111; 
-            border-radius: 5px; color: #00ff00; font-size: 0.85em; 
-            border: 1px solid #333; min-height: 20px;
-        }
-
-        /* Dynamic Buttons Area */
-        .dynamic-section { padding: 5px; }
-        #dynamic-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+        #reader { width: 100%; max-width: 400px; margin: 5px auto; border-radius: 10px; overflow: hidden; border: 1px solid #28a745; height: 180px !important; }
+        .result-box { margin: 5px 10px; padding: 5px; background: #111; border-radius: 5px; color: #00ff00; font-size: 0.85em; border: 1px solid #333; min-height: 20px; }
+        #dynamic-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 5px; }
         .custom-btn { padding: 8px 12px; border-radius: 6px; border: 1px solid #fff; color: white; font-weight: bold; font-size: 0.8em; min-width: 70px; }
-        
-        /* Send All Button */
-        .send-all-btn { 
-            background: #28a745; color: white; padding: 10px; width: 90%; 
-            margin: 5px auto; border-radius: 8px; display: none; 
-            font-weight: bold; border: none; font-size: 0.9em;
-        }
-
-        /* Modal Settings */
+        .send-all-btn { background: #28a745; color: white; padding: 10px; width: 90%; margin: 5px auto; border-radius: 8px; display: none; font-weight: bold; border: none; }
         #settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; overflow-y: auto; }
         .modal-content { background: #222; width: 85%; margin: 15px auto; padding: 15px; border-radius: 12px; text-align: left; }
         .setting-row { background: #333; padding: 10px; margin-bottom: 8px; border-radius: 8px; display: flex; flex-direction: column; gap: 5px; }
@@ -60,25 +29,21 @@
         <button id="billModeBtn" onclick="toggleBillMode()">📑 Bill: OFF</button>
     </div>
 
-    <div id="reader-container">
-        <div id="reader"></div>
-    </div>
+    <div id="reader"></div>
 
     <div id="result" class="result-box">Ready...</div>
     
     <button id="sendAllBtn" class="send-all-btn" onclick="sendFullBill()">📤 Send Full Bill (<span id="count">0</span>)</button>
 
-    <div class="dynamic-section">
-        <div id="dynamic-buttons"></div>
-    </div>
+    <div id="dynamic-buttons"></div>
 
     <div id="settings-modal">
-        <div class="modal-content" dir="ltr">
+        <div class="modal-content">
             <h3>⚙️ Button Config</h3>
             <div id="settings-list"></div>
             <button onclick="addNewButtonSetting()" style="background:#007bff; color:white; width:100%; padding:10px; border-radius:8px; margin-top:5px; border:none;">➕ Add New Button</button>
             <div style="display:flex; gap:10px; margin-top:15px;">
-                <button onclick="saveSettings()" style="background:#28a745; color:white; flex:2; padding:12px; border-radius:8px; border:none; font-weight:bold;">Save Changes</button>
+                <button onclick="saveSettings()" style="background:#28a745; color:white; flex:2; padding:12px; border-radius:8px; border:none; font-weight:bold;">Save</button>
                 <button onclick="toggleSettings(false)" style="background:#555; color:white; flex:1; padding:12px; border-radius:8px; border:none;">Cancel</button>
             </div>
         </div>
@@ -93,8 +58,8 @@
         let isBillMode = false;
         let billItems = [];
         let lastScanTime = 0;
-        let flashStream = null;
         let isFlashOn = false;
+        let html5QrCode = null;
 
         function renderButtons() {
             const container = document.getElementById('dynamic-buttons');
@@ -122,74 +87,10 @@
         function onScanSuccess(text) {
             if (Date.now() - lastScanTime < 2000) return;
             lastScanTime = Date.now();
-
             if (isBillMode) {
                 billItems.push(text);
                 document.getElementById('count').innerText = billItems.length;
                 document.getElementById('result').innerText = "Added: " + text;
             } else {
                 document.getElementById('result').innerText = "Sent: " + text;
-                fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: text });
-            }
-        }
-
-        function toggleBillMode() {
-            isBillMode = !isBillMode;
-            const btn = document.getElementById('billModeBtn');
-            const sendBtn = document.getElementById('sendAllBtn');
-            btn.innerText = isBillMode ? "📑 Bill: ON" : "📑 Bill: OFF";
-            btn.classList.toggle('active', isBillMode);
-            if (isBillMode) { billItems = []; document.getElementById('count').innerText = "0"; sendBtn.style.display = 'none'; }
-            else if (billItems.length > 0) { sendBtn.style.display = 'block'; }
-        }
-
-        async function sendFullBill() {
-            const btn = document.getElementById('sendAllBtn');
-            btn.disabled = true;
-            for (let i = 0; i < billItems.length; i++) {
-                document.getElementById('result').innerText = `Sending ${i+1}/${billItems.length}...`;
-                await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: billItems[i] });
-                await new Promise(r => setTimeout(r, 1200));
-            }
-            btn.style.display = 'none'; btn.disabled = false;
-            document.getElementById('result').innerText = "Bill Sent!";
-        }
-
-        async function toggleFlash() {
-            try {
-                const video = document.querySelector('video');
-                if (!video) return;
-                const track = video.srcObject.getVideoTracks()[0];
-                isFlashOn = !isFlashOn;
-                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
-                document.getElementById('flash-btn').innerText = isFlashOn ? "❌ Off" : "🔦 Flash";
-            } catch (e) { alert("Flash error"); }
-        }
-
-        // Settings Logic
-        function toggleSettings(show) { document.getElementById('settings-modal').style.display = show ? 'block' : 'none'; if(show) renderSettingsList(); }
-        function renderSettingsList() {
-            const list = document.getElementById('settings-list');
-            list.innerHTML = '';
-            buttons.forEach((btn, index) => {
-                list.innerHTML += `<div class="setting-row">
-                    <input type="text" value="${btn.name}" oninput="updateBtn(${index}, 'name', this.value)">
-                    <input type="text" value="${btn.cmd}" oninput="updateBtn(${index}, 'cmd', this.value)">
-                    <label style="font-size:0.8em; color:#bbb;"><input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="updateBtn(${index}, 'useEnter', this.checked)"> Auto Enter?</label>
-                    <button onclick="removeBtn(${index})" style="background:#ff4444; color:white; border:none; padding:4px; border-radius:4px; font-size:0.7em;">Remove</button>
-                </div>`;
-            });
-        }
-        function updateBtn(i, k, v) { buttons[i][k] = v; }
-        function addNewButtonSetting() { buttons.push({ name: "New", cmd: "f1", useEnter: false }); renderSettingsList(); }
-        function removeBtn(i) { buttons.splice(i, 1); renderSettingsList(); }
-        function saveSettings() { localStorage.setItem('userButtons', JSON.stringify(buttons)); renderButtons(); toggleSettings(false); }
-
-        window.onload = () => {
-            const scanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: {width: 250, height: 120} });
-            scanner.render(onScanSuccess);
-            renderButtons();
-        };
-    </script>
-</body>
-</html>
+                fetch('
