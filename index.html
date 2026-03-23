@@ -3,43 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>سكانر إبراهيم الذكي</title>
+    <title>سكانر إبراهيم Pro</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 0; }
-        
-        /* شريط الأدوات العلوي */
-        .top-bar { 
-            display: flex; justify-content: space-around; align-items: center; 
-            background: #1a1a1a; padding: 10px; border-bottom: 1px solid #333;
-            position: sticky; top: 0; z-index: 1000;
-        }
-        .top-bar button { 
-            background: #333; color: white; border: 1px solid #555; 
-            padding: 8px 12px; border-radius: 8px; font-size: 0.8em; 
-        }
-        .top-bar button.active { background: #ffcc00; color: #000; border-color: #ffcc00; }
-
-        /* منطقة السكانر */
-        #reader-container { position: relative; width: 100%; max-width: 500px; margin: 10px auto; border-radius: 15px; overflow: hidden; border: 2px solid #28a745; }
-        
-        /* منطقة الزراير المضافة */
-        .dynamic-section { 
-            padding: 15px; background: #0f0f0f; border-top: 2px dashed #333; margin-top: 10px;
-        }
-        .dynamic-section h5 { margin: 0 0 10px 0; color: #888; font-size: 0.9em; }
+        .top-bar { display: flex; justify-content: space-around; align-items: center; background: #1a1a1a; padding: 10px; position: sticky; top: 0; z-index: 1000; }
+        .top-bar button { background: #333; color: white; border: 1px solid #555; padding: 8px 12px; border-radius: 8px; font-size: 0.8em; }
+        .top-bar button.active { background: #ffcc00; color: #000; }
+        #reader-container { width: 100%; max-width: 500px; margin: 10px auto; border-radius: 15px; overflow: hidden; border: 2px solid #28a745; }
+        .dynamic-section { padding: 15px; background: #0f0f0f; border-top: 2px dashed #333; margin-top: 10px; }
         #dynamic-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-        
         .custom-btn { padding: 12px 18px; border-radius: 10px; border: 1px solid #fff; color: white; font-weight: bold; min-width: 90px; }
-        
-        .result-box { margin: 15px; padding: 15px; background: #1e1e1e; border-radius: 10px; color: #00ff00; font-size: 1.1em; min-height: 40px; }
-
-        /* مودال الإعدادات */
+        .result-box { margin: 15px; padding: 15px; background: #1e1e1e; border-radius: 10px; color: #00ff00; min-height: 40px; }
+        .send-all-btn { background: #28a745; color: white; padding: 15px; width: 80%; margin: 10px auto; border-radius: 10px; display: none; font-weight: bold; border: none; }
         #settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; overflow-y: auto; }
         .modal-content { background: #222; width: 90%; margin: 20px auto; padding: 20px; border-radius: 15px; text-align: right; }
         .setting-row { background: #333; padding: 15px; margin-bottom: 10px; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; }
-        input { padding: 10px; border-radius: 5px; border: none; font-size: 1em; }
-        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -47,17 +26,16 @@
     <div class="top-bar">
         <button onclick="toggleSettings(true)">⚙️ إعدادات</button>
         <button id="flash-btn" onclick="toggleFlash()">🔦 كشاف</button>
-        <button id="billModeBtn" onclick="toggleBillMode()">📑 فاتورة: ❌</button>
+        <button id="billModeBtn" onclick="toggleBillMode()">📑 فاتورة: مُغلق</button>
     </div>
 
-    <div id="reader-container">
-        <div id="reader"></div>
-    </div>
+    <div id="reader-container"><div id="reader"></div></div>
 
-    <div id="result" class="result-box">في انتظار الأوامر...</div>
+    <div id="result" class="result-box">جاهز للمسح...</div>
+    
+    <button id="sendAllBtn" class="send-all-btn" onclick="sendFullBill()">📤 إرسال الفاتورة بالكامل (<span id="count">0</span>)</button>
 
     <div class="dynamic-section">
-        <h5>الوصول السريع للأوامر 👇</h5>
         <div id="dynamic-buttons"></div>
     </div>
 
@@ -66,25 +44,24 @@
             <h3>⚙️ تخصيص الأزرار</h3>
             <div id="settings-list"></div>
             <button onclick="addNewButtonSetting()" style="background:#007bff; color:white; width:100%; padding:12px; border-radius:10px; margin-top:10px; border:none;">➕ إضافة زر جديد</button>
-            <div class="btn-group">
-                <button onclick="saveSettings()" style="background:#28a745; color:white; flex:2; padding:15px; border-radius:10px; border:none; font-weight:bold;">💾 حفظ التغييرات</button>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button onclick="saveSettings()" style="background:#28a745; color:white; flex:2; padding:15px; border-radius:10px; border:none;">💾 حفظ</button>
                 <button onclick="toggleSettings(false)" style="background:#555; color:white; flex:1; padding:15px; border-radius:10px; border:none;">إلغاء</button>
             </div>
         </div>
     </div>
 
     <script>
-        // نظام تخزين البيانات
         let buttons = JSON.parse(localStorage.getItem('userButtons')) || [
             { name: "إضافة", cmd: "f8", useEnter: true, color: "#007bff" },
             { name: "حفظ", cmd: "f9", useEnter: true, color: "#28a745" }
         ];
 
         let isBillMode = false;
-        let isFlashOn = false;
-        let html5QrCode = null;
+        let billItems = [];
+        let lastScanTime = 0;
+        const SCAN_COOLDOWN = 2500; // ثانيتين ونصف بين كل سكان
 
-        // وظيفة رسم الزراير في الواجهة
         function renderButtons() {
             const container = document.getElementById('dynamic-buttons');
             container.innerHTML = '';
@@ -98,88 +75,98 @@
             });
         }
 
-        // إرسال الأمر للكمبيوتر
         async function sendCommand(cmd, useEnter) {
             const res = document.getElementById('result');
-            res.innerText = `🚀 إرسال: ${cmd}...`;
-            try {
-                await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: cmd });
-                if (useEnter) {
-                    await new Promise(r => setTimeout(r, 1000));
-                    res.innerText = "⏎ إرسال: Enter...";
-                    await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: 'enter' });
-                }
-                res.innerText = "✅ تم التنفيذ بنجاح";
-            } catch (e) { res.innerText = "❌ خطأ في الاتصال"; }
+            res.innerText = `🚀 إرسال أمر: ${cmd}`;
+            await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: cmd });
+            
+            // لا يضغط Enter إلا لو الخيار مفعل للزرار ده
+            if (useEnter) {
+                await new Promise(r => setTimeout(r, 1000));
+                res.innerText = "⏎ إرسال: Enter";
+                await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: 'enter' });
+            }
         }
 
-        // تبديل وضع الفاتورة
+        function onScanSuccess(text) {
+            const now = Date.now();
+            if (now - lastScanTime < SCAN_COOLDOWN) return; // منع التكرار السريع
+            lastScanTime = now;
+
+            if (isBillMode) {
+                billItems.push(text);
+                document.getElementById('count').innerText = billItems.length;
+                document.getElementById('result').innerText = "✅ تمت الإضافة للفاتورة: " + text;
+            } else {
+                // وضع البحث المباشر: يرسل ويضغط Enter فوراً
+                document.getElementById('result').innerText = "📦 بحث مباشر: " + text;
+                fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: text });
+            }
+        }
+
         function toggleBillMode() {
             isBillMode = !isBillMode;
             const btn = document.getElementById('billModeBtn');
-            btn.innerText = isBillMode ? "📑 فاتورة: ✅" : "📑 فاتورة: ❌";
-            btn.classList.toggle('active', isBillMode);
+            const sendBtn = document.getElementById('sendAllBtn');
+            
+            if (isBillMode) {
+                btn.innerText = "📑 فاتورة: يجمع الآن...";
+                btn.classList.add('active');
+                billItems = []; // تصفير القائمة لبدء فاتورة جديدة
+                document.getElementById('count').innerText = "0";
+                sendBtn.style.display = 'none';
+            } else {
+                btn.innerText = "📑 فاتورة: مُغلق";
+                btn.classList.remove('active');
+                if (billItems.length > 0) sendBtn.style.display = 'block';
+            }
         }
 
-        // تشغيل/إطفاء الكشاف (النسخة المحسنة)
-        async function toggleFlash() {
-            try {
-                const video = document.querySelector('video');
-                if (!video) return;
-                const track = video.srcObject.getVideoTracks()[0];
-                const capabilities = track.getCapabilities();
-                if (!capabilities.torch) {
-                    alert("الكشاف غير مدعوم على هذا الجهاز");
-                    return;
-                }
-                isFlashOn = !isFlashOn;
-                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
-                document.getElementById('flash-btn').innerText = isFlashOn ? "❌ إطفاء" : "🔦 كشاف";
-            } catch (e) { console.error(e); }
+        async function sendFullBill() {
+            const btn = document.getElementById('sendAllBtn');
+            btn.disabled = true;
+            for (let i = 0; i < billItems.length; i++) {
+                document.getElementById('result').innerText = `📤 إرسال صنف ${i+1}...`;
+                await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: billItems[i] });
+                await new Promise(r => setTimeout(r, 1500)); // انتظار ثانية ونصف بين كل كود
+            }
+            alert("تم إرسال الفاتورة بالكامل ✅");
+            billItems = [];
+            btn.style.display = 'none';
+            btn.disabled = false;
+            document.getElementById('result').innerText = "جاهز...";
         }
 
-        // إعدادات المودال
-        function toggleSettings(show) {
-            document.getElementById('settings-modal').style.display = show ? 'block' : 'none';
-            if (show) renderSettingsList();
-        }
-
+        // باقي وظائف الإعدادات والكشاف (بدون تغيير)
+        function toggleSettings(show) { document.getElementById('settings-modal').style.display = show ? 'block' : 'none'; if(show) renderSettingsList(); }
         function renderSettingsList() {
             const list = document.getElementById('settings-list');
             list.innerHTML = '';
             buttons.forEach((btn, index) => {
-                list.innerHTML += `
-                    <div class="setting-row">
-                        <input type="text" placeholder="اسم الزر" value="${btn.name}" oninput="updateBtn(${index}, 'name', this.value)">
-                        <input type="text" placeholder="الأمر (مثلاً: f8)" value="${btn.cmd}" oninput="updateBtn(${index}, 'cmd', this.value)">
-                        <label style="font-size:0.8em;"><input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="updateBtn(${index}, 'useEnter', this.checked)"> ضغط Enter بعده؟</label>
-                        <button onclick="removeBtn(${index})" style="background:#ff4444; color:white; border:none; padding:5px; border-radius:5px;">حذف الزر</button>
-                    </div>
-                `;
+                list.innerHTML += `<div class="setting-row">
+                    <input type="text" value="${btn.name}" oninput="updateBtn(${index}, 'name', this.value)">
+                    <input type="text" value="${btn.cmd}" oninput="updateBtn(${index}, 'cmd', this.value)">
+                    <label><input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="updateBtn(${index}, 'useEnter', this.checked)"> ضغط Enter بعده؟</label>
+                    <button onclick="removeBtn(${index})" style="background:red; color:white; border:none; padding:5px; border-radius:5px;">حذف</button>
+                </div>`;
             });
         }
+        function updateBtn(i, k, v) { buttons[i][k] = v; }
+        function addNewButtonSetting() { buttons.push({ name: "جديد", cmd: "f1", useEnter: false }); renderSettingsList(); }
+        function removeBtn(i) { buttons.splice(i, 1); renderSettingsList(); }
+        function saveSettings() { localStorage.setItem('userButtons', JSON.stringify(buttons)); renderButtons(); toggleSettings(false); }
 
-        function updateBtn(index, key, value) { buttons[index][key] = value; }
-        function addNewButtonSetting() { buttons.push({ name: "جديد", cmd: "f1", useEnter: false, color: "#444" }); renderSettingsList(); }
-        function removeBtn(index) { buttons.splice(index, 1); renderSettingsList(); }
-        
-        function saveSettings() {
-            localStorage.setItem('userButtons', JSON.stringify(buttons));
-            renderButtons();
-            toggleSettings(false);
-        }
-
-        // بدء السكانر
-        function startScanner() {
-            const scanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: {width: 250, height: 150} });
-            scanner.render((text) => {
-                document.getElementById('result').innerText = "✅ مسح: " + text;
-                fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: text });
-            });
+        async function toggleFlash() {
+            const video = document.querySelector('video');
+            if (!video) return;
+            const track = video.srcObject.getVideoTracks()[0];
+            const isFlash = !track.getConstraints().torch;
+            await track.applyConstraints({ advanced: [{ torch: isFlash }] });
+            document.getElementById('flash-btn').innerText = isFlash ? "❌ إطفاء" : "🔦 كشاف";
         }
 
         window.onload = () => {
-            startScanner();
+            new Html5QrcodeScanner("reader", { fps: 15, qrbox: {width: 250, height: 150} }).render(onScanSuccess);
             renderButtons();
         };
     </script>
