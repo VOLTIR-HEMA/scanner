@@ -3,23 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ibrahim Scanner Pro</title>
+    <title>Ibrahim Pro Scanner</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 0; overflow-x: hidden; }
-        .top-bar { display: flex; justify-content: space-around; padding: 8px; background: #1a1a1a; border-bottom: 1px solid #333; }
-        .top-bar button { background: #333; color: white; border: 1px solid #555; padding: 8px 12px; border-radius: 8px; font-size: 0.8em; }
         
-        /* الكاميرا تظهر هنا فوراً */
-        #reader { width: 100% !important; max-width: 500px; margin: 0 auto; border: none !important; min-height: 280px; background: #111; }
+        /* شريط علوي أنيق ومنظم */
+        .top-bar { display: flex; justify-content: space-around; align-items: center; padding: 10px; background: #1a1a1a; border-bottom: 1px solid #333; }
+        .top-bar button { background: #333; color: white; border: 1px solid #555; padding: 8px 12px; border-radius: 8px; font-size: 0.85em; }
+        .top-bar button.active { background: #ffcc00; color: #000; font-weight: bold; }
+
+        /* الكاميرا - رجعت للمكان الأصلي المستقر */
+        #reader { width: 100% !important; max-width: 500px; margin: 5px auto; border: none !important; min-height: 250px; background: #000; }
         
-        /* إخفاء أزرار التحكم الأصلية للمكتبة في الصفحة الرئيسية */
-        #reader__dashboard { display: none !important; }
+        /* زر الكاميرا المربع الصغير (أيقونة فقط) */
+        #reader__dashboard_section_csr button { 
+            background: #007bff !important; color: white !important; border: none !important;
+            width: 50px !important; height: 50px !important; border-radius: 10px !important;
+            font-size: 20px !important; margin: 10px auto !important; padding: 0 !important;
+        }
 
         .result-box { margin: 5px 10px; padding: 10px; background: #111; border-radius: 8px; color: #00ff00; font-size: 0.9em; border: 1px solid #222; }
         #dynamic-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 10px; }
         .custom-btn { padding: 12px 16px; border-radius: 10px; border: 1px solid #fff; color: white; font-weight: bold; min-width: 85px; }
-        
+        .send-all-btn { background: #28a745; color: white; padding: 15px; width: 90%; margin: 10px auto; border-radius: 10px; display: none; font-weight: bold; border: none; }
+
         #settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; overflow-y: auto; }
         .modal-content { background: #222; width: 85%; margin: 20px auto; padding: 20px; border-radius: 15px; text-align: left; }
         .setting-row { background: #333; padding: 10px; margin-bottom: 10px; border-radius: 8px; display: flex; flex-direction: column; }
@@ -36,26 +44,21 @@
 
     <div id="reader"></div>
 
-    <div id="result" class="result-box">Initializing Scanner...</div>
+    <div id="result" class="result-box">Ready...</div>
     
+    <button id="sendAllBtn" class="send-all-btn" onclick="sendFullBill()">📤 Send Bill (<span id="count">0</span>)</button>
+
     <div id="dynamic-buttons"></div>
 
     <div id="settings-modal">
         <div class="modal-content">
-            <h2 style="color:#007bff; margin-top:0;">Camera Controls</h2>
-            <div id="camera-management" style="background:#111; padding:10px; border-radius:10px; margin-bottom:20px;">
-                <p style="font-size:0.8em; color:#888;">Switch camera or re-scan if needed:</p>
-                <div id="settings-scanner-ui"></div>
-            </div>
-
-            <hr style="border:0.5px solid #444; margin: 15px 0;">
-            <h3>⚙️ Buttons Config</h3>
+            <h3 style="margin-top:0;">⚙️ Buttons Config</h3>
             <div id="settings-list"></div>
-            <button onclick="addNewButtonSetting()" style="background:#444; color:white; width:100%; padding:10px; border-radius:8px; border:1px dashed #777;">➕ Add New Button</button>
+            <button onclick="addNewButtonSetting()" style="background:#444; color:white; width:100%; padding:10px; border-radius:8px; margin-top:5px; border: 1px dashed #777;">➕ Add New Button</button>
             
             <div style="display:flex; gap:10px; margin-top:25px;">
-                <button onclick="saveSettings()" style="background:#28a745; color:white; flex:2; padding:15px; border-radius:10px; border:none; font-weight:bold;">Save & Close</button>
-                <button onclick="toggleSettings(false)" style="background:#555; color:white; flex:1; padding:15px; border-radius:10px; border:none;">Cancel</button>
+                <button onclick="saveSettings()" style="background:#28a745; color:white; flex:2; padding:15px; border-radius:10px; border:none; font-weight:bold;">Save</button>
+                <button onclick="toggleSettings(false)" style="background:#555; color:white; flex:1; padding:15px; border-radius:10px; border:none;">Close</button>
             </div>
         </div>
     </div>
@@ -67,9 +70,9 @@
         ];
 
         let isBillMode = false;
+        let billItems = [];
         let lastScanTime = 0;
         let isFlashOn = false;
-        let mainScanner = null;
 
         function renderButtons() {
             const container = document.getElementById('dynamic-buttons');
@@ -96,24 +99,51 @@
         function onScanSuccess(text) {
             if (Date.now() - lastScanTime < 2500) return;
             lastScanTime = Date.now();
-            document.getElementById('result').innerText = "Scanned: " + text;
-            // إرسال مع علامة _ent ليقوم البايثون بضغط انتر تلقائي في الوضع العادي
-            fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: text + '_ent' });
-        }
-
-        function toggleSettings(show) { 
-            document.getElementById('settings-modal').style.display = show ? 'block' : 'none'; 
-            if(show) {
-                renderSettingsList();
-                // إظهار لوحة التحكم في الكاميرا داخل الإعدادات فقط
-                document.getElementById('reader__dashboard').style.display = 'block';
-                document.getElementById('camera-management').appendChild(document.getElementById('reader__dashboard'));
+            if (isBillMode) {
+                billItems.push(text);
+                document.getElementById('count').innerText = billItems.length;
+                document.getElementById('result').innerText = "Stored: " + text;
             } else {
-                // إخفاء اللوحة عند الخروج
-                document.getElementById('reader__dashboard').style.display = 'none !important';
+                document.getElementById('result').innerText = "Sent: " + text;
+                fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: text + '_ent' });
             }
         }
 
+        function toggleBillMode() {
+            isBillMode = !isBillMode;
+            const btn = document.getElementById('billModeBtn');
+            const sendBtn = document.getElementById('sendAllBtn');
+            btn.innerText = isBillMode ? "📑 Bill: ON" : "📑 Bill: OFF";
+            btn.classList.toggle('active', isBillMode);
+            if (isBillMode) { billItems = []; document.getElementById('count').innerText = "0"; sendBtn.style.display = 'none'; }
+            else if (billItems.length > 0) { sendBtn.style.display = 'block'; }
+        }
+
+        async function sendFullBill() {
+            const btn = document.getElementById('sendAllBtn');
+            btn.disabled = true;
+            for (let i = 0; i < billItems.length; i++) {
+                document.getElementById('result').innerText = `Sending ${i+1}/${billItems.length}`;
+                await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: billItems[i] + '_ent' });
+                await new Promise(r => setTimeout(r, 1200));
+            }
+            btn.style.display = 'none'; btn.disabled = false;
+            document.getElementById('result').innerText = "Bill Sent!";
+            billItems = [];
+        }
+
+        async function toggleFlash() {
+            try {
+                const video = document.querySelector('video');
+                const track = video.srcObject.getVideoTracks()[0];
+                isFlashOn = !isFlashOn;
+                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+                document.getElementById('flash-btn').innerText = isFlashOn ? "❌ Off" : "🔦 Flash";
+            } catch (e) { alert("Start Camera First!"); }
+        }
+
+        function toggleSettings(show) { document.getElementById('settings-modal').style.display = show ? 'block' : 'none'; if(show) renderSettingsList(); }
+        
         function renderSettingsList() {
             const list = document.getElementById('settings-list');
             list.innerHTML = '';
@@ -132,11 +162,16 @@
         function saveSettings() { localStorage.setItem('userButtons', JSON.stringify(buttons)); renderButtons(); toggleSettings(false); }
 
         window.onload = () => {
+            const scanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: 250 });
+            scanner.render(onScanSuccess);
+            
+            // تغيير شكل زر البدء لأيقونة مربعة
+            setTimeout(() => {
+                const startBtn = document.querySelector('#reader__dashboard_section_csr button');
+                if(startBtn) startBtn.innerHTML = "📷";
+            }, 1000);
+
             renderButtons();
-            // تشغيل الكاميرا في الصفحة الرئيسية تلقائياً
-            mainScanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: 250 });
-            mainScanner.render(onScanSuccess);
-            document.getElementById('result').innerText = "Scanner Ready ✅";
         };
     </script>
 </body>
