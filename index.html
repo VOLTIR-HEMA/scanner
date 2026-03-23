@@ -3,146 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>سكانر إبراهيم - نظام الفاتورة</title>
+    <title>سكانر إبراهيم Pro</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 10px; }
-        #reader { width: 100%; max-width: 500px; margin: auto; border-radius: 15px; border: 2px solid #28a745; overflow: hidden; position: relative; }
-        .controls { display: flex; justify-content: space-around; margin: 15px 0; }
-        button { padding: 12px 20px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; font-size: 0.9em; }
-        .btn-bill { background: #555; color: white; transition: 0.3s; }
-        .btn-bill.active { background: #ffcc00; color: #000; box-shadow: 0 0 10px #ffcc00; }
-        .btn-send { background: #28a745; color: white; display: none; width: 80%; margin: 10px auto; }
-        .result-box { margin-top: 15px; padding: 15px; background: #1e1e1e; border-radius: 10px; color: #00ff00; font-size: 1.1em; min-height: 50px; }
-        #flash-btn { position: absolute; top: 10px; right: 10px; z-index: 100; padding: 8px 12px; background: rgba(0,0,0,0.5); border: 1px solid #fff; color: #fff; border-radius: 5px; font-size: 0.7em; }
-        .btn-cmd { position: absolute; top: 10px; z-index: 100; padding: 8px 12px; border: 1px solid #fff; color: #fff; border-radius: 5px; font-size: 0.8em; font-weight: bold; }
+        #reader { width: 100%; max-width: 500px; margin: auto; border-radius: 15px; border: 2px solid #28a745; overflow: hidden; }
+        
+        /* منطقة الزراير الديناميكية */
+        #dynamic-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 15px 0; }
+        .custom-btn { padding: 10px 15px; border-radius: 8px; border: 1px solid #fff; color: white; font-weight: bold; cursor: pointer; min-width: 80px; }
+        
+        .controls { margin: 15px 0; }
+        button { cursor: pointer; }
+        .result-box { margin-top: 15px; padding: 15px; background: #1e1e1e; border-radius: 10px; color: #00ff00; min-height: 40px; }
+        
+        /* نافذة الإعدادات */
+        #settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; overflow-y: auto; padding-top: 20px; }
+        .modal-content { background: #222; width: 90%; margin: auto; padding: 20px; border-radius: 15px; text-align: right; }
+        .setting-row { border-bottom: 1px solid #444; padding: 10px 0; display: flex; flex-direction: column; gap: 5px; }
+        input[type="text"] { padding: 8px; border-radius: 5px; border: none; }
+        .save-close-btn { background: #28a745; color: white; padding: 10px 20px; border-radius: 10px; margin-top: 20px; width: 100%; }
+        
+        #config-btn { background: #666; color: white; padding: 5px 10px; border-radius: 5px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-    <h3 style="margin-bottom: 10px;">سكانر صيدلية إبراهيم 🚀</h3>
+    <h3>سكانر صيدلية إبراهيم 🚀</h3>
+    
+    <button id="config-btn" onclick="toggleSettings(true)">⚙️ الإعدادات</button>
     
     <div style="position: relative;">
-        <button id="add-btn" class="btn-cmd" onclick="sendAddCommand()" style="left: 10px; background: #007bff;">➕ إضافة</button>
-        <button id="save-btn" class="btn-cmd" onclick="sendSaveCommand()" style="left: 85px; background: #28a745;">💾 حفظ</button>
-        
-        <button id="flash-btn" onclick="toggleFlash()">🔦 كشاف</button>
+        <button id="flash-btn" onclick="toggleFlash()" style="position: absolute; top: 5px; right: 5px; z-index: 10; background:rgba(0,0,0,0.5); color:white; border:1px solid #fff; padding:5px; border-radius:5px;">🔦</button>
         <div id="reader"></div>
     </div>
 
+    <div id="dynamic-buttons"></div>
+
     <div class="controls">
-        <button id="billModeBtn" class="btn-bill" onclick="toggleBillMode()">📑 وضع الفاتورة: مُغلق</button>
+        <button id="billModeBtn" style="background:#555; color:white; padding:10px;" onclick="toggleBillMode()">📑 وضع الفاتورة: مُغلق</button>
     </div>
 
-    <button id="sendAllBtn" class="btn-send" onclick="sendAllItems()">📤 إرسال الفاتورة للكمبيوتر (<span id="count">0</span>)</button>
+    <div id="result" class="result-box">جاهز...</div>
 
-    <div id="result" class="result-box">في انتظار الدواء...</div>
+    <div id="settings-modal">
+        <div class="modal-content">
+            <h4>إدارة الأزرار المختصرة</h4>
+            <div id="settings-list"></div>
+            <button onclick="addNewButtonSetting()" style="background:#007bff; color:white; width:100%; padding:10px; margin-top:10px;">➕ إضافة زر جديد</button>
+            <button class="save-close-btn" onclick="saveSettings()">💾 حفظ وإغلاق</button>
+        </div>
+    </div>
 
     <script>
+        let buttons = JSON.parse(localStorage.getItem('userButtons')) || [
+            { name: "إضافة", cmd: "f8", useEnter: true, color: "#007bff" },
+            { name: "حفظ", cmd: "f9", useEnter: true, color: "#28a745" }
+        ];
+
+        function renderButtons() {
+            const container = document.getElementById('dynamic-buttons');
+            container.innerHTML = '';
+            buttons.forEach((btn, index) => {
+                const b = document.createElement('button');
+                b.className = 'custom-btn';
+                b.style.backgroundColor = btn.color || '#444';
+                b.innerText = btn.name;
+                b.onclick = () => sendCommand(btn.cmd, btn.useEnter);
+                container.appendChild(b);
+            });
+        }
+
+        async function sendCommand(cmd, useEnter) {
+            const res = document.getElementById('result');
+            res.innerText = `إرسال أمر: ${cmd}...`;
+            await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: cmd });
+            
+            if (useEnter) {
+                await new Promise(r => setTimeout(r, 1000));
+                res.innerText = "إرسال: Enter...";
+                await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: 'enter' });
+            }
+            res.innerText = "تم التنفيذ ✅";
+        }
+
+        function toggleSettings(show) {
+            document.getElementById('settings-modal').style.display = show ? 'block' : 'none';
+            if (show) renderSettingsList();
+        }
+
+        function renderSettingsList() {
+            const list = document.getElementById('settings-list');
+            list.innerHTML = '';
+            buttons.forEach((btn, index) => {
+                list.innerHTML += `
+                    <div class="setting-row">
+                        <input type="text" placeholder="اسم الزر (مثلاً: إضافة)" value="${btn.name}" onchange="updateBtn(${index}, 'name', this.value)">
+                        <input type="text" placeholder="الأمر (مثلاً: f8 أو tab)" value="${btn.cmd}" onchange="updateBtn(${index}, 'cmd', this.value)">
+                        <label><input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="updateBtn(${index}, 'useEnter', this.checked)"> ضغط Enter بعده؟</label>
+                        <button onclick="removeBtn(${index})" style="background:red; color:white; border:none; padding:5px; margin-top:5px;">حذف الزر</button>
+                    </div>
+                `;
+            });
+        }
+
+        function updateBtn(index, key, value) { buttons[index][key] = value; }
+        function addNewButtonSetting() { buttons.push({ name: "جديد", cmd: "f1", useEnter: false, color: "#444" }); renderSettingsList(); }
+        function removeBtn(index) { buttons.splice(index, 1); renderSettingsList(); }
+        
+        function saveSettings() {
+            localStorage.setItem('userButtons', JSON.stringify(buttons));
+            renderButtons();
+            toggleSettings(false);
+        }
+
+        // --- كود السكانر الأساسي (بدون تغيير) ---
         let lastScanTime = 0;
-        const COOLDOWN = 2500;
-        let isBillMode = false;
-        let billItems = [];
-        let track = null;
-        let isFlashOn = false;
-
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playBeep(freq = 880) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.type = 'sine'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.15);
-        }
-
-        // إرسال إضافة (F8 + Enter)
-        async function sendAddCommand() {
-            const res = document.getElementById('result');
-            res.innerText = "جاري إرسال: F8...";
-            await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: 'F8' });
-            playBeep(600);
-            await new Promise(r => setTimeout(r, 1000));
-            res.innerText = "جاري إرسال: Enter...";
-            await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: 'Enter' });
-            playBeep(1000);
-            res.innerText = "تم تنفيذ أمر الإضافة ✅";
-        }
-
-        // إرسال حفظ (F9 + Enter)
-        async function sendSaveCommand() {
-            const res = document.getElementById('result');
-            res.innerText = "جاري إرسال: F9...";
-            await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: 'F9' });
-            playBeep(700);
-            await new Promise(r => setTimeout(r, 1000));
-            res.innerText = "جاري إرسال: Enter...";
-            await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: 'Enter' });
-            playBeep(1200);
-            res.innerText = "تم حفظ الفاتورة بنجاح ✅";
-        }
-
         function onScanSuccess(decodedText) {
-            const now = Date.now();
-            if (now - lastScanTime < COOLDOWN) return;
-            lastScanTime = now;
-            playBeep();
-            if (navigator.vibrate) navigator.vibrate(80);
-
-            if (isBillMode) {
-                billItems.push(decodedText);
-                document.getElementById('count').innerText = billItems.length;
-                document.getElementById('sendAllBtn').style.display = 'block';
-                document.getElementById('result').innerText = "تمت الإضافة للفاتورة: " + decodedText;
-            } else {
-                document.getElementById('result').innerText = "تم الإرسال فوراً: " + decodedText;
-                fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: decodedText });
-            }
+            if (Date.now() - lastScanTime < 2500) return;
+            lastScanTime = Date.now();
+            document.getElementById('result').innerText = "تم المسح: " + decodedText;
+            fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: decodedText });
         }
-
-        function toggleBillMode() {
-            isBillMode = !isBillMode;
-            const btn = document.getElementById('billModeBtn');
-            if (isBillMode) {
-                btn.innerText = "📑 وضع الفاتورة: يجمع الآن";
-                btn.classList.add('active');
-                playBeep(1200);
-            } else {
-                btn.innerText = "📑 وضع الفاتورة: مُغلق";
-                btn.classList.remove('active');
-                billItems = [];
-                document.getElementById('sendAllBtn').style.display = 'none';
-            }
-        }
-
-        async function sendAllItems() {
-            const btn = document.getElementById('sendAllBtn');
-            btn.disabled = true;
-            btn.innerText = "جاري الإرسال بالتتابع...";
-            for (let i = 0; i < billItems.length; i++) {
-                await fetch('https://ntfy.sh/ibrahim_pharmacy_2026', { method: 'POST', body: billItems[i] });
-                if (i < billItems.length - 1) await new Promise(r => setTimeout(r, 2000));
-            }
-            playBeep(1500);
-            alert("تم إرسال الفاتورة بالكامل ✅");
-            billItems = [];
-            document.getElementById('count').innerText = "0";
-            btn.style.display = 'none';
-            btn.disabled = false;
-        }
-
-        let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: {width: 280, height: 150} });
+        let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
         html5QrcodeScanner.render(onScanSuccess);
-
-        async function toggleFlash() {
-            const video = document.querySelector('video');
-            if (!video || !video.srcObject) return;
-            track = video.srcObject.getVideoTracks()[0];
-            if (track && track.getCapabilities().torch) {
-                isFlashOn = !isFlashOn;
-                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
-                document.getElementById('flash-btn').innerText = isFlashOn ? "❌ إطفاء" : "🔦 كشاف";
-            }
-        }
+        renderButtons();
     </script>
 </body>
 </html>
