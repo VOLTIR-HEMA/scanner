@@ -3,145 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Just Scan Pro - Ibrahim</title>
+    <title>Just Scan - Ibrahim Edition</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 0; overflow: hidden; }
-        .top-bar { display: flex; justify-content: space-around; align-items: center; padding: 10px; background: #1a1a1a; border-bottom: 2px solid #333; }
-        .top-bar button { background: #333; color: white; border: 1px solid #555; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8em; }
+        body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 0; overflow-x: hidden; }
+        .top-bar { display: flex; justify-content: space-around; align-items: center; padding: 8px; background: #1a1a1a; border-bottom: 1px solid #333; flex-wrap: wrap; gap: 5px; }
+        .top-bar button { background: #333; color: white; border: 1px solid #555; padding: 6px 10px; border-radius: 6px; font-size: 0.75em; cursor: pointer; }
         
-        #reader { width: 100% !important; max-width: 500px; margin: auto; background: #000; }
-        /* منع أي قلب للصورة برمجياً وبالـ CSS للتأكيد */
-        video { transform: scaleX(1) !important; -webkit-transform: scaleX(1) !important; }
+        #reader { width: 100% !important; max-width: 500px; margin: 5px auto; border: none !important; min-height: 250px; background: #000; }
+        #reader button { background: #444 !important; color: white !important; border: 1px solid #666 !important; padding: 8px !important; border-radius: 5px !important; margin: 5px !important; }
+        #reader select { background: #222 !important; color: white !important; padding: 5px !important; border-radius: 5px !important; }
 
-        .result-box { margin: 10px; padding: 10px; background: #111; color: #00ff00; border: 1px solid #222; border-radius: 10px; font-size: 0.9em; min-height: 20px; }
+        .result-box { margin: 5px 10px; padding: 8px; background: #111; border-radius: 8px; color: #00ff00; font-size: 0.85em; border: 1px solid #222; min-height: 20px; }
         
-        #dynamic-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 10px; }
-        .custom-btn { padding: 15px 2px; border-radius: 8px; border: 1px solid #444; color: white; font-weight: bold; font-size: 0.7em; cursor: pointer; }
+        #dynamic-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 8px; }
+        .custom-btn { padding: 12px 2px; border-radius: 6px; border: 1px solid #444; color: white; font-weight: bold; font-size: 0.75em; text-align: center; cursor: pointer; }
 
-        #keyboard-modal { display: none; position: fixed; top: 10px; left: 0; width: 100%; z-index: 3000; justify-content: center; }
-        .keyboard-content { background: #111; border: 2px solid #ff0000; border-radius: 15px; padding: 20px; width: 85%; max-width: 350px; box-shadow: 0 5px 30px rgba(255,0,0,0.6); }
-        .keyboard-content input { width: 90%; padding: 15px; background: #000; border: 1px solid #444; color: #00ff00; border-radius: 10px; font-size: 1.2em; text-align: center; outline: none; margin-bottom: 15px; }
+        /* نافذة الكيبورد المطورة - تظهر في الأعلى */
+        #keyboard-modal { display: none; position: fixed; top: 10px; left: 0; width: 100%; height: auto; z-index: 3000; justify-content: center; }
+        .keyboard-content { background: #111; border: 2px solid #ff0000; border-radius: 12px; padding: 15px; width: 85%; max-width: 350px; box-shadow: 0 5px 20px rgba(255,0,0,0.4); }
+        .keyboard-content input { width: 90%; padding: 12px; background: #000; border: 1px solid #444; color: #00ff00; border-radius: 8px; font-size: 1.1em; text-align: center; margin-bottom: 10px; outline: none; }
         .keyboard-btns { display: flex; gap: 10px; }
-        .keyboard-btns button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: white; }
+        .keyboard-btns button { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+
+        #settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; overflow-y: auto; }
+        .modal-content { background: #222; width: 85%; margin: 20px auto; padding: 15px; border-radius: 15px; text-align: left; }
     </style>
 </head>
 <body>
 
     <div class="top-bar">
-        <button id="flash-btn" onclick="toggleFlash()">🔦 Flash</button>
+        <button onclick="toggleSettings(true)">⚙️</button>
+        <button id="flash-btn" onclick="toggleFlash()">🔦</button>
+        <button id="full-screen-btn" onclick="toggleFullScreen()">📺 Full</button>
         <button onclick="openKeyboardModal()">⌨️ Keyboard</button>
-        <button onclick="location.reload()">🔄 Refresh</button>
+        <button id="billModeBtn" onclick="toggleBillMode()">📑 Bill: OFF</button>
     </div>
 
     <div id="reader"></div>
-    <div id="result" class="result-box">في انتظار الكاميرا...</div>
+    <div id="result" class="result-box">جاهز للمسح...</div>
     <div id="dynamic-buttons"></div>
 
     <div id="keyboard-modal">
         <div class="keyboard-content">
-            <h4 style="margin: 0 0 10px 0; color: #ff0000;">إدخال يدوي مباشر</h4>
-            <input type="text" id="manual-input" placeholder="اكتب الكود..." onkeypress="if(event.key==='Enter') submitManualInput()">
+            <h4 style="margin: 0 0 10px 0; color: #ff0000; font-size: 0.9em;">إدخال مستمر</h4>
+            <input type="text" id="manual-input" placeholder="اكتب هنا..." onkeypress="handleKbdEnter(event)">
             <div class="keyboard-btns">
-                <button onclick="submitManualInput()" style="background: #28a745;">إرسال</button>
-                <button onclick="closeKeyboardModal()" style="background: #444;">إغلاق</button>
+                <button onclick="submitManualInput()" style="background: #28a745; color: white;">إرسال</button>
+                <button onclick="closeKeyboardModal()" style="background: #444; color: white;">إغلاق</button>
             </div>
+        </div>
+    </div>
+
+    <div id="settings-modal">
+        <div class="modal-content" id="settings-list-parent">
+            <h3 style="color: #ffcc00;">⚙️ الإعدادات</h3>
+            <div id="settings-list"></div>
+            <button onclick="addNewButtonSetting()" style="background:#444; color:white; width:100%; padding:10px; border-radius:8px;">➕ إضافة زر</button>
+            <button onclick="saveSettings()" style="background:#28a745; color:white; width:100%; padding:15px; border-radius:10px; margin-top:10px;">حفظ وإغلاق</button>
         </div>
     </div>
 
     <script>
         const NTFY_URL = 'https://ntfy.sh/ibrahim_pharmacy_2026';
-        let html5QrCode;
-        let isFlashOn = false;
-        let lastScanTime = 0;
+        let isBillMode = false, billItems = [], lastScanTime = 0, isFlashOn = false;
+        let buttons = JSON.parse(localStorage.getItem('userButtons')) || [
+            { name: "Add", cmd: "f8", useEnter: true, color: "#007bff" },
+            { name: "Save", cmd: "f9", useEnter: true, color: "#28a745" }
+        ];
 
-        function doVibrate(ms = 100) { if (navigator.vibrate) navigator.vibrate(ms); }
+        // ميزة الاهتزاز من الكود القديم
+        function doVibrate(ms = 100) {
+            if (navigator.vibrate) navigator.vibrate(ms);
+        }
 
-        // وظائف الكيبورد
+        function playBeep() {
+            try {
+                const context = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = context.createOscillator();
+                const gain = context.createGain();
+                osc.type = 'sine'; osc.frequency.value = 800;
+                gain.gain.value = 0.1;
+                osc.connect(gain); gain.connect(context.destination);
+                osc.start(); osc.stop(context.currentTime + 0.1);
+            } catch (e) {}
+        }
+
+        // نافذة الكيبورد المطورة
         function openKeyboardModal() {
             document.getElementById('keyboard-modal').style.display = 'flex';
-            setTimeout(() => document.getElementById('manual-input').focus(), 300);
+            document.getElementById('manual-input').focus();
         }
-        function closeKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'none'; }
-
-        async function submitManualInput() {
+        function closeKeyboardModal() {
+            document.getElementById('keyboard-modal').style.display = 'none';
+        }
+        function handleKbdEnter(e) {
+            if(e.key === 'Enter') {
+                submitManualInput();
+                // لا نغلق النافذة هنا بناءً على طلبك
+            }
+        }
+        function submitManualInput() {
             const input = document.getElementById('manual-input');
-            const val = input.value.trim();
-            if (val !== "") {
-                try {
-                    await fetch(NTFY_URL, { method: 'POST', body: val + '_ent' });
-                    document.getElementById('result').innerText = "يدوي: " + val;
-                    doVibrate(50);
-                    input.value = '';
-                    input.focus();
-                } catch(e) { console.error("Error sending"); }
+            const val = input.value;
+            if (val.trim() !== "") {
+                fetch(NTFY_URL, { method: 'POST', body: val.trim() }); // إرسال النص فقط بدون انتر تلقائي
+                document.getElementById('result').innerText = "تم إرسال: " + val;
+                playBeep();
+                doVibrate(50);
+                input.value = ''; // مسح الخانة للكتابة مرة أخرى
+                input.focus();
             }
         }
 
-        function onScanSuccess(decodedText) {
+        function onScanSuccess(text) {
             if (Date.now() - lastScanTime < 2500) return;
             lastScanTime = Date.now();
-            doVibrate(100);
-            fetch(NTFY_URL, { method: 'POST', body: decodedText + '_ent' });
-            document.getElementById('result').innerText = "تم المسح: " + decodedText;
+            playBeep();
+            doVibrate(100); // اهتزاز عند النجاح
+            fetch(NTFY_URL, { method: 'POST', body: text + '_ent' });
+            document.getElementById('result').innerText = "تم مسح: " + text;
         }
 
-        // تشغيل الكاميرا بإعدادات تمنع الانعكاس
+        // توافق الكاميرا (الإعدادات المرنة للتابلت والموبايل)
         window.onload = () => {
-            html5QrCode = new Html5Qrcode("reader");
-            const config = { 
+            const scanner = new Html5QrcodeScanner("reader", { 
                 fps: 20, 
-                qrbox: { width: 280, height: 160 },
-                disableFlip: true // أهم سطر لمنع الكاميرا من قلب الصورة سيلفي
-            };
-
-            // البدء بالكاميرا الخلفية تلقائياً لو أمكن
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                config, 
-                onScanSuccess
-            ).catch(err => {
-                // لو فشل (زي التابلت اللي فيه كاميرا واحدة) يفتح المتاحة
-                html5QrCode.start({ facingMode: "user" }, config, onScanSuccess);
+                qrbox: { width: 250, height: 150 },
+                // شلنا القيود اللي بتعطل الكاميرات في بعض الأجهزة
             });
-
+            scanner.render(onScanSuccess);
             renderButtons();
         };
 
-        // الفلاش المطور
-        async function toggleFlash() {
-            try {
-                isFlashOn = !isFlashOn;
-                await html5QrCode.applyVideoConstraints({
-                    advanced: [{ torch: isFlashOn }]
-                });
-                document.getElementById('flash-btn').innerText = isFlashOn ? "❌ OFF" : "🔦 Flash";
-            } catch (e) {
-                alert("الفلاش غير متاح حالياً أو الكاميرا لم تعمل بعد");
-                isFlashOn = !isFlashOn;
-            }
-        }
-
+        // باقي دوال الأزرار والإعدادات (نفس الوظائف السابقة)
         function renderButtons() {
             const container = document.getElementById('dynamic-buttons');
-            const buttons = JSON.parse(localStorage.getItem('userButtons')) || [
-                { name: "Add", cmd: "f8" },
-                { name: "Save", cmd: "f9" },
-                { name: "Tab", cmd: "tab" }
-            ];
             container.innerHTML = '';
-            buttons.forEach(btn => {
+            buttons.forEach((btn, index) => {
                 const b = document.createElement('button');
                 b.className = 'custom-btn';
-                b.style.background = '#333';
+                b.style.backgroundColor = btn.color || '#444';
                 b.innerText = btn.name;
-                b.onclick = async () => {
-                    await fetch(NTFY_URL, { method: 'POST', body: btn.cmd });
-                    doVibrate(50);
-                };
+                b.onclick = () => sendCommand(btn.cmd, btn.useEnter);
                 container.appendChild(b);
             });
+        }
+        async function sendCommand(cmd, useEnter) {
+            await fetch(NTFY_URL, { method: 'POST', body: cmd });
+            if (useEnter) {
+                await new Promise(r => setTimeout(r, 400));
+                await fetch(NTFY_URL, { method: 'POST', body: 'enter' });
+            }
+            playBeep(); doVibrate(50);
+        }
+        function toggleSettings(show) { document.getElementById('settings-modal').style.display = show ? 'block' : 'none'; if(show) renderSettingsList(); }
+        function renderSettingsList() {
+            const list = document.getElementById('settings-list'); list.innerHTML = '';
+            buttons.forEach((btn, index) => {
+                const row = document.createElement('div');
+                row.style.margin = "10px 0"; row.style.padding = "10px"; row.style.background = "#333";
+                row.innerHTML = `<input type="text" value="${btn.name}" oninput="buttons[${index}].name=this.value">
+                                 <input type="text" value="${btn.cmd}" oninput="buttons[${index}].cmd=this.value">
+                                 <button onclick="buttons.splice(${index},1);renderSettingsList()">حذف</button>`;
+                list.appendChild(row);
+            });
+        }
+        function addNewButtonSetting() { buttons.push({name:"جديد", cmd:"f1"}); renderSettingsList(); }
+        function saveSettings() { localStorage.setItem('userButtons', JSON.stringify(buttons)); renderButtons(); toggleSettings(false); }
+        function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        async function toggleFlash() {
+            try {
+                const track = document.querySelector('video').srcObject.getVideoTracks()[0];
+                isFlashOn = !isFlashOn;
+                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+            } catch (e) { alert("الفلاش غير مدعوم"); }
         }
     </script>
 </body>
 </html>
+
+
