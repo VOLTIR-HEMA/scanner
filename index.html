@@ -19,13 +19,11 @@
         .custom-btn { padding: 12px 2px; border-radius: 6px; border: 1px solid #444; color: white; font-weight: bold; font-size: 0.75em; text-align: center; cursor: pointer; }
 
         #keyboard-modal { display: none; position: fixed; top: 10px; left: 0; width: 100%; height: auto; z-index: 3000; justify-content: center; }
-        .keyboard-content { background: #111; border: 2px solid #ff0000; border-radius: 12px; padding: 15px; width: 85%; max-width: 350px; }
-        .keyboard-content input { width: 90%; padding: 12px; background: #000; border: 1px solid #444; color: #00ff00; border-radius: 8px; font-size: 1.1em; text-align: center; margin-bottom: 10px; }
+        .keyboard-content { background: #111; border: 2px solid #ff0000; border-radius: 12px; padding: 15px; width: 85%; max-width: 350px; box-shadow: 0 5px 20px rgba(255,0,0,0.4); }
+        .keyboard-content input { width: 90%; padding: 12px; background: #000; border: 1px solid #444; color: #00ff00; border-radius: 8px; font-size: 1.1em; text-align: center; margin-bottom: 10px; outline: none; }
 
         #settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; overflow-y: auto; }
-        .modal-content { background: #222; width: 90%; margin: 20px auto; padding: 15px; border-radius: 15px; text-align: left; }
-        .setting-item { background: #333; padding: 10px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid #ffcc00; }
-        .setting-item input[type="text"] { width: 40%; padding: 5px; margin-right: 5px; }
+        .modal-content { background: #222; width: 85%; margin: 20px auto; padding: 15px; border-radius: 15px; text-align: left; }
     </style>
 </head>
 <body>
@@ -35,7 +33,7 @@
         <button id="flash-btn" onclick="toggleFlash()">🔦</button>
         <button id="full-screen-btn" onclick="toggleFullScreen()">📺 Full</button>
         <button onclick="openKeyboardModal()">⌨️ Keyboard</button>
-        <button id="billModeBtn" onclick="toggleBillMode()" style="background: #444;">📑 Bill: OFF</button>
+        <button id="billModeBtn" onclick="toggleBillMode()">📑 Bill: OFF</button>
     </div>
 
     <div id="reader"></div>
@@ -43,27 +41,3 @@
     <div id="dynamic-buttons"></div>
 
     <div id="keyboard-modal">
-        <div class="keyboard-content">
-            <h4 style="margin: 0 0 10px 0; color: #ff0000;">إدخال مستمر</h4>
-            <input type="text" id="manual-input" placeholder="اكتب هنا..." onkeypress="handleKbdEnter(event)">
-            <div style="display:flex; gap:10px;">
-                <button onclick="submitManualInput()" style="flex:1; padding:10px; background:#28a745; color:white; border:none; border-radius:8px;">إرسال</button>
-                <button onclick="closeKeyboardModal()" style="flex:1; padding:10px; background:#444; color:white; border:none; border-radius:8px;">إغلاق</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="settings-modal">
-        <div class="modal-content">
-            <h3 style="color: #ffcc00;">⚙️ إعدادات الأزرار</h3>
-            <div id="settings-list"></div>
-            <button onclick="addNewButtonSetting()" style="background:#444; color:white; width:100%; padding:10px; border-radius:8px; margin-top:10px;">➕ إضافة زر</button>
-            <button onclick="saveSettings()" style="background:#28a745; color:white; width:100%; padding:15px; border-radius:10px; margin-top:15px; font-weight:bold;">حفظ وإغلاق</button>
-        </div>
-    </div>
-
-    <script>
-        const NTFY_URL = 'https://ntfy.sh/ibrahim_pharmacy_2026';
-        let isBillMode = false, billItems = [], lastScanTime = 0, isFlashOn = false;
-        
-        // استرجاع الأزرار مع دعم
