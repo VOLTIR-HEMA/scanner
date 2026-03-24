@@ -14,15 +14,17 @@
         #dynamic-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 8px; }
         .custom-btn { padding: 12px 2px; border-radius: 6px; border: 1px solid #444; color: white; font-weight: bold; font-size: 0.75em; text-align: center; cursor: pointer; }
         
-        /* نافذة الكيبورد */
         #keyboard-modal { display: none; position: fixed; top: 10px; left: 0; width: 100%; height: auto; z-index: 3000; justify-content: center; }
         .keyboard-content { background: #111; border: 2px solid #ff0000; border-radius: 12px; padding: 15px; width: 85%; max-width: 350px; }
         .keyboard-content input { width: 90%; padding: 12px; background: #000; border: 1px solid #444; color: #00ff00; border-radius: 8px; font-size: 1.1em; text-align: center; margin-bottom: 10px; }
-        .keyboard-btns { display: flex; gap: 10px; }
-        .keyboard-btns button { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        .keyboard-btns { display: flex; gap: 5px; }
+        .keyboard-btns button { flex: 1; padding: 10px 5px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 0.8em; }
 
         #settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; overflow-y: auto; }
-        .modal-content { background: #222; width: 85%; margin: 20px auto; padding: 15px; border-radius: 15px; text-align: left; }
+        .modal-content { background: #222; width: 90%; margin: 20px auto; padding: 15px; border-radius: 15px; text-align: left; }
+        .setting-row { margin: 10px 0; padding: 10px; background: #333; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+        
+        #send-bill-area { display: none; padding: 10px; }
     </style>
 </head>
 <body>
@@ -35,16 +37,21 @@
         <button id="billModeBtn" onclick="toggleBillMode()" style="background: #800000;">📑 Bill: OFF</button>
     </div>
 
+    <div id="send-bill-area">
+        <button id="final-send-btn" onclick="processBillQueue()" style="background:#28a745; color:white; width:100%; padding:15px; border-radius:10px; font-weight:bold;">📤 إرسال الفاتورة الآن (<span id="bill-count-display">0</span>)</button>
+    </div>
+
     <div id="reader"></div>
     <div id="result" class="result-box">جاهز للمسح...</div>
     <div id="dynamic-buttons"></div>
 
     <div id="keyboard-modal">
         <div class="keyboard-content">
-            <h4 style="margin: 0 0 10px 0; color: #ff0000; font-size: 0.9em;">إدخال نصوص (عربي/إنجليزي)</h4>
+            <h4 style="margin: 0 0 10px 0; color: #ff0000; font-size: 0.9em;">إدخال مستمر</h4>
             <input type="text" id="manual-input" placeholder="اكتب هنا..." onkeypress="handleKbdEnter(event)">
             <div class="keyboard-btns">
                 <button onclick="submitManualInput()" style="background: #28a745; color: white;">إرسال</button>
+                <button onclick="sendCommand('enter', false)" style="background: #ffcc00; color: black;">Enter</button>
                 <button onclick="closeKeyboardModal()" style="background: #444; color: white;">إغلاق</button>
             </div>
         </div>
@@ -60,138 +67,4 @@
     </div>
 
     <script>
-        const NTFY_URL = 'https://ntfy.sh/ibrahim_pharmacy_2026';
-        let isBillMode = false, billItems = [], lastScanTime = 0, isFlashOn = false;
-        let buttons = JSON.parse(localStorage.getItem('userButtons')) || [
-            { name: "Add", cmd: "f8", useEnter: true, color: "#007bff" },
-            { name: "Save", cmd: "f9", useEnter: true, color: "#28a745" }
-        ];
-
-        function doVibrate(ms = 100) { if (navigator.vibrate) navigator.vibrate(ms); }
-        function playBeep() {
-            try {
-                const context = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = context.createOscillator();
-                const gain = context.createGain();
-                osc.type = 'sine'; osc.frequency.value = 800;
-                gain.gain.value = 0.1;
-                osc.connect(gain); gain.connect(context.destination);
-                osc.start(); osc.stop(context.currentTime + 0.1);
-            } catch (e) {}
-        }
-
-        // إرسال البيانات (تم تحسينها للتعامل مع العربي)
-        async function sendToPC(data) {
-            await fetch(NTFY_URL, { 
-                method: 'POST', 
-                body: data,
-                headers: { 'Title': 'Scan Event' } 
-            });
-        }
-
-        // إصلاح زر الفاتورة
-        function toggleBillMode() {
-            isBillMode = !isBillMode;
-            const btn = document.getElementById('billModeBtn');
-            if (isBillMode) {
-                billItems = [];
-                btn.innerText = "📑 Bill: ON (0)";
-                btn.style.background = "#28a745";
-                document.getElementById('result').innerText = "بدأ وضع الفاتورة.. امسح الأصناف";
-            } else {
-                if (billItems.length > 0) {
-                    // إرسال كل الأصناف مفصولة بـ Enter
-                    sendToPC(billItems.join('_ent\n') + '_ent');
-                    document.getElementById('result').innerText = "تم إرسال الفاتورة بالكامل";
-                }
-                btn.innerText = "📑 Bill: OFF";
-                btn.style.background = "#800000";
-            }
-            doVibrate(200);
-        }
-
-        function onScanSuccess(text) {
-            if (Date.now() - lastScanTime < 2000) return;
-            lastScanTime = Date.now();
-            playBeep(); doVibrate(100);
-
-            if (isBillMode) {
-                billItems.push(text);
-                document.getElementById('billModeBtn').innerText = `📑 Bill: ON (${billItems.length})`;
-                document.getElementById('result').innerText = "تمت إضافة: " + text;
-            } else {
-                sendToPC(text + '_ent');
-                document.getElementById('result').innerText = "تم إرسال: " + text;
-            }
-        }
-
-        function openKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'flex'; document.getElementById('manual-input').focus(); }
-        function closeKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'none'; }
-        function handleKbdEnter(e) { if(e.key === 'Enter') submitManualInput(); }
-        
-        function submitManualInput() {
-            const input = document.getElementById('manual-input');
-            const val = input.value.trim();
-            if (val !== "") {
-                // نرسل النص كما هو. تأكد أن برنامج الاستقبال على الكمبيوتر مضبوط لعمل Paste
-                sendToPC(val); 
-                document.getElementById('result').innerText = "تم إرسال نص: " + val;
-                playBeep(); doVibrate(50);
-                input.value = ''; 
-                input.focus();
-            }
-        }
-
-        window.onload = () => {
-            const scanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: { width: 250, height: 150 } });
-            scanner.render(onScanSuccess);
-            renderButtons();
-        };
-
-        function renderButtons() {
-            const container = document.getElementById('dynamic-buttons');
-            container.innerHTML = '';
-            buttons.forEach((btn, index) => {
-                const b = document.createElement('button');
-                b.className = 'custom-btn';
-                b.style.backgroundColor = btn.color || '#444';
-                b.innerText = btn.name;
-                b.onclick = () => sendCommand(btn.cmd, btn.useEnter);
-                container.appendChild(b);
-            });
-        }
-
-        async function sendCommand(cmd, useEnter) {
-            await sendToPC(cmd);
-            if (useEnter) {
-                await new Promise(r => setTimeout(r, 400));
-                await sendToPC('enter');
-            }
-            playBeep(); doVibrate(50);
-        }
-
-        function toggleSettings(show) { document.getElementById('settings-modal').style.display = show ? 'block' : 'none'; if(show) renderSettingsList(); }
-        function renderSettingsList() {
-            const list = document.getElementById('settings-list'); list.innerHTML = '';
-            buttons.forEach((btn, index) => {
-                const row = document.createElement('div');
-                row.style.margin = "10px 0"; row.style.padding = "10px"; row.style.background = "#333";
-                row.innerHTML = `<input type="text" value="${btn.name}" oninput="buttons[${index}].name=this.value" style="width:70px">
-                                 <input type="text" value="${btn.cmd}" oninput="buttons[${index}].cmd=this.value" style="width:70px">
-                                 <button onclick="buttons.splice(${index},1);renderSettingsList()">حذف</button>`;
-                list.appendChild(row);
-            });
-        }
-        function addNewButtonSetting() { buttons.push({name:"جديد", cmd:"f1"}); renderSettingsList(); }
-        function saveSettings() { localStorage.setItem('userButtons', JSON.stringify(buttons)); renderButtons(); toggleSettings(false); }
-        function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
-        async function toggleFlash() {
-            try {
-                const track = document.querySelector('video').srcObject.getVideoTracks()[0];
-                isFlashOn = !isFlashOn;
-                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
-            } catch (e) { alert("الفلاش غير مدعوم"); }
-        }
-    </script>
-</body>
-</html>
+        const NT
