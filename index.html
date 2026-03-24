@@ -1,232 +1,215 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Just Scan Pro - Ibrahim Edition</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <style>
-        body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 0; overflow: hidden; }
-        
-        /* البار العلوي - 6 أزرار متساوية */
-        .top-bar { 
-            display: grid; 
-            grid-template-columns: repeat(6, 1fr); 
-            gap: 2px; 
-            padding: 5px; 
-            background: #1a1a1a; 
-            border-bottom: 1px solid #333; 
-        }
-        .top-bar button { 
-            background: #333; color: white; border: 1px solid #444; 
-            padding: 10px 0; border-radius: 4px; font-size: 0.65em; cursor: pointer;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        .top-bar button.active { background: #ffcc00; color: #000; font-weight: bold; border-color: #fff; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Just Scan - Pro Edition</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 0; overflow-x: hidden; }
+        /* تحسين البار العلوي ليستوعب الأزرار الجديدة */
+        .top-bar { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 5px; 
+            padding: 8px; 
+            background: #1a1a1a; 
+            border-bottom: 1px solid #333; 
+        }
+        .top-bar button { background: #333; color: white; border: 1px solid #555; padding: 8px 5px; border-radius: 6px; font-size: 0.7em; cursor: pointer; }
+        .top-bar button.active { background: #ffcc00; color: #000; font-weight: bold; }
+        
+        #reader { width: 100% !important; max-width: 500px; margin: 5px auto; border: none !important; min-height: 250px; background: #000; }
+        .result-box { margin: 5px 10px; padding: 8px; background: #111; border-radius: 8px; color: #00ff00; font-size: 0.85em; border: 1px solid #222; min-height: 20px; }
+        
+        #dynamic-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 8px; }
+        .custom-btn { padding: 12px 2px; border-radius: 6px; border: 1px solid #444; color: white; font-weight: bold; font-size: 0.75em; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 
-        /* منطقة الكاميرا */
-        #reader { width: 100% !important; max-width: 500px; margin: 0 auto; background: #000; min-height: 300px; border-bottom: 1px solid #222; }
-        
-        .result-box { margin: 10px; padding: 12px; background: #111; border-radius: 8px; color: #00ff00; font-size: 0.9em; border: 1px solid #222; min-height: 25px; }
-        
-        #dynamic-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 10px; }
-        .custom-btn { padding: 15px 2px; border-radius: 8px; border: 1px solid #444; color: white; font-weight: bold; font-size: 0.8em; cursor: pointer; }
-
-        .send-all-btn { background: #28a745 !important; color: white; padding: 15px; width: 90%; margin: 10px auto; border-radius: 10px; display: none; font-weight: bold; border: none; font-size: 1.1em; }
-        
-        /* الإعدادات */
-        #settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; overflow-y: auto; }
-        .modal-content { background: #222; width: 90%; margin: 20px auto; padding: 15px; border-radius: 15px; text-align: left; }
-        .setting-row { background: #333; padding: 10px; margin-bottom: 10px; border-radius: 8px; display: flex; flex-direction: column; }
-        input[type="text"] { padding: 10px; border-radius: 5px; border: 1px solid #555; background: #111; color: #fff; margin-bottom: 5px; }
-    </style>
+        .send-all-btn { background: #28a745; color: white; padding: 12px; width: 90%; margin: 10px auto; border-radius: 10px; display: none; font-weight: bold; border: none; cursor: pointer; }
+        #settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; overflow-y: auto; }
+        .modal-content { background: #222; width: 85%; margin: 20px auto; padding: 15px; border-radius: 15px; text-align: left; }
+        .setting-row { background: #333; padding: 10px; margin-bottom: 10px; border-radius: 8px; display: flex; flex-direction: column; border: 1px solid #444; }
+        input[type="text"] { padding: 10px; border-radius: 5px; border: 1px solid #555; margin-bottom: 5px; font-size: 0.9em; background: #111; color: #fff; }
+    </style>
 </head>
 <body>
 
-    <div class="top-bar">
-        <button onclick="toggleSettings(true)">⚙️<br>ضبط</button>
-        <button onclick="openKeyboard()">⌨️<br>كيبورد</button>
-        <button onclick="toggleFullScreen()">📺<br>شاشة</button>
-        <button id="flash-btn" onclick="toggleFlash()">🔦<br>فلاش</button>
-        <button onclick="switchCamera()">🔄<br>كاميرا</button>
-        <button id="billModeBtn" onclick="toggleBillMode()">📑<br>فاتورة</button>
-    </div>
+    <div class="top-bar">
+        <button onclick="toggleSettings(true)">⚙️ الإعدادات</button>
+        <button onclick="openKeyboard()">⌨️ كيبورد</button>
+        <button onclick="toggleFullScreen()">📺 شاشة كاملة</button>
+        <button id="flash-btn" onclick="toggleFlash()">🔦 Flash</button>
+        <button id="billModeBtn" onclick="toggleBillMode()">📑 Bill: OFF</button>
+    </div>
 
-    <div id="reader"></div>
-    <div id="result" class="result-box">جاهز يا إبراهيم...</div>
-    
-    <button id="sendAllBtn" class="send-all-btn" onclick="sendFullBill()">📤 إرسال الفاتورة (<span id="count">0</span>)</button>
-    
-    <div id="dynamic-buttons"></div>
+    <div id="reader"></div>
+    <div id="result" class="result-box">جاهز للمسح يا إبراهيم...</div>
+    <button id="sendAllBtn" class="send-all-btn" onclick="sendFullBill()">📤 إرسال الفاتورة كاملة (<span id="count">0</span>)</button>
+    
+    <div id="dynamic-buttons"></div>
 
-    <div id="settings-modal">
-        <div class="modal-content">
-            <h3 style="color: #ffcc00; margin-top:0;">⚙️ إعدادات الأزرار</h3>
-            <div id="settings-list"></div>
-            <button onclick="addNewButtonSetting()" style="background:#444; color:white; width:100%; padding:10px; border-radius:8px; border: 1px dashed #777;">➕ إضافة زر</button>
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button onclick="saveSettings()" style="background:#28a745; color:white; flex:2; padding:15px; border-radius:10px; border:none; font-weight:bold;">حفظ</button>
-                <button onclick="toggleSettings(false)" style="background:#555; color:white; flex:1; padding:15px; border-radius:10px; border:none;">إغلاق</button>
-            </div>
-        </div>
-    </div>
+    <div id="settings-modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0; color: #ffcc00;">⚙️ تخصيص الأزرار</h3>
+            <div id="settings-list"></div>
+            <button onclick="addNewButtonSetting()" style="background:#444; color:white; width:100%; padding:10px; border-radius:8px; margin-top:5px; border: 1px dashed #777;">➕ إضافة زر جديد</button>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button onclick="saveSettings()" style="background:#28a745; color:white; flex:2; padding:15px; border-radius:10px; border:none; font-weight:bold;">حفظ</button>
+                <button onclick="toggleSettings(false)" style="background:#555; color:white; flex:1; padding:15px; border-radius:10px; border:none;">إغلاق</button>
+            </div>
+        </div>
+    </div>
 
-    <script>
-        let buttons = JSON.parse(localStorage.getItem('userButtons')) || [
-            { name: "Add", cmd: "f8", useEnter: true, color: "#007bff" },
-            { name: "Save", cmd: "f9", useEnter: true, color: "#28a745" },
-            { name: "F1", cmd: "f1", useEnter: false, color: "#555" },
-            { name: "Tab", cmd: "tab", useEnter: false, color: "#666" },
-            { name: "Del", cmd: "delete", useEnter: false, color: "#cc0000" }
-        ];
+    <script>
+        let buttons = JSON.parse(localStorage.getItem('userButtons')) || [
+            { name: "Add", cmd: "f8", useEnter: true, color: "#007bff" },
+            { name: "Save", cmd: "f9", useEnter: true, color: "#28a745" },
+            { name: "F1", cmd: "f1", useEnter: false, color: "#555" },
+            { name: "F2", cmd: "f2", useEnter: false, color: "#555" },
+            { name: "Tab", cmd: "tab", useEnter: false, color: "#666" }
+        ];
 
-        let isBillMode = false, billItems = [], lastScanTime = 0, isFlashOn = false, html5QrCode, currentCameraId;
-        const NTFY_URL = 'https://ntfy.sh/ibrahim_pharmacy_2026';
+        let isBillMode = false, billItems = [], lastScanTime = 0, isFlashOn = false;
+        const NTFY_URL = 'https://ntfy.sh/ibrahim_pharmacy_2026';
 
-        function openKeyboard() {
-            let text = prompt("أدخل النص المراد إرساله:");
-            if (text) {
-                fetch(NTFY_URL, { method: 'POST', body: text + '_ent' });
-                document.getElementById('result').innerText = "تم إرسال: " + text;
-            }
-        }
+        // وظيفة الكيبورد اليدوي
+        function openKeyboard() {
+            let text = prompt("أدخل النص أو الرقم الذي تريد إرساله للكمبيوتر:");
+            if (text !== null && text !== "") {
+                fetch(NTFY_URL, { method: 'POST', body: text + '_ent' });
+                document.getElementById('result').innerText = "تم إرسال النص: " + text;
+            }
+        }
 
-        function toggleFullScreen() {
-            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-            else document.exitFullscreen();
-        }
+        // وظيفة ملء الشاشة
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => {
+                    alert(`خطأ في تفعيل ملء الشاشة: ${e.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
 
-        function renderButtons() {
-            const container = document.getElementById('dynamic-buttons');
-            container.innerHTML = '';
-            buttons.forEach((btn, index) => {
-                const b = document.createElement('button');
-                b.className = 'custom-btn';
-                b.style.backgroundColor = btn.color || '#444';
-                b.innerText = btn.name;
-                b.onclick = () => sendCommand(btn.cmd, btn.useEnter);
-                container.appendChild(b);
-            });
-        }
+        function renderButtons() {
+            const container = document.getElementById('dynamic-buttons');
+            container.innerHTML = '';
+            buttons.forEach((btn, index) => {
+                const b = document.createElement('button');
+                b.className = 'custom-btn';
+                b.style.backgroundColor = btn.color || '#444';
+                b.innerText = btn.name;
+                b.onclick = () => sendCommand(btn.cmd, btn.useEnter);
+                container.appendChild(b);
+            });
+        }
 
-        async function sendCommand(cmd, useEnter) {
-            try {
-                await fetch(NTFY_URL, { method: 'POST', body: cmd });
-                if (useEnter) {
-                    await new Promise(r => setTimeout(r, 300));
-                    await fetch(NTFY_URL, { method: 'POST', body: 'enter' });
-                }
-                document.getElementById('result').innerText = "تم إرسال أمر: " + cmd;
-            } catch (e) { alert("خطأ في الشبكة"); }
-        }
+        async function sendCommand(cmd, useEnter) {
+            document.getElementById('result').innerText = `جاري إرسال: ${cmd}`;
+            try {
+                await fetch(NTFY_URL, { method: 'POST', body: cmd });
+                if (useEnter) {
+                    await new Promise(r => setTimeout(r, 400));
+                    await fetch(NTFY_URL, { method: 'POST', body: 'enter' });
+                    document.getElementById('result').innerText = `تم إرسال: ${cmd} + Enter`;
+                } else {
+                    document.getElementById('result').innerText = `تم إرسال: ${cmd}`;
+                }
+            } catch (e) {
+                document.getElementById('result').innerText = "خطأ في الاتصال!";
+            }
+        }
 
-        function onScanSuccess(text) {
-            if (Date.now() - lastScanTime < 2000) return;
-            lastScanTime = Date.now();
-            
-            if (isBillMode) {
-                billItems.push(text);
-                document.getElementById('count').innerText = billItems.length;
-                document.getElementById('result').innerText = "📦 تمت الإضافة: " + text;
-                document.getElementById('sendAllBtn').style.display = 'block';
-            } else {
-                fetch(NTFY_URL, { method: 'POST', body: text + '_ent' });
-                document.getElementById('result').innerText = "✅ تم الإرسال: " + text;
-            }
-        }
+        function onScanSuccess(text) {
+            if (Date.now() - lastScanTime < 2500) return;
+            lastScanTime = Date.now();
+            if (isBillMode) {
+                billItems.push(text);
+                document.getElementById('count').innerText = billItems.length;
+                document.getElementById('result').innerText = "تم الحفظ مؤقتاً: " + text;
+            } else {
+                document.getElementById('result').innerText = "تم مسح وإرسال: " + text;
+                fetch(NTFY_URL, { method: 'POST', body: text + '_ent' });
+            }
+        }
 
-        function toggleBillMode() {
-            isBillMode = !isBillMode;
-            const btn = document.getElementById('billModeBtn');
-            btn.classList.toggle('active', isBillMode);
-            if (!isBillMode) {
-                billItems = [];
-                document.getElementById('sendAllBtn').style.display = 'none';
-                document.getElementById('count').innerText = "0";
-            }
-            document.getElementById('result').innerText = isBillMode ? "وضع الفاتورة: مفعّل" : "وضع الفاتورة: معطل";
-        }
+        function toggleBillMode() {
+            isBillMode = !isBillMode;
+            const btn = document.getElementById('billModeBtn'), sendBtn = document.getElementById('sendAllBtn');
+            btn.innerText = isBillMode ? "📑 Bill: ON" : "📑 Bill: OFF";
+            btn.classList.toggle('active', isBillMode);
+            if (isBillMode) { billItems = []; document.getElementById('count').innerText = "0"; sendBtn.style.display = 'none'; } 
+            else if (billItems.length > 0) { sendBtn.style.display = 'block'; }
+        }
 
-        async function sendFullBill() {
-            const btn = document.getElementById('sendAllBtn');
-            btn.disabled = true;
-            for (let i = 0; i < billItems.length; i++) {
-                document.getElementById('result').innerText = `جاري إرسال ${i+1}/${billItems.length}...`;
-                await fetch(NTFY_URL, { method: 'POST', body: billItems[i] + '_ent' });
-                await new Promise(r => setTimeout(r, 1200));
-            }
-            btn.style.display = 'none'; btn.disabled = false;
-            billItems = [];
-            document.getElementById('result').innerText = "تم إرسال الفاتورة بنجاح!";
-        }
+        async function sendFullBill() {
+            const btn = document.getElementById('sendAllBtn');
+            btn.disabled = true;
+            for (let i = 0; i < billItems.length; i++) {
+                document.getElementById('result').innerText = `إرسال صنف ${i+1}/${billItems.length}`;
+                await fetch(NTFY_URL, { method: 'POST', body: billItems[i] + '_ent' });
+                await new Promise(r => setTimeout(r, 1200));
+            }
+            btn.style.display = 'none'; btn.disabled = false;
+            document.getElementById('result').innerText = "تم إرسال الفاتورة!";
+            billItems = [];
+        }
 
-        async function switchCamera() {
-            const devices = await Html5Qrcode.getCameras();
-            if (devices && devices.length > 1) {
-                let newId = devices.find(d => d.id !== currentCameraId).id;
-                startScanner(newId);
-            }
-        }
+        async function toggleFlash() {
+            try {
+                const video = document.querySelector('video');
+                const track = video.srcObject.getVideoTracks()[0];
+                isFlashOn = !isFlashOn;
+                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+                document.getElementById('flash-btn').innerText = isFlashOn ? "❌ Off" : "🔦 Flash";
+            } catch (e) { alert("يجب تشغيل الكاميرا أولاً!"); }
+        }
 
-        async function toggleFlash() {
-            try {
-                const track = html5QrCode.getRunningTrack();
-                isFlashOn = !isFlashOn;
-                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
-                document.getElementById('flash-btn').classList.toggle('active', isFlashOn);
-            } catch (e) { alert("الفلاش غير مدعوم أو الكاميرا مغلقة"); }
-        }
+        function toggleSettings(show) { 
+            document.getElementById('settings-modal').style.display = show ? 'block' : 'none'; 
+            if(show) renderSettingsList(); 
+        }
 
-        function startScanner(cameraId) {
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    initScanner(cameraId);
-                });
-            } else {
-                initScanner(cameraId);
-            }
-        }
+        function renderSettingsList() {
+            const list = document.getElementById('settings-list');
+            list.innerHTML = '';
+            buttons.forEach((btn, index) => {
+                const row = document.createElement('div');
+                row.className = 'setting-row';
+                row.innerHTML = `
+                    <input type="text" placeholder="اسم الزر" value="${btn.name}" oninput="updateBtn(${index}, 'name', this.value)">
+                    <input type="text" placeholder="الأمر (مثلاً f8)" value="${btn.cmd}" oninput="updateBtn(${index}, 'cmd', this.value)">
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="check-${index}" ${btn.useEnter ? 'checked' : ''} onchange="updateBtn(${index}, 'useEnter', this.checked)">
+                        <label for="check-${index}">إرسال Enter تلقائياً؟</label>
+                    </div>
+                    <button onclick="removeBtn(${index})" style="background:#ff4444; color:white; border:none; padding:8px; border-radius:5px; margin-top:5px;">إزالة</button>
+                `;
+                list.appendChild(row);
+            });
+        }
 
-        function initScanner(cameraId) {
-            currentCameraId = cameraId;
-            html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start(cameraId, { fps: 15, qrbox: { width: 250, height: 150 } }, onScanSuccess);
-        }
+        function updateBtn(i, k, v) { buttons[i][k] = v; }
+        function addNewButtonSetting() { buttons.push({ name: "جديد", cmd: "f1", useEnter: false, color: "#555" }); renderSettingsList(); }
+        function removeBtn(i) { buttons.splice(i, 1); renderSettingsList(); }
+        function saveSettings() { 
+            localStorage.setItem('userButtons', JSON.stringify(buttons)); 
+            renderButtons(); 
+            toggleSettings(false); 
+        }
 
-        function toggleSettings(show) { 
-            document.getElementById('settings-modal').style.display = show ? 'block' : 'none'; 
-            if(show) renderSettingsList(); 
-        }
-
-        function renderSettingsList() {
-            const list = document.getElementById('settings-list');
-            list.innerHTML = '';
-            buttons.forEach((btn, index) => {
-                const row = document.createElement('div');
-                row.className = 'setting-row';
-                row.innerHTML = `
-                    <input type="text" value="${btn.name}" oninput="buttons[${index}].name=this.value">
-                    <input type="text" value="${btn.cmd}" oninput="buttons[${index}].cmd=this.value">
-                    <label style="font-size:0.8em;"><input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="buttons[${index}].useEnter=this.checked"> إرسال Enter؟</label>
-                    <button onclick="buttons.splice(${index},1); renderSettingsList()" style="background:red; color:white; border:none; margin-top:5px; padding:5px;">حذف</button>
-                `;
-                list.appendChild(row);
-            });
-        }
-
-        function addNewButtonSetting() { buttons.push({ name: "جديد", cmd: "f1", useEnter: false }); renderSettingsList(); }
-        function saveSettings() { localStorage.setItem('userButtons', JSON.stringify(buttons)); renderButtons(); toggleSettings(false); }
-
-        window.onload = () => {
-            Html5Qrcode.getCameras().then(devices => {
-                if (devices && devices.length > 0) {
-                    // البدء بالكاميرا الخلفية تلقائياً
-                    let backCam = devices.find(d => d.label.toLowerCase().includes('back')) || devices[0];
-                    startScanner(backCam.id);
-                }
-            });
-            renderButtons();
-        };
-    </script>
+        window.onload = () => {
+            const scanner = new Html5QrcodeScanner("reader", { 
+                fps: 20, 
+                qrbox: { width: 250, height: 150 },
+                videoConstraints: { facingMode: "environment" }
+            });
+            scanner.render(onScanSuccess);
+            renderButtons();
+        };
+    </script>
 </body>
 </html>
