@@ -39,8 +39,11 @@
             <h4 style="color: #ff0000;">إدخال مستمر</h4>
             <input type="text" id="manual-input" style="width: 80%; padding: 15px; background: #000; color: #00ff00; border: 1px solid #444; border-radius: 8px; font-size: 1.2em;" onkeypress="if(event.key==='Enter') submitManualInput()">
             <br><br>
-            <button onclick="submitManualInput()" style="padding: 10px 30px; background: #28a745; color: white; border: none; border-radius: 8px;">إرسال</button>
-            <button onclick="closeKeyboardModal()" style="padding: 10px 30px; background: #444; color: white; border: none; border-radius: 8px;">إغلاق</button>
+            <div style="display: flex; gap: 5px; justify-content: center;">
+                <button onclick="submitManualInput()" style="flex: 1; padding: 10px; background: #28a745; color: white; border: none; border-radius: 8px;">إرسال</button>
+                <button onclick="sendManualEnter()" style="flex: 1; padding: 10px; background: #007bff; color: white; border: none; border-radius: 8px;">Enter ⏎</button>
+                <button onclick="closeKeyboardModal()" style="flex: 1; padding: 10px; background: #444; color: white; border: none; border-radius: 8px;">إغلاق</button>
+            </div>
         </div>
     </div>
 
@@ -73,18 +76,14 @@
             } catch (e) {}
         }
 
-        // وضع الفاتورة
         function toggleBillMode() {
             isBillMode = !isBillMode;
             const btn = document.getElementById('billModeBtn');
             if (isBillMode) {
-                btn.style.background = "#ff0000";
-                btn.innerText = "📑 Bill: ON";
-                billItems = [];
-                document.getElementById('result').innerText = "وضع الفاتورة: اجمع الأصناف";
+                btn.style.background = "#ff0000"; btn.innerText = "📑 Bill: ON";
+                billItems = []; document.getElementById('result').innerText = "وضع الفاتورة: اجمع الأصناف";
             } else {
-                btn.style.background = "#333";
-                btn.innerText = "📑 Bill: OFF";
+                btn.style.background = "#333"; btn.innerText = "📑 Bill: OFF";
                 sendBillItems();
             }
         }
@@ -94,18 +93,16 @@
             document.getElementById('result').innerText = `إرسال ${billItems.length} باركود...`;
             for (let item of billItems) {
                 fetch(NTFY_URL, { method: 'POST', body: item + '_ent' });
-                await new Promise(r => setTimeout(r, 1000)); // فرق ثانية
+                await new Promise(r => setTimeout(r, 1000));
             }
             document.getElementById('result').innerText = "تم إرسال الفاتورة بالكامل";
             billItems = [];
         }
 
-        // السكانر
         function onScanSuccess(text) {
             if (Date.now() - lastScanTime < 1500) return; 
             lastScanTime = Date.now();
             playBeep(); doVibrate(100);
-
             if (isBillMode) {
                 billItems.push(text);
                 document.getElementById('result').innerText = `تم تخزين (${billItems.length}): ${text}`;
@@ -115,14 +112,12 @@
             }
         }
 
-        // الأزرار
         function renderButtons() {
             const container = document.getElementById('dynamic-buttons');
             container.innerHTML = '';
             buttons.forEach((btn) => {
                 const b = document.createElement('button');
-                b.className = 'custom-btn';
-                b.style.backgroundColor = btn.color || '#444';
+                b.className = 'custom-btn'; b.style.backgroundColor = btn.color || '#444';
                 b.innerText = btn.name;
                 b.onclick = () => sendCommand(btn.cmd, btn.useEnter);
                 container.appendChild(b);
@@ -137,21 +132,15 @@
             playBeep(); doVibrate(50);
         }
 
-        // الإعدادات
         function toggleSettings(show) { document.getElementById('settings-modal').style.display = show ? 'block' : 'none'; if(show) renderSettingsList(); }
-        
         function renderSettingsList() {
-            const list = document.getElementById('settings-list');
-            list.innerHTML = '';
+            const list = document.getElementById('settings-list'); list.innerHTML = '';
             buttons.forEach((btn, index) => {
-                const div = document.createElement('div');
-                div.className = 'setting-row';
-                div.innerHTML = `
-                    <input type="text" value="${btn.name}" oninput="buttons[${index}].name=this.value" style="width:25%">
+                const div = document.createElement('div'); div.className = 'setting-row';
+                div.innerHTML = `<input type="text" value="${btn.name}" oninput="buttons[${index}].name=this.value" style="width:25%">
                     <input type="text" value="${btn.cmd}" oninput="buttons[${index}].cmd=this.value" style="width:25%">
                     <label style="font-size:12px">Enter: <input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="buttons[${index}].useEnter=this.checked"></label>
-                    <button onclick="buttons.splice(${index},1);renderSettingsList()" style="background:red; color:white; border:none; border-radius:4px; padding:5px;">حذف</button>
-                `;
+                    <button onclick="buttons.splice(${index},1);renderSettingsList()" style="background:red; color:white; border:none; border-radius:4px; padding:5px;">حذف</button>`;
                 list.appendChild(div);
             });
         }
@@ -159,7 +148,6 @@
         function addNewButtonSetting() { buttons.push({name:"جديد", cmd:"f1", useEnter: true}); renderSettingsList(); }
         function saveSettings() { localStorage.setItem('userButtons', JSON.stringify(buttons)); renderButtons(); toggleSettings(false); }
 
-        // تشغيل الكاميرا فور تحميل الصفحة
         window.onload = () => {
             const html5QrCode = new Html5Qrcode("reader");
             const config = { fps: 20, qrbox: { width: 250, height: 150 } };
@@ -170,6 +158,7 @@
 
         function openKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'block'; document.getElementById('manual-input').focus(); }
         function closeKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'none'; }
+        
         function submitManualInput() {
             const input = document.getElementById('manual-input');
             if (input.value.trim() !== "") {
@@ -178,6 +167,14 @@
                 playBeep(); doVibrate(50);
             }
         }
+
+        // دالة إرسال انتر فقط من الكيبورد
+        function sendManualEnter() {
+            fetch(NTFY_URL, { method: 'POST', body: 'enter' });
+            document.getElementById('manual-input').focus();
+            playBeep(); doVibrate(50);
+        }
+
         function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
         async function toggleFlash() {
             try {
