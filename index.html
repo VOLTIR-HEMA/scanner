@@ -7,7 +7,7 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 0; overflow-x: hidden; }
-        .top-bar { display: flex; justify-content: space-around; align-items: center; padding: 8px; background: #1a1a1a; border-bottom: 1px solid #333; }
+        .top-bar { display: flex; justify-content: space-around; align-items: center; padding: 8px; background: #1a1a1a; border-bottom: 1px solid #333; flex-wrap: wrap; gap: 5px; }
         .top-bar button { background: #333; color: white; border: 1px solid #555; padding: 6px 10px; border-radius: 6px; font-size: 0.75em; cursor: pointer; }
         .top-bar button.active { background: #ffcc00; color: #000; font-weight: bold; }
         
@@ -47,8 +47,10 @@
 <body>
 
     <div class="top-bar">
-        <button onclick="toggleSettings(true)">⚙️ الإعدادات</button>
-        <button id="flash-btn" onclick="toggleFlash()">🔦 Flash</button>
+        <button onclick="toggleSettings(true)">⚙️</button>
+        <button id="flash-btn" onclick="toggleFlash()">🔦</button>
+        <button id="full-screen-btn" onclick="toggleFullScreen()">📺 Full</button>
+        <button onclick="openManualInput()">⌨️ Keyboard</button>
         <button id="billModeBtn" onclick="toggleBillMode()">📑 Bill: OFF</button>
     </div>
 
@@ -71,7 +73,45 @@
     </div>
 
     <script>
-        // تحميل الأزرار من الذاكرة أو استخدام القيم الافتراضية
+        // دالة إصدار صوت التنبيه
+        function playBeep() {
+            try {
+                const context = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = context.createOscillator();
+                const gain = context.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, context.currentTime);
+                gain.gain.setValueAtTime(0.1, context.currentTime);
+                oscillator.connect(gain);
+                gain.connect(context.destination);
+                oscillator.start();
+                oscillator.stop(context.currentTime + 0.1);
+            } catch (e) { console.log("Audio not supported"); }
+        }
+
+        // دالة ملء الشاشة
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => alert("خطأ في تشغيل ملء الشاشة"));
+                document.getElementById('full-screen-btn').innerText = "📺 Exit";
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    document.getElementById('full-screen-btn').innerText = "📺 Full";
+                }
+            }
+        }
+
+        // دالة الإدخال اليدوي (الكيبورد)
+        function openManualInput() {
+            let val = prompt("اكتب النص أو الكود لإرساله للكمبيوتر:");
+            if (val && val.trim() !== "") {
+                fetch(NTFY_URL, { method: 'POST', body: val + '_ent' });
+                document.getElementById('result').innerText = "تم إرسال يدوياً: " + val;
+                playBeep();
+            }
+        }
+
         let buttons = JSON.parse(localStorage.getItem('userButtons')) || [
             { name: "Add", cmd: "f8", useEnter: true, color: "#007bff" },
             { name: "Save", cmd: "f9", useEnter: true, color: "#28a745" },
@@ -83,7 +123,6 @@
         let isBillMode = false, billItems = [], lastScanTime = 0, isFlashOn = false;
         const NTFY_URL = 'https://ntfy.sh/ibrahim_pharmacy_2026';
 
-        // رسم الأزرار في الواجهة
         function renderButtons() {
             const container = document.getElementById('dynamic-buttons');
             container.innerHTML = '';
@@ -97,31 +136,28 @@
             });
         }
 
-        // إرسال الأوامر (تم التعديل لفصل الإنتر)
         async function sendCommand(cmd, useEnter) {
             document.getElementById('result').innerText = `جاري إرسال: ${cmd}`;
-            
             try {
-                // إرسال الأمر الأساسي فقط
                 await fetch(NTFY_URL, { method: 'POST', body: cmd });
-
-                // إرسال الإنتر فقط إذا كان الخيار مفعلاً لهذا الزر تحديداً
                 if (useEnter) {
-                    await new Promise(r => setTimeout(r, 500)); // انتظار بسيط لضمان الترتيب
+                    await new Promise(r => setTimeout(r, 500));
                     await fetch(NTFY_URL, { method: 'POST', body: 'enter' });
                     document.getElementById('result').innerText = `تم إرسال: ${cmd} + Enter`;
                 } else {
                     document.getElementById('result').innerText = `تم إرسال: ${cmd}`;
                 }
+                playBeep(); // صوت عند الضغط على زر
             } catch (e) {
                 document.getElementById('result').innerText = "خطأ في الاتصال!";
             }
         }
 
-        // عند نجاح المسح (السكانر يرسل دائمًا انتر لسرعة البيع)
         function onScanSuccess(text) {
             if (Date.now() - lastScanTime < 2500) return;
             lastScanTime = Date.now();
+            
+            playBeep(); // تشغيل الصوت عند نجاح السكان
             
             if (isBillMode) {
                 billItems.push(text);
@@ -129,7 +165,6 @@
                 document.getElementById('result').innerText = "تم الحفظ مؤقتاً: " + text;
             } else {
                 document.getElementById('result').innerText = "تم مسح وإرسال: " + text;
-                // السكانر يرسل الكود مع علامة _ent ليفهمها البايثون كإدخال مباشر
                 fetch(NTFY_URL, { method: 'POST', body: text + '_ent' });
             }
         }
@@ -154,6 +189,7 @@
             for (let i = 0; i < billItems.length; i++) {
                 document.getElementById('result').innerText = `إرسال صنف ${i+1}/${billItems.length}`;
                 await fetch(NTFY_URL, { method: 'POST', body: billItems[i] + '_ent' });
+                playBeep();
                 await new Promise(r => setTimeout(r, 1200));
             }
             btn.style.display = 'none'; btn.disabled = false;
@@ -167,11 +203,10 @@
                 const track = video.srcObject.getVideoTracks()[0];
                 isFlashOn = !isFlashOn;
                 await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
-                document.getElementById('flash-btn').innerText = isFlashOn ? "❌ Off" : "🔦 Flash";
+                document.getElementById('flash-btn').innerText = isFlashOn ? "❌" : "🔦";
             } catch (e) { alert("يجب تشغيل الكاميرا أولاً!"); }
         }
 
-        // وظائف الإعدادات
         function toggleSettings(show) { 
             document.getElementById('settings-modal').style.display = show ? 'block' : 'none'; 
             if(show) renderSettingsList(); 
@@ -188,9 +223,9 @@
                     <input type="text" placeholder="الأمر (مثلاً f8)" value="${btn.cmd}" oninput="updateBtn(${index}, 'cmd', this.value)">
                     <div class="checkbox-container">
                         <input type="checkbox" id="check-${index}" ${btn.useEnter ? 'checked' : ''} onchange="updateBtn(${index}, 'useEnter', this.checked)">
-                        <label for="check-${index}">إرسال Enter تلقائياً بعد الزر؟</label>
+                        <label for="check-${index}">إرسال Enter تلقائياً؟</label>
                     </div>
-                    <button onclick="removeBtn(${index})" style="background:#ff4444; color:white; border:none; padding:8px; border-radius:5px; margin-top:5px; cursor:pointer;">إزالة الزر</button>
+                    <button onclick="removeBtn(${index})" style="background:#ff4444; color:white; border:none; padding:8px; border-radius:5px; margin-top:5px; cursor:pointer;">إزالة</button>
                 `;
                 list.appendChild(row);
             });
