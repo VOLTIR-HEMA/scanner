@@ -49,4 +49,143 @@
             <h3 style="color: #ffcc00;">⚙️ الإعدادات</h3>
             <div id="settings-list"></div>
             <button onclick="addNewButtonSetting()" style="width:100%; padding:10px; background:#444; color:white; border-radius:8px; margin-top:10px;">➕ إضافة زر</button>
-            <button onclick="saveSettings()" style="width:100%; padding:15px; background:#28a745; color:white; border-radius:10px; margin-top:15px; font-
+            <button onclick="saveSettings()" style="width:100%; padding:15px; background:#28a745; color:white; border-radius:10px; margin-top:15px; font-weight:bold;">حفظ وإغلاق</button>
+        </div>
+    </div>
+
+    <script>
+        const NTFY_URL = 'https://ntfy.sh/ibrahim_pharmacy_2026';
+        let isBillMode = false, billItems = [], lastScanTime = 0, isFlashOn = false;
+        let buttons = JSON.parse(localStorage.getItem('userButtons')) || [
+            { name: "Add", cmd: "f8", useEnter: true, color: "#007bff" },
+            { name: "Save", cmd: "f9", useEnter: true, color: "#28a745" }
+        ];
+
+        function doVibrate(ms = 100) { if (navigator.vibrate) navigator.vibrate(ms); }
+        function playBeep() {
+            try {
+                const context = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = context.createOscillator();
+                const gain = context.createGain();
+                osc.type = 'sine'; osc.frequency.value = 800; gain.gain.value = 0.1;
+                osc.connect(gain); gain.connect(context.destination);
+                osc.start(); osc.stop(context.currentTime + 0.1);
+            } catch (e) {}
+        }
+
+        // وضع الفاتورة
+        function toggleBillMode() {
+            isBillMode = !isBillMode;
+            const btn = document.getElementById('billModeBtn');
+            if (isBillMode) {
+                btn.style.background = "#ff0000";
+                btn.innerText = "📑 Bill: ON";
+                billItems = [];
+                document.getElementById('result').innerText = "وضع الفاتورة: اجمع الأصناف";
+            } else {
+                btn.style.background = "#333";
+                btn.innerText = "📑 Bill: OFF";
+                sendBillItems();
+            }
+        }
+
+        async function sendBillItems() {
+            if (billItems.length === 0) return;
+            document.getElementById('result').innerText = `إرسال ${billItems.length} باركود...`;
+            for (let item of billItems) {
+                fetch(NTFY_URL, { method: 'POST', body: item + '_ent' });
+                await new Promise(r => setTimeout(r, 1000)); // فرق ثانية
+            }
+            document.getElementById('result').innerText = "تم إرسال الفاتورة بالكامل";
+            billItems = [];
+        }
+
+        // السكانر
+        function onScanSuccess(text) {
+            if (Date.now() - lastScanTime < 1500) return; 
+            lastScanTime = Date.now();
+            playBeep(); doVibrate(100);
+
+            if (isBillMode) {
+                billItems.push(text);
+                document.getElementById('result').innerText = `تم تخزين (${billItems.length}): ${text}`;
+            } else {
+                fetch(NTFY_URL, { method: 'POST', body: text + '_ent' });
+                document.getElementById('result').innerText = "تم إرسال: " + text;
+            }
+        }
+
+        // الأزرار
+        function renderButtons() {
+            const container = document.getElementById('dynamic-buttons');
+            container.innerHTML = '';
+            buttons.forEach((btn) => {
+                const b = document.createElement('button');
+                b.className = 'custom-btn';
+                b.style.backgroundColor = btn.color || '#444';
+                b.innerText = btn.name;
+                b.onclick = () => sendCommand(btn.cmd, btn.useEnter);
+                container.appendChild(b);
+            });
+        }
+
+        function sendCommand(cmd, useEnter) {
+            fetch(NTFY_URL, { method: 'POST', body: cmd });
+            if (useEnter) {
+                setTimeout(() => fetch(NTFY_URL, { method: 'POST', body: 'enter' }), 400);
+            }
+            playBeep(); doVibrate(50);
+        }
+
+        // الإعدادات
+        function toggleSettings(show) { document.getElementById('settings-modal').style.display = show ? 'block' : 'none'; if(show) renderSettingsList(); }
+        
+        function renderSettingsList() {
+            const list = document.getElementById('settings-list');
+            list.innerHTML = '';
+            buttons.forEach((btn, index) => {
+                const div = document.createElement('div');
+                div.className = 'setting-row';
+                div.innerHTML = `
+                    <input type="text" value="${btn.name}" oninput="buttons[${index}].name=this.value" style="width:25%">
+                    <input type="text" value="${btn.cmd}" oninput="buttons[${index}].cmd=this.value" style="width:25%">
+                    <label style="font-size:12px">Enter: <input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="buttons[${index}].useEnter=this.checked"></label>
+                    <button onclick="buttons.splice(${index},1);renderSettingsList()" style="background:red; color:white; border:none; border-radius:4px; padding:5px;">حذف</button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function addNewButtonSetting() { buttons.push({name:"جديد", cmd:"f1", useEnter: true}); renderSettingsList(); }
+        function saveSettings() { localStorage.setItem('userButtons', JSON.stringify(buttons)); renderButtons(); toggleSettings(false); }
+
+        // تشغيل الكاميرا فور تحميل الصفحة
+        window.onload = () => {
+            const html5QrCode = new Html5Qrcode("reader");
+            const config = { fps: 20, qrbox: { width: 250, height: 150 } };
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
+            renderButtons();
+            document.getElementById('result').innerText = "جاهز للمسح...";
+        };
+
+        function openKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'block'; document.getElementById('manual-input').focus(); }
+        function closeKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'none'; }
+        function submitManualInput() {
+            const input = document.getElementById('manual-input');
+            if (input.value.trim() !== "") {
+                fetch(NTFY_URL, { method: 'POST', body: input.value.trim() });
+                input.value = ''; input.focus();
+                playBeep(); doVibrate(50);
+            }
+        }
+        function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        async function toggleFlash() {
+            try {
+                const track = document.querySelector('video').srcObject.getVideoTracks()[0];
+                isFlashOn = !isFlashOn;
+                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+            } catch (e) { alert("الفلاش غير مدعوم"); }
+        }
+    </script>
+</body>
+</html>
