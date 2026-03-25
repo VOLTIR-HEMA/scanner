@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // الرابط بتاعك من مونجو (تأكد من وضع الباسوورد الصحيحة)
-const mongoURI = "رابط_مونجو_الخاص_بك_هنا";
+const mongoURI = "mongodb+srv://justscan_db_user:Hema@2003@justscan.9w2pw5s.mongodb.net/?appName=JustScan";
 
 exports.handler = async (event, context) => {
     try {
