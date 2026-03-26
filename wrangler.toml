@@ -1,0 +1,7 @@
+name = "round-resonance-b6f1"
+main = "index.js"
+compatibility_date = "2026-03-27"
+
+[[kv_namespaces]]
+binding = "USERS_DB"
+id = "9cbfe854fb4547dcbbd786aa83696090"
