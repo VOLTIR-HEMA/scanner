@@ -26,7 +26,11 @@
     </style>
 </head>
 <body>
-
+<div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center;">
+    <h2 style="color: #00ffcc;">VoltIR 🛡️</h2>
+    <p>يرجى تسجيل الدخول من الإعدادات</p>
+    <button onclick="toggleSettings(true)" style="padding: 15px; background: #ffcc00; border-radius: 10px; border: none; font-weight: bold;">فتح الإعدادات ⚙️</button>
+</div>
     <div class="top-bar">
         <button onclick="toggleSettings(true)">⚙️</button>
         <button id="flash-btn" onclick="toggleFlash()">🔦</button>
@@ -55,6 +59,11 @@
     <div id="settings-modal">
         <div class="modal-content">
             <h3 style="color: #ffcc00;">⚙️ الإعدادات</h3>
+            <div style="background:#111; padding:10px; border-radius:8px; margin-bottom:10px; border:1px solid #444;">
+    <input type="tel" id="u-phone" placeholder="رقم الموبايل" style="width:100%; padding:8px; margin-bottom:5px; background:#000; color:#0f0; border:1px solid #333;">
+    <input type="password" id="u-pass" placeholder="كلمة المرور" style="width:100%; padding:8px; margin-bottom:5px; background:#000; color:#0f0; border:1px solid #333;">
+    <button onclick="handleAuth()" style="width:100%; padding:10px; background:#007bff; color:white; border:none; border-radius:5px;">تسجيل دخول / إنشاء حساب</button>
+</div>
             
             <div class="auth-box">
                 <div id="auth-logged-in" style="display:none;">
@@ -78,6 +87,20 @@
     </div>
 
     <script>
+        async function handleAuth() {
+    const phone = document.getElementById('u-phone').value;
+    const pass = document.getElementById('u-pass').value;
+    const res = await fetch('/.netlify/functions/index', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'register', phone, password: pass }) 
+    });
+    if(res.ok) {
+        localStorage.setItem('v_phone', phone);
+        location.reload(); // هيعمل ريفريش ويفتح السكانر لأن الرقم بقى موجود
+    } else {
+        alert("خطأ في البيانات");
+    }
+}
         const NTFY_URL = 'https://ntfy.sh/ibrahim_pharmacy_2026';
         const SERVER_URL = '/.netlify/functions/index';
         let isBillMode = false, billItems = [], lastScanTime = 0, isFlashOn = false;
@@ -210,20 +233,22 @@
         function addNewButtonSetting() { buttons.push({name:"جديد", cmd:"f1", useEnter: true}); renderSettingsList(); }
         function saveSettings() { localStorage.setItem('userButtons', JSON.stringify(buttons)); renderButtons(); toggleSettings(false); }
 
-        window.onload = () => {
-            const scanner = new Html5QrcodeScanner("reader", { 
-                fps: 25, 
-                qrbox: { width: 250, height: 150 },
-                aspectRatio: 1.0,
-                showTorchButtonIfSupported: true,
-                showZoomSliderIfSupported: true,
-                defaultZoomValueIfSupported: 2
-            });
-            scanner.render(onScanSuccess);
-            renderButtons();
-            checkLoginStatus();
-            document.getElementById('result').innerText = "جاهز للمسح...";
-        };
+       window.onload = () => {
+    // لو مفيش رقم موبايل متسيف، أظهر شاشة القفل وماتشغلش السكانر
+    if (!localStorage.getItem('v_phone')) {
+        document.getElementById('auth-overlay').style.display = 'flex';
+        renderButtons();
+        return; // وقف هنا مكملش تشغيل السكانر
+    }
+
+    // لو فيه رقم، كمل تشغيل السكانر عادي
+    const scanner = new Html5QrcodeScanner("reader", { 
+        fps: 25, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0,
+        showTorchButtonIfSupported: true, showZoomSliderIfSupported: true, defaultZoomValueIfSupported: 2
+    });
+    scanner.render(onScanSuccess);
+    renderButtons();
+};
 
         function openKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'block'; document.getElementById('manual-input').focus(); }
         function closeKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'none'; }
