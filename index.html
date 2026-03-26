@@ -57,12 +57,28 @@
     </div>
 
     <div id="settings-modal">
-        <div class="modal-content">
-            <h3 style="color: #ffcc00;">⚙️ الإعدادات</h3>
-            <div style="background:#111; padding:10px; border-radius:8px; margin-bottom:10px; border:1px solid #444;">
-    <input type="tel" id="u-phone" placeholder="رقم الموبايل" style="width:100%; padding:8px; margin-bottom:5px; background:#000; color:#0f0; border:1px solid #333;">
-    <input type="password" id="u-pass" placeholder="كلمة المرور" style="width:100%; padding:8px; margin-bottom:5px; background:#000; color:#0f0; border:1px solid #333;">
-    <button onclick="handleAuth()" style="width:100%; padding:10px; background:#007bff; color:white; border:none; border-radius:5px;">تسجيل دخول / إنشاء حساب</button>
+       <div class="modal-content">
+    <h3 style="color: #ffcc00; margin-bottom: 15px;">⚙️ الإعدادات</h3>
+    
+    <div id="auth-section" style="background:#111; padding:15px; border-radius:10px; border:1px solid #444; margin-bottom:20px;">
+        <div id="logged-in-view" style="display:none;">
+            <p style="color:#00ffcc; font-size:0.9em; margin-bottom:10px;">✅ مسجل دخول برقم: <span id="user-display"></span></p>
+            <button onclick="userLogout()" style="width:100%; padding:10px; background:#800; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل خروج 🚪</button>
+        </div>
+        
+        <div id="logged-out-view">
+            <input type="tel" id="u-phone" placeholder="رقم الموبايل" style="width:100%; padding:10px; margin-bottom:8px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
+            <input type="password" id="u-pass" placeholder="كلمة المرور" style="width:100%; padding:10px; margin-bottom:10px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
+            <div style="display:flex; gap:5px;">
+                <button onclick="handleAuth('login')" style="flex:1; padding:10px; background:#333; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">دخول</button>
+                <button onclick="handleAuth('register')" style="flex:1; padding:10px; background:#007bff; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-list"></div>
+    <button onclick="addNewButtonSetting()" style="width:100%; padding:10px; background:#444; color:white; border:none; border-radius:8px; margin-top:10px; cursor:pointer;">➕ إضافة زر جديد</button>
+    <button onclick="saveSettings()" style="width:100%; padding:15px; background:#28a745; color:white; border:none; border-radius:10px; margin-top:15px; font-weight:bold; cursor:pointer;">حفظ وإغلاق</button>
 </div>
             
             <div class="auth-box">
