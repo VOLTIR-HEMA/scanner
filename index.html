@@ -29,7 +29,7 @@
 <div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center;">
     <h2 style="color: #00ffcc;">VoltIR 🛡️</h2>
     <p>يرجى تسجيل الدخول من الإعدادات</p>
-    <button onclick="toggleSettings(true)" style="padding: 15px; background: #ffcc00; border-radius: 10px; border: none; font-weight: bold;">فتح الإعدادات ⚙️</button>
+    <button onclick="document.getElementById('auth-overlay').style.display='none'; toggleSettings(true);" style="padding: 15px 30px; background: #ffcc00; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: black;">فتح الإعدادات ⚙️</button>
 </div>
     <div class="top-bar">
         <button onclick="toggleSettings(true)">⚙️</button>
