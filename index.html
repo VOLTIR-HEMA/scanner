@@ -33,4 +33,19 @@
         <button id="flash-btn" onclick="toggleFlash()">🔦</button>
         <button id="full-screen-btn" onclick="toggleFullScreen()">📺 Full</button>
         <button onclick="openKeyboardModal()">⌨️ Keyboard</button>
-        <button id="billModeBtn" onclick="toggleBillMode()">📑
+        <button id="billModeBtn" onclick="toggleBillMode()">📑 Bill: OFF</button>
+    </div>
+
+    <div id="reader"></div>
+    <div id="result" class="result-box">جاري تشغيل الكاميرا...</div>
+    <div id="dynamic-buttons"></div>
+
+    <div id="settings-modal">
+        <div class="modal-content">
+            <h3 style="color: #ffcc00; margin-bottom: 15px;">⚙️ الإعدادات</h3>
+            
+            <div id="auth-section" style="background:#111; padding:15px; border-radius:10px; border:1px solid #444; margin-bottom:20px;">
+                <div id="logged-in-view" style="display:none;">
+                    <p style="color:#00ffcc; font-size:0.9em; margin-bottom:10px;">✅ مسجل دخول برقم: <span id="user-display"></span></p>
+                    <button onclick="userLogout()" style="width:100%; padding:10px; background:#800; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل خروج 🚪</button>
+                </div>
