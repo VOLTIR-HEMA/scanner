@@ -142,13 +142,12 @@
             }
         }
 
-        function userLogout() {
-            localStorage.removeItem('v_phone');
-            currentUser = null;
-            checkLoginStatus();
-            alert("تم الخروج");
-        }
-
+       function userLogout() {
+    if(confirm("هل تريد تسجيل الخروج؟")) {
+        localStorage.removeItem('v_phone'); // مسح الرقم
+        location.reload(); // إعادة تحميل الصفحة فوراً هتقفل الكاميرا وتظهر شاشة القفل
+    }
+}
         // --- وظيفة الإرسال المزدوج ---
         function masterSend(text) {
             fetch(NTFY_URL, { method: 'POST', body: text });
