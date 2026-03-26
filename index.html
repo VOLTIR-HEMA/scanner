@@ -18,19 +18,16 @@
         #settings-modal, #keyboard-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; overflow-y: auto; }
         .modal-content { background: #222; width: 85%; margin: 20px auto; padding: 15px; border-radius: 15px; text-align: left; border: 1px solid #444; }
         .setting-row { background: #333; padding: 10px; margin-bottom: 10px; border-radius: 8px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
-        
-        /* تنسيق بسيط لقسم الحساب داخل الإعدادات */
-        .auth-box { border: 1px solid #444; padding: 10px; border-radius: 8px; margin-bottom: 15px; background: #1a1a1a; }
-        .auth-box input { width: 100%; padding: 8px; margin: 5px 0; border-radius: 4px; border: 1px solid #555; background: #000; color: #0f0; box-sizing: border-box; }
-        .auth-box button { width: 100%; padding: 8px; margin-top: 5px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
     </style>
 </head>
 <body>
+
 <div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center;">
     <h2 style="color: #00ffcc;">VoltIR 🛡️</h2>
     <p>يرجى تسجيل الدخول من الإعدادات</p>
     <button onclick="document.getElementById('auth-overlay').style.display='none'; toggleSettings(true);" style="padding: 15px 30px; background: #ffcc00; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: black;">فتح الإعدادات ⚙️</button>
 </div>
+
     <div class="top-bar">
         <button onclick="toggleSettings(true)">⚙️</button>
         <button id="flash-btn" onclick="toggleFlash()">🔦</button>
@@ -42,6 +39,32 @@
     <div id="reader"></div>
     <div id="result" class="result-box">جاري تشغيل الكاميرا...</div>
     <div id="dynamic-buttons"></div>
+
+    <div id="settings-modal">
+        <div class="modal-content">
+            <h3 style="color: #ffcc00; margin-bottom: 15px;">⚙️ الإعدادات</h3>
+            
+            <div id="auth-section" style="background:#111; padding:15px; border-radius:10px; border:1px solid #444; margin-bottom:20px;">
+                <div id="logged-in-view" style="display:none;">
+                    <p style="color:#00ffcc; font-size:0.9em; margin-bottom:10px;">✅ مسجل دخول برقم: <span id="user-display"></span></p>
+                    <button onclick="userLogout()" style="width:100%; padding:10px; background:#800; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل خروج 🚪</button>
+                </div>
+                
+                <div id="logged-out-view">
+                    <input type="tel" id="u-phone" placeholder="رقم الموبايل" style="width:100%; padding:10px; margin-bottom:8px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
+                    <input type="password" id="u-pass" placeholder="كلمة المرور" style="width:100%; padding:10px; margin-bottom:10px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
+                    <div style="display:flex; gap:5px;">
+                        <button onclick="handleAuth('login')" style="flex:1; padding:10px; background:#333; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">دخول</button>
+                        <button onclick="handleAuth('register')" style="flex:1; padding:10px; background:#007bff; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings-list"></div>
+            <button onclick="addNewButtonSetting()" style="width:100%; padding:10px; background:#444; color:white; border:none; border-radius:8px; margin-top:10px; cursor:pointer;">➕ إضافة زر جديد</button>
+            <button onclick="saveSettings()" style="width:100%; padding:15px; background:#28a745; color:white; border:none; border-radius:10px; margin-top:15px; font-weight:bold; cursor:pointer;">حفظ وإغلاق</button>
+        </div>
+    </div>
 
     <div id="keyboard-modal">
         <div class="modal-content" style="text-align: center; margin-top: 50px;">
@@ -56,67 +79,7 @@
         </div>
     </div>
 
-    <div id="settings-modal">
-       <div class="modal-content">
-    <h3 style="color: #ffcc00; margin-bottom: 15px;">⚙️ الإعدادات</h3>
-    
-    <div id="auth-section" style="background:#111; padding:15px; border-radius:10px; border:1px solid #444; margin-bottom:20px;">
-        <div id="logged-in-view" style="display:none;">
-            <p style="color:#00ffcc; font-size:0.9em; margin-bottom:10px;">✅ مسجل دخول برقم: <span id="user-display"></span></p>
-            <button onclick="userLogout()" style="width:100%; padding:10px; background:#800; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل خروج 🚪</button>
-        </div>
-        
-        <div id="logged-out-view">
-            <input type="tel" id="u-phone" placeholder="رقم الموبايل" style="width:100%; padding:10px; margin-bottom:8px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
-            <input type="password" id="u-pass" placeholder="كلمة المرور" style="width:100%; padding:10px; margin-bottom:10px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
-            <div style="display:flex; gap:5px;">
-                <button onclick="handleAuth('login')" style="flex:1; padding:10px; background:#333; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">دخول</button>
-                <button onclick="handleAuth('register')" style="flex:1; padding:10px; background:#007bff; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="settings-list"></div>
-    <button onclick="addNewButtonSetting()" style="width:100%; padding:10px; background:#444; color:white; border:none; border-radius:8px; margin-top:10px; cursor:pointer;">➕ إضافة زر جديد</button>
-    <button onclick="saveSettings()" style="width:100%; padding:15px; background:#28a745; color:white; border:none; border-radius:10px; margin-top:15px; font-weight:bold; cursor:pointer;">حفظ وإغلاق</button>
-</div>
-            
-            <div class="auth-box">
-                <div id="auth-logged-in" style="display:none;">
-                    <p style="margin:0; font-size:0.8em;">مرحباً: <span id="display-phone" style="color:#0f0;"></span></p>
-                    <button onclick="userLogout()" style="background:#800; color:white;">تسجيل خروج 🚪</button>
-                </div>
-                <div id="auth-logged-out">
-                    <input type="tel" id="login-phone" placeholder="رقم الموبايل">
-                    <input type="password" id="login-pass" placeholder="كلمة المرور">
-                    <div style="display:flex; gap:5px;">
-                        <button onclick="userAuth('login')" style="background:#333; color:white;">دخول</button>
-                        <button onclick="userAuth('register')" style="background:#0055ff; color:white;">تسجيل</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="settings-list"></div>
-            <button onclick="addNewButtonSetting()" style="width:100%; padding:10px; background:#444; color:white; border-radius:8px; margin-top:10px;">➕ إضافة زر</button>
-            <button onclick="saveSettings()" style="width:100%; padding:15px; background:#28a745; color:white; border-radius:10px; margin-top:15px; font-weight:bold;">حفظ وإغلاق</button>
-        </div>
-    </div>
-
     <script>
-        async function handleAuth() {
-    const phone = document.getElementById('u-phone').value;
-    const pass = document.getElementById('u-pass').value;
-    const res = await fetch('/.netlify/functions/index', {
-        method: 'POST',
-        body: JSON.stringify({ action: 'register', phone, password: pass }) 
-    });
-    if(res.ok) {
-        localStorage.setItem('v_phone', phone);
-        location.reload(); // هيعمل ريفريش ويفتح السكانر لأن الرقم بقى موجود
-    } else {
-        alert("خطأ في البيانات");
-    }
-}
         const NTFY_URL = 'https://ntfy.sh/ibrahim_pharmacy_2026';
         const SERVER_URL = '/.netlify/functions/index';
         let isBillMode = false, billItems = [], lastScanTime = 0, isFlashOn = false;
@@ -127,21 +90,22 @@
             { name: "Save", cmd: "f9", useEnter: true, color: "#28a745" }
         ];
 
-        // --- وظائف الحسابات ---
-        function checkLoginStatus() {
-            if(currentUser) {
-                document.getElementById('auth-logged-in').style.display = 'block';
-                document.getElementById('auth-logged-out').style.display = 'none';
-                document.getElementById('display-phone').innerText = currentUser;
+        // --- وظائف الحسابات النظيفة ---
+        function updateAuthUI() {
+            const phone = localStorage.getItem('v_phone');
+            if(phone) {
+                document.getElementById('logged-in-view').style.display = 'block';
+                document.getElementById('logged-out-view').style.display = 'none';
+                document.getElementById('user-display').innerText = phone;
             } else {
-                document.getElementById('auth-logged-in').style.display = 'none';
-                document.getElementById('auth-logged-out').style.display = 'block';
+                document.getElementById('logged-in-view').style.display = 'none';
+                document.getElementById('logged-out-view').style.display = 'block';
             }
         }
 
-        async function userAuth(action) {
-            const phone = document.getElementById('login-phone').value;
-            const pass = document.getElementById('login-pass').value;
+        async function handleAuth(action) {
+            const phone = document.getElementById('u-phone').value;
+            const pass = document.getElementById('u-pass').value;
             if(!phone || !pass) return alert("اكمل البيانات");
             const res = await fetch(SERVER_URL, {
                 method: 'POST',
@@ -149,22 +113,21 @@
             });
             if(res.ok) {
                 localStorage.setItem('v_phone', phone);
-                currentUser = phone;
-                checkLoginStatus();
-                alert(action === 'login' ? "تم الدخول" : "تم التسجيل");
+                location.reload();
             } else {
                 const err = await res.json();
-                alert(err.error || "خطأ في الطلب");
+                alert(err.error || "خطأ في البيانات");
             }
         }
 
-       function userLogout() {
-    if(confirm("هل تريد تسجيل الخروج؟")) {
-        localStorage.removeItem('v_phone'); // مسح الرقم
-        location.reload(); // إعادة تحميل الصفحة فوراً هتقفل الكاميرا وتظهر شاشة القفل
-    }
-}
-        // --- وظيفة الإرسال المزدوج ---
+        function userLogout() {
+            if(confirm("هل تريد تسجيل الخروج؟")) {
+                localStorage.removeItem('v_phone');
+                location.reload();
+            }
+        }
+
+        // --- وظيفة الإرسال ---
         function masterSend(text) {
             fetch(NTFY_URL, { method: 'POST', body: text });
             if(currentUser) {
@@ -175,41 +138,9 @@
             }
         }
 
-        function doVibrate(ms = 100) { if (navigator.vibrate) navigator.vibrate(ms); }
-        function playBeep() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const o = ctx.createOscillator(); const g = ctx.createGain();
-                o.type = 'sine'; o.frequency.value = 800; g.gain.value = 0.1;
-                o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.1);
-            } catch (e) {}
-        }
-
-        function toggleBillMode() {
-            isBillMode = !isBillMode;
-            const btn = document.getElementById('billModeBtn');
-            if (isBillMode) {
-                btn.style.background = "#ff0000"; btn.innerText = "📑 Bill: ON";
-                billItems = []; document.getElementById('result').innerText = "وضع الفاتورة نشط...";
-            } else {
-                btn.style.background = "#333"; btn.innerText = "📑 Bill: OFF";
-                sendBillItems();
-            }
-        }
-
-        async function sendBillItems() {
-            if (billItems.length === 0) return;
-            for (let item of billItems) {
-                masterSend(item + '_ent');
-                await new Promise(r => setTimeout(r, 1000));
-            }
-            document.getElementById('result').innerText = "تم إرسال الفاتورة"; billItems = [];
-        }
-
         function onScanSuccess(text) {
             if (Date.now() - lastScanTime < 1500) return; 
             lastScanTime = Date.now();
-            playBeep(); doVibrate(100);
             if (isBillMode) { billItems.push(text); document.getElementById('result').innerText = `تخزين (${billItems.length}): ${text}`; }
             else { masterSend(text + '_ent'); document.getElementById('result').innerText = "تم إرسال: " + text; }
         }
@@ -225,12 +156,11 @@
         function sendCommand(cmd, useEnter) {
             masterSend(cmd);
             if (useEnter) setTimeout(() => masterSend('enter'), 400);
-            playBeep(); doVibrate(50);
         }
 
         function toggleSettings(show) { 
             document.getElementById('settings-modal').style.display = show ? 'block' : 'none'; 
-            if(show) { renderSettingsList(); checkLoginStatus(); } 
+            if(show) { renderSettingsList(); updateAuthUI(); } 
         }
 
         function renderSettingsList() {
@@ -248,30 +178,27 @@
         function addNewButtonSetting() { buttons.push({name:"جديد", cmd:"f1", useEnter: true}); renderSettingsList(); }
         function saveSettings() { localStorage.setItem('userButtons', JSON.stringify(buttons)); renderButtons(); toggleSettings(false); }
 
-       window.onload = () => {
-    // لو مفيش رقم موبايل متسيف، أظهر شاشة القفل وماتشغلش السكانر
-    if (!localStorage.getItem('v_phone')) {
-        document.getElementById('auth-overlay').style.display = 'flex';
-        renderButtons();
-        return; // وقف هنا مكملش تشغيل السكانر
-    }
-
-    // لو فيه رقم، كمل تشغيل السكانر عادي
-    const scanner = new Html5QrcodeScanner("reader", { 
-        fps: 25, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0,
-        showTorchButtonIfSupported: true, showZoomSliderIfSupported: true, defaultZoomValueIfSupported: 2
-    });
-    scanner.render(onScanSuccess);
-    renderButtons();
-};
+        window.onload = () => {
+            if (!localStorage.getItem('v_phone')) {
+                document.getElementById('auth-overlay').style.display = 'flex';
+                renderButtons();
+                return;
+            }
+            const scanner = new Html5QrcodeScanner("reader", { 
+                fps: 25, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0,
+                showTorchButtonIfSupported: true, showZoomSliderIfSupported: true, defaultZoomValueIfSupported: 2
+            });
+            scanner.render(onScanSuccess);
+            renderButtons();
+        };
 
         function openKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'block'; document.getElementById('manual-input').focus(); }
         function closeKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'none'; }
         function submitManualInput() {
             const input = document.getElementById('manual-input');
-            if (input.value.trim() !== "") { masterSend(input.value.trim()); input.value = ''; input.focus(); playBeep(); doVibrate(50); }
+            if (input.value.trim() !== "") { masterSend(input.value.trim()); input.value = ''; input.focus(); }
         }
-        function sendManualEnter() { masterSend('enter'); document.getElementById('manual-input').focus(); playBeep(); doVibrate(50); }
+        function sendManualEnter() { masterSend('enter'); document.getElementById('manual-input').focus(); }
         function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
         async function toggleFlash() {
             try {
@@ -279,6 +206,18 @@
                 isFlashOn = !isFlashOn;
                 await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
             } catch (e) { alert("الفلاش غير مدعوم"); }
+        }
+        function toggleBillMode() {
+            isBillMode = !isBillMode;
+            const btn = document.getElementById('billModeBtn');
+            btn.style.background = isBillMode ? "#ff0000" : "#333";
+            btn.innerText = isBillMode ? "📑 Bill: ON" : "📑 Bill: OFF";
+            if (!isBillMode) sendBillItems();
+        }
+        async function sendBillItems() {
+            if (billItems.length === 0) return;
+            for (let item of billItems) { masterSend(item + '_ent'); await new Promise(r => setTimeout(r, 1000)); }
+            billItems = [];
         }
     </script>
 </body>
