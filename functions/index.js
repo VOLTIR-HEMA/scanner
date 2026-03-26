@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // ضع رابط المونجو الخاص بك هنا وتأكد من كتابة الباسوورد
-const mongoURI = "mongodb+srv://justscan_db_user:Hema@2003@justscan.9w2pw5s.mongodb.net/?appName=JustScan";
+const mongoURI = "mongodb+srv://justscan_db_user:justscan2026@justscan.9w2pw5s.mongodb.net/?appName=JustScan";
 
 exports.handler = async (event, context) => {
     // الاتصال بقاعدة البيانات
