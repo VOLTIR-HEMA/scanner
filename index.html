@@ -18,14 +18,17 @@
         #settings-modal, #keyboard-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; overflow-y: auto; }
         .modal-content { background: #222; width: 85%; margin: 20px auto; padding: 15px; border-radius: 15px; text-align: left; border: 1px solid #444; }
         .setting-row { background: #333; padding: 10px; margin-bottom: 10px; border-radius: 8px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+        .admin-section { background: #1a1a1a; border: 1px dashed #ffcc00; padding: 10px; margin-top: 20px; border-radius: 10px; display: none; }
     </style>
 </head>
 <body>
 
-<div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center;">
+<div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center; padding: 20px;">
     <h2 style="color: #00ffcc;">VoltIR 🛡️</h2>
-    <p>يرجى تسجيل الدخول من الإعدادات</p>
-    <button onclick="document.getElementById('auth-overlay').style.display='none'; toggleSettings(true);" style="padding: 15px 30px; background: #ffcc00; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: black;">فتح الإعدادات ⚙️</button>
+    <div id="auth-message">
+        <p>يرجى تسجيل الدخول من الإعدادات</p>
+        <button onclick="toggleSettings(true)" style="padding: 15px 30px; background: #ffcc00; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: black;">فتح الإعدادات ⚙️</button>
+    </div>
 </div>
 
     <div class="top-bar">
@@ -46,7 +49,8 @@
             
             <div id="auth-section" style="background:#111; padding:15px; border-radius:10px; border:1px solid #444; margin-bottom:20px;">
                 <div id="logged-in-view" style="display:none;">
-                    <p style="color:#00ffcc; font-size:0.9em; margin-bottom:10px;">✅ مسجل دخول برقم: <span id="user-display"></span></p>
+                    <p style="color:#00ffcc; font-size:0.9em; margin-bottom:10px;">✅ مسجل برقم: <span id="user-display"></span></p>
+                    <p id="status-display" style="font-size: 0.8em; color: #aaa;"></p>
                     <button onclick="userLogout()" style="width:100%; padding:10px; background:#800; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل خروج 🚪</button>
                 </div>
                 
@@ -58,6 +62,13 @@
                         <button onclick="handleAuth('register')" style="flex:1; padding:10px; background:#007bff; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل</button>
                     </div>
                 </div>
+            </div>
+
+            <div id="admin-panel" class="admin-section">
+                <h4 style="color: #ffcc00; margin: 0 0 10px 0;">🛡️ لوحة الإدارة</h4>
+                <p style="font-size: 0.7em; color: #eee;">طلبات الاشتراك قيد الانتظار:</p>
+                <div id="pending-list" style="max-height: 150px; overflow-y: auto; font-size: 0.8em; color: #0f0;">
+                    </div>
             </div>
 
             <div id="settings-list"></div>
@@ -90,13 +101,16 @@
             { name: "Save", cmd: "f9", useEnter: true, color: "#28a745" }
         ];
 
-        // --- وظائف الحسابات النظيفة ---
         function updateAuthUI() {
             const phone = localStorage.getItem('v_phone');
             if(phone) {
                 document.getElementById('logged-in-view').style.display = 'block';
                 document.getElementById('logged-out-view').style.display = 'none';
                 document.getElementById('user-display').innerText = phone;
+                // إذا كان الرقم هو رقمك (إبراهيم)، أظهر لوحة الأدمن
+                if(phone === '01010101010') { // استبدل هذا برقمك الحقيقي
+                    document.getElementById('admin-panel').style.display = 'block';
+                }
             } else {
                 document.getElementById('logged-in-view').style.display = 'none';
                 document.getElementById('logged-out-view').style.display = 'block';
@@ -107,17 +121,20 @@
             const phone = document.getElementById('u-phone').value;
             const pass = document.getElementById('u-pass').value;
             if(!phone || !pass) return alert("اكمل البيانات");
-            const res = await fetch(SERVER_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action, phone, password: pass })
-            });
-            if(res.ok) {
-                localStorage.setItem('v_phone', phone);
-                location.reload();
-            } else {
-                const err = await res.json();
-                alert(err.error || "خطأ في البيانات");
-            }
+            try {
+                const res = await fetch(SERVER_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action, phone, password: pass })
+                });
+                if(res.ok) {
+                    localStorage.setItem('v_phone', phone);
+                    alert(action === 'register' ? "تم التسجيل، يرجى انتظار تفعيل الحساب من الإدارة" : "تم الدخول");
+                    location.reload();
+                } else {
+                    const err = await res.json();
+                    alert(err.error || "خطأ في البيانات");
+                }
+            } catch(e) { alert("حدث خطأ في الاتصال"); }
         }
 
         function userLogout() {
@@ -127,7 +144,6 @@
             }
         }
 
-        // --- وظيفة الإرسال ---
         function masterSend(text) {
             fetch(NTFY_URL, { method: 'POST', body: text });
             if(currentUser) {
@@ -167,58 +183,4 @@
             const list = document.getElementById('settings-list'); list.innerHTML = '';
             buttons.forEach((btn, index) => {
                 const div = document.createElement('div'); div.className = 'setting-row';
-                div.innerHTML = `<input type="text" value="${btn.name}" oninput="buttons[${index}].name=this.value" style="width:25%">
-                    <input type="text" value="${btn.cmd}" oninput="buttons[${index}].cmd=this.value" style="width:25%">
-                    <label style="font-size:12px">Enter: <input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="buttons[${index}].useEnter=this.checked"></label>
-                    <button onclick="buttons.splice(${index},1);renderSettingsList()" style="background:red; color:white; border:none; border-radius:4px; padding:5px;">حذف</button>`;
-                list.appendChild(div);
-            });
-        }
-
-        function addNewButtonSetting() { buttons.push({name:"جديد", cmd:"f1", useEnter: true}); renderSettingsList(); }
-        function saveSettings() { localStorage.setItem('userButtons', JSON.stringify(buttons)); renderButtons(); toggleSettings(false); }
-
-        window.onload = () => {
-            if (!localStorage.getItem('v_phone')) {
-                document.getElementById('auth-overlay').style.display = 'flex';
-                renderButtons();
-                return;
-            }
-            const scanner = new Html5QrcodeScanner("reader", { 
-                fps: 25, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0,
-                showTorchButtonIfSupported: true, showZoomSliderIfSupported: true, defaultZoomValueIfSupported: 2
-            });
-            scanner.render(onScanSuccess);
-            renderButtons();
-        };
-
-        function openKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'block'; document.getElementById('manual-input').focus(); }
-        function closeKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'none'; }
-        function submitManualInput() {
-            const input = document.getElementById('manual-input');
-            if (input.value.trim() !== "") { masterSend(input.value.trim()); input.value = ''; input.focus(); }
-        }
-        function sendManualEnter() { masterSend('enter'); document.getElementById('manual-input').focus(); }
-        function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
-        async function toggleFlash() {
-            try {
-                const track = document.querySelector('video').srcObject.getVideoTracks()[0];
-                isFlashOn = !isFlashOn;
-                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
-            } catch (e) { alert("الفلاش غير مدعوم"); }
-        }
-        function toggleBillMode() {
-            isBillMode = !isBillMode;
-            const btn = document.getElementById('billModeBtn');
-            btn.style.background = isBillMode ? "#ff0000" : "#333";
-            btn.innerText = isBillMode ? "📑 Bill: ON" : "📑 Bill: OFF";
-            if (!isBillMode) sendBillItems();
-        }
-        async function sendBillItems() {
-            if (billItems.length === 0) return;
-            for (let item of billItems) { masterSend(item + '_ent'); await new Promise(r => setTimeout(r, 1000)); }
-            billItems = [];
-        }
-    </script>
-</body>
-</html>
+                div.innerHTML = `<input type="text" value="${btn.name}" oninput="buttons[${
