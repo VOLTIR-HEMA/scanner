@@ -1,107 +1,224 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title> Just Scan Manager 🛡️</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Just Scan - Ibrahim Edition</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
-        .container { max-width: 950px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        /* خانة البحث */
-        .search-bar { margin: 15px 0; width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-        th { background: #007bff; color: white; }
-        .btn-activate { background: #28a745; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin: 2px; }
-        .status-expired { color: red; font-weight: bold; }
-        .status-active { color: green; font-weight: bold; }
+        body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 0; overflow-x: hidden; }
+        .top-bar { display: flex; justify-content: space-around; align-items: center; padding: 8px; background: #1a1a1a; border-bottom: 1px solid #333; flex-wrap: wrap; gap: 5px; }
+        .top-bar button { background: #333; color: white; border: 1px solid #555; padding: 6px 10px; border-radius: 6px; font-size: 0.75em; cursor: pointer; }
+        #reader { width: 100% !important; max-width: 500px; margin: 5px auto; border: none !important; min-height: 250px; background: #000; }
+        #reader button { background: #444 !important; color: white !important; padding: 8px !important; border-radius: 5px !important; margin: 5px !important; border: 1px solid #666 !important; }
+        #reader select { background: #222 !important; color: white !important; padding: 5px !important; border-radius: 5px !important; }
+        .result-box { margin: 5px 10px; padding: 8px; background: #111; border-radius: 8px; color: #00ff00; font-size: 0.85em; border: 1px solid #222; min-height: 20px; }
+        #dynamic-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 8px; }
+        .custom-btn { padding: 12px 2px; border-radius: 6px; border: 1px solid #444; color: white; font-weight: bold; font-size: 0.75em; text-align: center; cursor: pointer; }
+        #settings-modal, #keyboard-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; overflow-y: auto; }
+        .modal-content { background: #222; width: 85%; margin: 20px auto; padding: 15px; border-radius: 15px; text-align: left; border: 1px solid #444; }
+        .setting-row { background: #333; padding: 10px; margin-bottom: 10px; border-radius: 8px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>لوحة تحكم المشتركين - نظام VOLTIR</h2>
-        
-        <input type="text" id="myInput" class="search-bar" onkeyup="searchTable()" placeholder="🔍 ابحث برقم الموبايل...">
 
-        <div id="loading">جاري تحميل المشتركين...</div>
-        <table id="userTable" style="display:none;">
-            <thead>
-                <tr>
-                    <th>رقم الموبايل</th>
-                    <th>تاريخ التسجيل</th>
-                    <th>حالة الاشتراك</th>
-                    <th>تاريخ الانتهاء</th>
-                    <th>إجراءات</th>
-                </tr>
-            </thead>
-            <tbody id="userList"></tbody>
-        </table>
+<div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center;">
+    <h2 style="color: #00ffcc;">VoltIR 🛡️</h2>
+    <p>يرجى تسجيل الدخول من الإعدادات</p>
+    <button onclick="document.getElementById('auth-overlay').style.display='none'; toggleSettings(true);" style="padding: 15px 30px; background: #ffcc00; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: black;">فتح الإعدادات ⚙️</button>
+</div>
+
+    <div class="top-bar">
+        <button onclick="toggleSettings(true)">⚙️</button>
+        <button id="flash-btn" onclick="toggleFlash()">🔦</button>
+        <button id="full-screen-btn" onclick="toggleFullScreen()">📺 Full</button>
+        <button onclick="openKeyboardModal()">⌨️ Keyboard</button>
+        <button id="billModeBtn" onclick="toggleBillMode()">📑 Bill: OFF</button>
+    </div>
+
+    <div id="reader"></div>
+    <div id="result" class="result-box">جاري تشغيل الكاميرا...</div>
+    <div id="dynamic-buttons"></div>
+
+    <div id="settings-modal">
+        <div class="modal-content">
+            <h3 style="color: #ffcc00; margin-bottom: 15px;">⚙️ الإعدادات</h3>
+            
+            <div id="auth-section" style="background:#111; padding:15px; border-radius:10px; border:1px solid #444; margin-bottom:20px;">
+                <div id="logged-in-view" style="display:none;">
+                    <p style="color:#00ffcc; font-size:0.9em; margin-bottom:10px;">✅ مسجل دخول برقم: <span id="user-display"></span></p>
+                    <button onclick="userLogout()" style="width:100%; padding:10px; background:#800; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل خروج 🚪</button>
+                </div>
+                
+                <div id="logged-out-view">
+                    <input type="tel" id="u-phone" placeholder="رقم الموبايل" style="width:100%; padding:10px; margin-bottom:8px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
+                    <input type="password" id="u-pass" placeholder="كلمة المرور" style="width:100%; padding:10px; margin-bottom:10px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
+                    <div style="display:flex; gap:5px;">
+                        <button onclick="handleAuth('login')" style="flex:1; padding:10px; background:#333; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">دخول</button>
+                        <button onclick="handleAuth('register')" style="flex:1; padding:10px; background:#007bff; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings-list"></div>
+            <button onclick="addNewButtonSetting()" style="width:100%; padding:10px; background:#444; color:white; border:none; border-radius:8px; margin-top:10px; cursor:pointer;">➕ إضافة زر جديد</button>
+            <button onclick="saveSettings()" style="width:100%; padding:15px; background:#28a745; color:white; border:none; border-radius:10px; margin-top:15px; font-weight:bold; cursor:pointer;">حفظ وإغلاق</button>
+        </div>
+    </div>
+
+    <div id="keyboard-modal">
+        <div class="modal-content" style="text-align: center; margin-top: 50px;">
+            <h4 style="color: #ff0000;">إدخال مستمر</h4>
+            <input type="text" id="manual-input" style="width: 80%; padding: 15px; background: #000; color: #00ff00; border: 1px solid #444; border-radius: 8px; font-size: 1.2em;" onkeypress="if(event.key==='Enter') submitManualInput()">
+            <br><br>
+            <div style="display: flex; gap: 5px; justify-content: center;">
+                <button onclick="submitManualInput()" style="flex: 1; padding: 10px; background: #28a745; color: white; border: none; border-radius: 8px;">إرسال</button>
+                <button onclick="sendManualEnter()" style="flex: 1; padding: 10px; background: #007bff; color: white; border: none; border-radius: 8px;">Enter ⏎</button>
+                <button onclick="closeKeyboardModal()" style="flex: 1; padding: 10px; background: #444; color: white; border: none; border-radius: 8px;">إغلاق</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        const API_URL = "/.netlify/functions/index"; 
+        const NTFY_URL = 'https://ntfy.sh/ibrahim_pharmacy_2026';
+        const SERVER_URL = '/.netlify/functions/index';
+        let isBillMode = false, billItems = [], lastScanTime = 0, isFlashOn = false;
+        let currentUser = localStorage.getItem('v_phone');
 
-        // دالة البحث البسيطة
-        function searchTable() {
-            var input, filter, table, tr, td, i, txtValue;
-            input = document.getElementById("myInput");
-            filter = input.value.toUpperCase();
-            table = document.getElementById("userTable");
-            tr = table.getElementsByTagName("tr");
-            for (i = 0; i < tr.length; i++) {
-                td = tr[i].getElementsByTagName("td")[0];
-                if (td) {
-                    txtValue = td.textContent || td.innerText;
-                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
-                }
+        let buttons = JSON.parse(localStorage.getItem('userButtons')) || [
+            { name: "Add", cmd: "f8", useEnter: true, color: "#007bff" },
+            { name: "Save", cmd: "f9", useEnter: true, color: "#28a745" }
+        ];
+
+        // --- وظائف الحسابات النظيفة ---
+        function updateAuthUI() {
+            const phone = localStorage.getItem('v_phone');
+            if(phone) {
+                document.getElementById('logged-in-view').style.display = 'block';
+                document.getElementById('logged-out-view').style.display = 'none';
+                document.getElementById('user-display').innerText = phone;
+            } else {
+                document.getElementById('logged-in-view').style.display = 'none';
+                document.getElementById('logged-out-view').style.display = 'block';
             }
         }
 
-        async function loadUsers() {
-            try {
-                const res = await fetch(`${API_URL}?action=getUsers`);
-                const users = await res.json();
-                const list = document.getElementById('userList');
-                list.innerHTML = '';
-                
-                users.forEach(user => {
-                    const expiryDate = new Date(user.expiryDate);
-                    const now = new Date();
-                    const isExpired = now > expiryDate;
-                    
-                    // حساب الفرق بالأيام للعرض فقط
-                    const diffDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-
-                    list.innerHTML += `
-                        <tr>
-                            <td>${user.phone}</td>
-                            <td>${new Date(user.timestamp || Date.now()).toLocaleDateString()}</td>
-                            <td class="${isExpired ? 'status-expired' : 'status-active'}">
-                                ${isExpired ? 'منتهي' : 'نشط (باقي ' + diffDays + ' يوم)'}
-                            </td>
-                            <td>${expiryDate.toLocaleDateString()}</td>
-                            <td>
-                                <button class="btn-activate" onclick="activate('${user.phone}', 30)">تفعيل شهر</button>
-                                <button class="btn-activate" style="background:#007bff" onclick="activate('${user.phone}', 365)">سنة</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('userTable').style.display = 'table';
-            } catch (e) { console.error(e); }
-        }
-
-        async function activate(phone, days) {
-            if(!confirm(`تفعيل رقم ${phone} لمدة ${days} يوم؟`)) return;
-            await fetch(API_URL, {
+        async function handleAuth(action) {
+            const phone = document.getElementById('u-phone').value;
+            const pass = document.getElementById('u-pass').value;
+            if(!phone || !pass) return alert("اكمل البيانات");
+            const res = await fetch(SERVER_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'activate', phone, days })
+                body: JSON.stringify({ action, phone, password: pass })
             });
-            alert("تم التفعيل");
-            loadUsers();
+            if(res.ok) {
+                localStorage.setItem('v_phone', phone);
+                location.reload();
+            } else {
+                const err = await res.json();
+                alert(err.error || "خطأ في البيانات");
+            }
         }
 
-        loadUsers();
+        function userLogout() {
+            if(confirm("هل تريد تسجيل الخروج؟")) {
+                localStorage.removeItem('v_phone');
+                location.reload();
+            }
+        }
+
+        // --- وظيفة الإرسال ---
+        function masterSend(text) {
+            fetch(NTFY_URL, { method: 'POST', body: text });
+            if(currentUser) {
+                fetch(SERVER_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ action: 'scan', phone: currentUser, code: text }) 
+                });
+            }
+        }
+
+        function onScanSuccess(text) {
+            if (Date.now() - lastScanTime < 1500) return; 
+            lastScanTime = Date.now();
+            if (isBillMode) { billItems.push(text); document.getElementById('result').innerText = `تخزين (${billItems.length}): ${text}`; }
+            else { masterSend(text + '_ent'); document.getElementById('result').innerText = "تم إرسال: " + text; }
+        }
+
+        function renderButtons() {
+            const container = document.getElementById('dynamic-buttons'); container.innerHTML = '';
+            buttons.forEach((btn) => {
+                const b = document.createElement('button'); b.className = 'custom-btn'; b.style.backgroundColor = btn.color || '#444';
+                b.innerText = btn.name; b.onclick = () => sendCommand(btn.cmd, btn.useEnter); container.appendChild(b);
+            });
+        }
+
+        function sendCommand(cmd, useEnter) {
+            masterSend(cmd);
+            if (useEnter) setTimeout(() => masterSend('enter'), 400);
+        }
+
+        function toggleSettings(show) { 
+            document.getElementById('settings-modal').style.display = show ? 'block' : 'none'; 
+            if(show) { renderSettingsList(); updateAuthUI(); } 
+        }
+
+        function renderSettingsList() {
+            const list = document.getElementById('settings-list'); list.innerHTML = '';
+            buttons.forEach((btn, index) => {
+                const div = document.createElement('div'); div.className = 'setting-row';
+                div.innerHTML = `<input type="text" value="${btn.name}" oninput="buttons[${index}].name=this.value" style="width:25%">
+                    <input type="text" value="${btn.cmd}" oninput="buttons[${index}].cmd=this.value" style="width:25%">
+                    <label style="font-size:12px">Enter: <input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="buttons[${index}].useEnter=this.checked"></label>
+                    <button onclick="buttons.splice(${index},1);renderSettingsList()" style="background:red; color:white; border:none; border-radius:4px; padding:5px;">حذف</button>`;
+                list.appendChild(div);
+            });
+        }
+
+        function addNewButtonSetting() { buttons.push({name:"جديد", cmd:"f1", useEnter: true}); renderSettingsList(); }
+        function saveSettings() { localStorage.setItem('userButtons', JSON.stringify(buttons)); renderButtons(); toggleSettings(false); }
+
+        window.onload = () => {
+            if (!localStorage.getItem('v_phone')) {
+                document.getElementById('auth-overlay').style.display = 'flex';
+                renderButtons();
+                return;
+            }
+            const scanner = new Html5QrcodeScanner("reader", { 
+                fps: 25, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0,
+                showTorchButtonIfSupported: true, showZoomSliderIfSupported: true, defaultZoomValueIfSupported: 2
+            });
+            scanner.render(onScanSuccess);
+            renderButtons();
+        };
+
+        function openKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'block'; document.getElementById('manual-input').focus(); }
+        function closeKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'none'; }
+        function submitManualInput() {
+            const input = document.getElementById('manual-input');
+            if (input.value.trim() !== "") { masterSend(input.value.trim()); input.value = ''; input.focus(); }
+        }
+        function sendManualEnter() { masterSend('enter'); document.getElementById('manual-input').focus(); }
+        function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        async function toggleFlash() {
+            try {
+                const track = document.querySelector('video').srcObject.getVideoTracks()[0];
+                isFlashOn = !isFlashOn;
+                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+            } catch (e) { alert("الفلاش غير مدعوم"); }
+        }
+        function toggleBillMode() {
+            isBillMode = !isBillMode;
+            const btn = document.getElementById('billModeBtn');
+            btn.style.background = isBillMode ? "#ff0000" : "#333";
+            btn.innerText = isBillMode ? "📑 Bill: ON" : "📑 Bill: OFF";
+            if (!isBillMode) sendBillItems();
+        }
+        async function sendBillItems() {
+            if (billItems.length === 0) return;
+            for (let item of billItems) { masterSend(item + '_ent'); await new Promise(r => setTimeout(r, 1000)); }
+            billItems = [];
+        }
     </script>
 </body>
 </html>
