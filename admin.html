@@ -2,16 +2,20 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title> Just Scan Manager 🛡️</title>
+    <title>Just Scan Manager 🛡️</title>
     <style>
         body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-        th { background: #007bff; color: white; }
-        .btn-activate { background: #28a745; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
+        th { background: #333; color: white; }
+        .btn { border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; color: white; margin: 2px; }
+        .btn-save { background: #28a745; }
+        .btn-del { background: #dc3545; }
+        .btn-add { background: #007bff; }
         .status-expired { color: red; font-weight: bold; }
         .status-active { color: green; font-weight: bold; }
+        input { text-align: center; padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -21,10 +25,10 @@
         <table id="userTable" style="display:none;">
             <thead>
                 <tr>
-                    <th>رقم الموبايل</th>
-                    <th>تاريخ التسجيل</th>
-                    <th>حالة الاشتراك</th>
-                    <th>تاريخ الانتهاء</th>
+                    <th>الموبايل</th>
+                    <th>كلمة السر</th>
+                    <th>المتبقي</th>
+                    <th>تعديل المدة (يوم)</th>
                     <th>إجراءات</th>
                 </tr>
             </thead>
@@ -33,46 +37,56 @@
     </div>
 
     <script>
-        const API_URL = "/.netlify/functions/index"; // رابط السيرفر بتاعك
+        const API_URL = "رابط_السيرفر_بتاعك_هنا"; // حط رابط الـ Worker بتاعك هنا
 
-        // دالة لجلب المستخدمين من السيرفر
         async function loadUsers() {
             try {
-                const res = await fetch(`${API_URL}?action=getUsers`);
+                const res = await fetch(`${API_URL}/admin-data`);
                 const users = await res.json();
                 const list = document.getElementById('userList');
                 list.innerHTML = '';
                 
                 users.forEach(user => {
-                    const isExpired = new Date() > new Date(user.expiryDate);
+                    const expiry = new Date(user.expiry || 0);
+                    const daysLeft = Math.max(0, Math.ceil((expiry - Date.now()) / 86400000));
+                    const isExpired = daysLeft <= 0;
+
                     list.innerHTML += `
-                        <tr>
+                        <tr style="background: ${isExpired ? '#fff5f5' : '#fafffa'}">
                             <td>${user.phone}</td>
-                            <td>${new Date(user.timestamp || Date.now()).toLocaleDateString()}</td>
+                            <td><input type="text" id="p-${user.phone}" value="${user.password || ''}" style="width:80px"></td>
                             <td class="${isExpired ? 'status-expired' : 'status-active'}">
-                                ${isExpired ? 'منتهي' : 'نشط'}
+                                ${isExpired ? 'منتهي' : daysLeft + ' يوم'}
                             </td>
-                            <td>${new Date(user.expiryDate).toLocaleDateString()}</td>
                             <td>
-                                <button class="btn-activate" onclick="activate('${user.phone}', 30)">تفعيل شهر</button>
-                                <button class="btn-activate" style="background:#007bff" onclick="activate('${user.phone}', 365)">سنة</button>
+                                <input type="number" id="d-${user.phone}" value="30" style="width:50px">
+                                <button class="btn btn-add" onclick="manage('${user.phone}', 'add')">+ شهر/أيام</button>
                             </td>
-                        </tr>
-                    `;
+                            <td>
+                                <button class="btn btn-save" onclick="manage('${user.phone}', 'update')">حفظ</button>
+                                <button class="btn btn-del" onclick="manage('${user.phone}', 'delete')">حذف</button>
+                            </td>
+                        </tr>`;
                 });
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('userTable').style.display = 'table';
-            } catch (e) { alert("خطأ في جلب البيانات"); }
+            } catch (e) { console.error(e); }
         }
 
-        async function activate(phone, days) {
-            if(!confirm(`هل تريد تفعيل رقم ${phone} لمدة ${days} يوم؟`)) return;
-            await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'activate', phone, days })
-            });
-            alert("تم التفعيل بنجاح");
-            loadUsers();
+        async function manage(phone, action) {
+            const pass = document.getElementById('p-'+phone).value;
+            const days = parseInt(document.getElementById('d-'+phone).value) || 0;
+
+            if(action === 'delete' && !confirm('سيتم مسح الحساب وكل ملفات السحب، متأكد؟')) return;
+
+            try {
+                await fetch(`${API_URL}/admin-action`, {
+                    method: 'POST',
+                    body: JSON.stringify({ action, phone, pass, days })
+                });
+                alert("تمت العملية بنجاح");
+                loadUsers();
+            } catch(e) { alert("فشلت العملية"); }
         }
 
         loadUsers();
