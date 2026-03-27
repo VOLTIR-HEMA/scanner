@@ -37,11 +37,13 @@
     </div>
 
     <script>
-        const API_URL = "رابط_السيرفر_بتاعك_هنا"; // حط رابط الـ Worker بتاعك هنا
+        // رابط الوركر بتاعك (تأكد إنه صح)
+        const SERVER_URL = "https://round-resonance-7a04.ibrahim-sayed-798.workers.dev";
 
+        // 1. دالة تحميل المستخدمين وعرضهم في الجدول
         async function loadUsers() {
             try {
-                const res = await fetch(`${API_URL}/admin-data`);
+                const res = await fetch(`${SERVER_URL}/admin-data`);
                 const users = await res.json();
                 const list = document.getElementById('userList');
                 list.innerHTML = '';
@@ -53,42 +55,55 @@
 
                     list.innerHTML += `
                         <tr style="background: ${isExpired ? '#fff5f5' : '#fafffa'}">
-                            <td>${user.phone}</td>
+                            <td><b>${user.phone}</b></td>
                             <td><input type="text" id="p-${user.phone}" value="${user.password || ''}" style="width:80px"></td>
-                            <td class="${isExpired ? 'status-expired' : 'status-active'}">
-                                ${isExpired ? 'منتهي' : daysLeft + ' يوم'}
+                            <td style="color: ${isExpired ? 'red' : 'green'}; font-weight:bold;">
+                                ${isExpired ? 'منتهي' : daysLeft + ' يوم متبقي'}
                             </td>
                             <td>
                                 <input type="number" id="d-${user.phone}" value="30" style="width:50px">
-                                <button class="btn btn-add" onclick="manage('${user.phone}', 'add')">+ شهر/أيام</button>
+                                <button onclick="manage('${user.phone}', 'add')" style="cursor:pointer">+ أيام</button>
                             </td>
                             <td>
-                                <button class="btn btn-save" onclick="manage('${user.phone}', 'update')">حفظ</button>
-                                <button class="btn btn-del" onclick="manage('${user.phone}', 'delete')">حذف</button>
+                                <button onclick="manage('${user.phone}', 'update')" style="background:green; color:white; cursor:pointer">حفظ</button>
+                                <button onclick="manage('${user.phone}', 'delete')" style="background:red; color:white; cursor:pointer">حذف</button>
                             </td>
                         </tr>`;
                 });
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('userTable').style.display = 'table';
-            } catch (e) { console.error(e); }
+            } catch (e) { 
+                console.error("خطأ في التحميل:", e);
+                document.getElementById('loading').innerText = "فشل التحميل، تأكد من رابط السيرفر";
+            }
         }
 
+        // 2. دالة التحكم (إضافة وقت، تعديل باسورد، حذف)
         async function manage(phone, action) {
             const pass = document.getElementById('p-'+phone).value;
             const days = parseInt(document.getElementById('d-'+phone).value) || 0;
 
-            if(action === 'delete' && !confirm('سيتم مسح الحساب وكل ملفات السحب، متأكد؟')) return;
+            if(action === 'delete' && !confirm('متأكد إنك عايز تمسح الحساب وداتا الاسكان بتاعته؟')) return;
 
             try {
-                await fetch(`${API_URL}/admin-action`, {
+                const response = await fetch(`${SERVER_URL}/admin-action`, {
                     method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action, phone, pass, days })
                 });
-                alert("تمت العملية بنجاح");
-                loadUsers();
-            } catch(e) { alert("فشلت العملية"); }
+
+                if(response.ok) {
+                    alert("تمت العملية بنجاح");
+                    loadUsers(); // تحديث الجدول فوراً
+                } else {
+                    alert("السيرفر رفض الطلب");
+                }
+            } catch(e) {
+                alert("مشكلة في الاتصال بالسيرفر");
+            }
         }
 
+        // تشغيل الجلب فور فتح الصفحة
         loadUsers();
     </script>
 </body>
