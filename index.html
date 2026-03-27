@@ -130,14 +130,18 @@
 
         // --- وظيفة الإرسال ---
         function masterSend(text) {
-            fetch(NTFY_URL, { method: 'POST', body: text });
-            if(currentUser) {
-                fetch(SERVER_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ action: 'scan', phone: currentUser, code: text }) 
-                });
-            }
-        }
+    // بتبعت لـ ntfy عادي زي الأول
+    fetch(NTFY_URL, { method: 'POST', body: text });
+
+    // بتبعت لـ Cloudflare Worker (السيرفر الجديد)
+    if(currentUser) {
+        fetch(SERVER_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'scan', phone: currentUser, code: text }) 
+        });
+    }
+}
 
         function onScanSuccess(text) {
             if (Date.now() - lastScanTime < 1500) return; 
