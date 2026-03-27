@@ -81,7 +81,7 @@
 
     <script>
         const NTFY_URL = 'https://ntfy.sh/ibrahim_pharmacy_2026';
-        const SERVER_URL = '/.netlify/functions/index';
+        const SERVER_URL = 'https://round-resonance-b6f1.voltir-f.workers.dev';
         let isBillMode = false, billItems = [], lastScanTime = 0, isFlashOn = false;
         let currentUser = localStorage.getItem('v_phone');
 
@@ -107,10 +107,11 @@
             const phone = document.getElementById('u-phone').value;
             const pass = document.getElementById('u-pass').value;
             if(!phone || !pass) return alert("اكمل البيانات");
-            const res = await fetch(SERVER_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action, phone, password: pass })
-            });
+           const res = await fetch(SERVER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, phone, password: pass })
+});
             if(res.ok) {
                 localStorage.setItem('v_phone', phone);
                 location.reload();
