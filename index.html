@@ -80,7 +80,7 @@
     </div>
 
     <script>
-        const NTFY_URL = 'https://ntfy.sh/ibrahim_pharmacy_2026';
+        let NTFY_URL = '';
         const SERVER_URL = 'https://round-resonance-b6f1.voltir-f.workers.dev';
         let isBillMode = false, billItems = [], lastScanTime = 0, isFlashOn = false;
         let currentUser = localStorage.getItem('v_phone');
@@ -92,17 +92,19 @@
 
         // --- وظائف الحسابات النظيفة ---
         function updateAuthUI() {
-            const phone = localStorage.getItem('v_phone');
-            if(phone) {
-                document.getElementById('logged-in-view').style.display = 'block';
-                document.getElementById('logged-out-view').style.display = 'none';
-                document.getElementById('user-display').innerText = phone;
-            } else {
-                document.getElementById('logged-in-view').style.display = 'none';
-                document.getElementById('logged-out-view').style.display = 'block';
-            }
-        }
-
+    const phone = localStorage.getItem('v_phone');
+    if(phone) {
+        // السطر الجديد ده هو اللي بيظبط الرابط بناءً على رقمك
+        NTFY_URL = `https://ntfy.sh/voltir_${phone}`; 
+        
+        document.getElementById('logged-in-view').style.display = 'block';
+        document.getElementById('logged-out-view').style.display = 'none';
+        document.getElementById('user-display').innerText = phone;
+    } else {
+        document.getElementById('logged-in-view').style.display = 'none';
+        document.getElementById('logged-out-view').style.display = 'block';
+    }
+}
        async function handleAuth(action) {
             const phone = document.getElementById('u-phone').value;
             const pass = document.getElementById('u-pass').value;
@@ -136,20 +138,27 @@
         }
 
         // --- وظيفة الإرسال ---
-        function masterSend(text) {
-    // بتبعت لـ ntfy عادي زي الأول
-    fetch(NTFY_URL, { method: 'POST', body: text });
+       function masterSend(text) {
+    // 1. نجيب الرقم اللي المستخدم دخل بيه
+    const phone = localStorage.getItem('v_phone');
 
-    // بتبعت لـ Cloudflare Worker (السيرفر الجديد)
-    if(currentUser) {
-        fetch(SERVER_URL, { 
-            method: 'POST', 
+    if (phone) {
+        // 2. نجهز الرابط الخاص برقمك عشان الجسر يشوفه
+        const dynamicNtfy = `https://ntfy.sh/voltir_${phone}`;
+
+        // 3. نبعت للجسر (البايثون)
+        fetch(dynamicNtfy, { method: 'POST', body: text });
+
+        // 4. نبعت للسيرفر بتاعنا (Cloudflare Worker) للتخزين
+        fetch(SERVER_URL, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'scan', phone: currentUser, code: text }) 
+            body: JSON.stringify({ action: 'scan', phone: phone, code: text })
         });
+    } else {
+        alert("برجاء تسجيل الدخول أولاً لربط السكانر بالكمبيوتر");
     }
 }
-
         function onScanSuccess(text) {
             if (Date.now() - lastScanTime < 1500) return; 
             lastScanTime = Date.now();
