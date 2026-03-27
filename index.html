@@ -103,23 +103,29 @@
             }
         }
 
-        async function handleAuth(action) {
+       async function handleAuth(action) {
             const phone = document.getElementById('u-phone').value;
             const pass = document.getElementById('u-pass').value;
             if(!phone || !pass) return alert("اكمل البيانات");
-       const res = await fetch(SERVER_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, phone, password: pass })
-    });
-    
-    if(res.ok) {
-        localStorage.setItem('v_phone', phone);
-        location.reload();
-    } else {
-        const err = await res.json();
-        alert(err.error || "خطأ في البيانات");
-    }
+            
+            try {
+                const res = await fetch(SERVER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action, phone, password: pass })
+                });
+
+                const result = await res.json();
+
+                if(res.ok) {
+                    localStorage.setItem('v_phone', phone);
+                    location.reload();
+                } else {
+                    alert(result.error || "بيانات الدخول غير صحيحة");
+                }
+            } catch(e) { 
+                alert("تعذر الاتصال بالسيرفر"); 
+            }
         }
 
         function userLogout() {
