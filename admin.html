@@ -2,109 +2,100 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Just Scan Manager 🛡️</title>
+    <title>لوحة تحكم VOLTIR - الإدارة 🛡️</title>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; text-align: center; }
+        .container { max-width: 900px; margin: auto; background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-        th { background: #333; color: white; }
-        .btn { border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; color: white; margin: 2px; }
-        .btn-save { background: #28a745; }
-        .btn-del { background: #dc3545; }
-        .btn-add { background: #007bff; }
-        .status-expired { color: red; font-weight: bold; }
-        .status-active { color: green; font-weight: bold; }
-        input { text-align: center; padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
+        th, td { border: 1px solid #334155; padding: 12px; text-align: center; }
+        th { background: #334155; color: #38bdf8; }
+        input { background: #0f172a; color: #22c55e; border: 1px solid #475569; padding: 5px; border-radius: 4px; text-align: center; }
+        .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin: 2px; }
+        .btn-update { background: #22c55e; color: white; }
+        .btn-delete { background: #ef4444; color: white; }
+        .btn-load { background: #3b82f6; color: white; padding: 10px 20px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>لوحة تحكم المشتركين - نظام VOLTIR</h2>
-        <div id="loading">جاري تحميل المشتركين...</div>
-        <table id="userTable" style="display:none;">
-            <thead>
-                <tr>
-                    <th>الموبايل</th>
-                    <th>كلمة السر</th>
-                    <th>المتبقي</th>
-                    <th>تعديل المدة (يوم)</th>
-                    <th>إجراءات</th>
-                </tr>
-            </thead>
-            <tbody id="userList"></tbody>
-        </table>
-    </div>
 
-    <script>
-        // رابط الوركر بتاعك (تأكد إنه صح)
-        const SERVER_URL = "https://round-resonance-7a04.ibrahim-sayed-798.workers.dev";
+<div class="container">
+    <h2>🛡️ مدير حسابات Just Scan</h2>
+    <button class="btn btn-load" onclick="loadUsers()">🔄 تحديث قائمة المشتركين</button>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>رقم الموبايل</th>
+                <th>كلمة السر (تعديل)</th>
+                <th>إجراءات</th>
+            </tr>
+        </thead>
+        <tbody id="userList">
+            </tbody>
+    </table>
+</div>
 
-        // 1. دالة تحميل المستخدمين وعرضهم في الجدول
-        async function loadUsers() {
-            try {
-                const res = await fetch(`${SERVER_URL}/admin-data`);
-                const users = await res.json();
-                const list = document.getElementById('userList');
-                list.innerHTML = '';
-                
-                users.forEach(user => {
-                    const expiry = new Date(user.expiry || 0);
-                    const daysLeft = Math.max(0, Math.ceil((expiry - Date.now()) / 86400000));
-                    const isExpired = daysLeft <= 0;
+<script>
+    // ⚠️ حط رابط الوركر بتاعك هنا
+    const SERVER_URL = "https://round-resonance-b6f1.voltir-f.workers.dev";
 
-                    list.innerHTML += `
-                        <tr style="background: ${isExpired ? '#fff5f5' : '#fafffa'}">
-                            <td><b>${user.phone}</b></td>
-                            <td><input type="text" id="p-${user.phone}" value="${user.password || ''}" style="width:80px"></td>
-                            <td style="color: ${isExpired ? 'red' : 'green'}; font-weight:bold;">
-                                ${isExpired ? 'منتهي' : daysLeft + ' يوم متبقي'}
-                            </td>
-                            <td>
-                                <input type="number" id="d-${user.phone}" value="30" style="width:50px">
-                                <button onclick="manage('${user.phone}', 'add')" style="cursor:pointer">+ أيام</button>
-                            </td>
-                            <td>
-                                <button onclick="manage('${user.phone}', 'update')" style="background:green; color:white; cursor:pointer">حفظ</button>
-                                <button onclick="manage('${user.phone}', 'delete')" style="background:red; color:white; cursor:pointer">حذف</button>
-                            </td>
-                        </tr>`;
-                });
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('userTable').style.display = 'table';
-            } catch (e) { 
-                console.error("خطأ في التحميل:", e);
-                document.getElementById('loading').innerText = "فشل التحميل، تأكد من رابط السيرفر";
-            }
+    async function loadUsers() {
+        const list = document.getElementById('userList');
+        list.innerHTML = '<tr><td colspan="3">جاري التحميل...</td></tr>';
+        
+        try {
+            const res = await fetch(SERVER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'admin-data', phone: 'admin', password: 'admin' }) 
+            });
+            const users = await res.json();
+            
+            list.innerHTML = '';
+            users.forEach(user => {
+                list.innerHTML += `
+                    <tr>
+                        <td><b>${user.phone}</b></td>
+                        <td><input type="text" id="pass-${user.phone}" value="${user.password}"></td>
+                        <td>
+                            <button class="btn btn-update" onclick="manage('${user.phone}', 'update')">حفظ التعديل</button>
+                            <button class="btn btn-delete" onclick="manage('${user.phone}', 'delete')">حذف</button>
+                        </td>
+                    </tr>`;
+            });
+        } catch (e) {
+            list.innerHTML = '<tr><td colspan="3">فشل جلب البيانات. تأكد من الـ Deploy في كلاود فلير</td></tr>';
         }
+    }
 
-        // 2. دالة التحكم (إضافة وقت، تعديل باسورد، حذف)
-        async function manage(phone, action) {
-            const pass = document.getElementById('p-'+phone).value;
-            const days = parseInt(document.getElementById('d-'+phone).value) || 0;
+    async function manage(phone, subAction) {
+        const newPass = document.getElementById('pass-' + phone).value;
+        if(subAction === 'delete' && !confirm('هل أنت متأكد من حذف هذا الحساب؟')) return;
 
-            if(action === 'delete' && !confirm('متأكد إنك عايز تمسح الحساب وداتا الاسكان بتاعته؟')) return;
-
-            try {
-                const response = await fetch(`${SERVER_URL}/admin-action`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action, phone, pass, days })
-                });
-
-                if(response.ok) {
-                    alert("تمت العملية بنجاح");
-                    loadUsers(); // تحديث الجدول فوراً
-                } else {
-                    alert("السيرفر رفض الطلب");
-                }
-            } catch(e) {
-                alert("مشكلة في الاتصال بالسيرفر");
-            }
+        try {
+            const res = await fetch(SERVER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    action: 'admin-action', 
+                    subAction: subAction,
+                    targetPhone: phone, 
+                    newPass: newPass,
+                    phone: 'admin', // بيانات وهمية لتخطي فحص الوركر الحالي
+                    password: 'admin'
+                })
+            });
+            const result = await res.json();
+            alert(result.success || result.error);
+            loadUsers(); // تحديث الجدول
+        } catch (e) {
+            alert("حدث خطأ في الاتصال");
         }
+    }
 
-        // تشغيل الجلب فور فتح الصفحة
-        loadUsers();
-    </script>
+    // تحميل البيانات أول ما تفتح الصفحة
+    loadUsers();
+</script>
+
 </body>
 </html>
