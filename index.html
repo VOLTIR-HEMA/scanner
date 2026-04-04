@@ -172,12 +172,19 @@ let slotsData = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().
     }
 }
        function onScanSuccess(text) {
-   const scanSound = new Audio('https://raw.githubusercontent.com/xandra7/soft-beep/main/beep.mp3');
-// أو جرب الرابط ده لو الأول مشتغلش (صوت ناعم جداً)
-// const scanSound = new Audio('https://assets.mixkit.co/active_storage/sfx/438/438-preview.mp3');
-
-scanSound.volume = 0.6; // تقدر تتحكم في مستوى العلو من هنا (0.1 هادي جداً لـ 1.0 عالي)
-scanSound.play().catch(e => console.log("الصوت محتاج لمسة للشاشة أولاً"));
+   try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = 880;
+        g.gain.setValueAtTime(0.1, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+    } catch (e) { console.log("Audio Error"); }
            if (Date.now() - lastScanTime < 1500) return; 
     lastScanTime = Date.now();
 
