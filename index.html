@@ -95,6 +95,7 @@
         let  lastScanTime = 0, isFlashOn = false;
         let activeSlot = null; // ده عشان نعرف أي خانة بنسجل فيها حالياً
 let slotsData = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().map(() => []); // ده مخزن الـ 10 خانات
+        let slotsNames = JSON.parse(localStorage.getItem('v_slots_names')) || Array(10).fill().map((_, i) => `فاتورة ${i + 1}`);
         let currentUser = localStorage.getItem('v_phone');
 
         let buttons = JSON.parse(localStorage.getItem('userButtons')) || [
@@ -289,7 +290,7 @@ function renderSlots() {
         div.style = "background:#222; border:1px solid #333; padding:10px; border-radius:8px; margin-bottom:8px; display:flex; flex-direction:column; gap:8px;";
         div.innerHTML = `
             <div style="display:flex; justify-content:space-between; color:#00ffcc; font-size:12px;">
-                <span>📦 فاتورة رقم ${index + 1}</span>
+               <span>📦 ${slotsNames[index]} <span onclick="editSlotName(${index})" style="cursor:pointer; margin-right:5px; color:#ffcc00;">✏️</span></span>
                 <span>المحتوى: (${items.length}/15)</span>
             </div>
             <div style="display:flex; gap:5px;">
@@ -325,7 +326,17 @@ function clearSlot(index) {
     if(confirm("متأكد إنك عاوز تمسح الفاتورة دي؟")) {
         slotsData[index] = [];
         localStorage.setItem('v_slots', JSON.stringify(slotsData));
+        slotsNames[index] = `فاتورة ${index + 1}`;
+        localStorage.setItem('v_slots_names', JSON.stringify(slotsNames));
         if(activeSlot === index) activeSlot = null;
+        renderSlots();
+    }
+}
+        function editSlotName(index) {
+    const newName = prompt("تغيير اسم الفاتورة:", slotsNames[index]);
+    if (newName !== null && newName.trim() !== "") {
+        slotsNames[index] = newName.trim();
+        localStorage.setItem('v_slots_names', JSON.stringify(slotsNames));
         renderSlots();
     }
 }
