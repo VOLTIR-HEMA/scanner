@@ -18,6 +18,7 @@
         #settings-modal, #keyboard-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; overflow-y: auto; }
         .modal-content { background: #222; width: 85%; margin: 20px auto; padding: 15px; border-radius: 15px; text-align: left; border: 1px solid #444; }
         .setting-row { background: #333; padding: 10px; margin-bottom: 10px; border-radius: 8px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    
     </style>
 </head>
 <body>
@@ -29,12 +30,21 @@
 </div>
 
     <div class="top-bar">
+        
         <button onclick="toggleSettings(true)">⚙️</button>
         <button id="flash-btn" onclick="toggleFlash()">🔦</button>
         <button id="full-screen-btn" onclick="toggleFullScreen()">📺 Full</button>
         <button onclick="openKeyboardModal()">⌨️ Keyboard</button>
         <button id="billModeBtn" onclick="toggleBillMode()">📑 Bill: OFF</button>
     </div>
+    <button onclick="toggleBillPanel()" style="width: 95%; margin: 10px auto; display: block; padding: 12px; background: #ff4500; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+    📑 إدارة الفواتير المحفوظة (10 Slots)
+</button>
+
+<div id="bill-panel" style="display: none; background: #111; padding: 10px; border: 1px solid #444; margin: 0 10px 10px 10px; border-radius: 10px;">
+    <div id="slots-container">
+        </div>
+</div>
 
     <div id="reader"></div>
     <div id="result" class="result-box">جاري تشغيل الكاميرا...</div>
@@ -83,6 +93,8 @@
         let NTFY_URL = '';
         const SERVER_URL = 'https://round-resonance-b6f1.voltir-f.workers.dev';
         let isBillMode = false, billItems = [], lastScanTime = 0, isFlashOn = false;
+        let activeSlot = null; // ده عشان نعرف أي خانة بنسجل فيها حالياً
+let slotsData = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().map(() => []); // ده مخزن الـ 10 خانات
         let currentUser = localStorage.getItem('v_phone');
 
         let buttons = JSON.parse(localStorage.getItem('userButtons')) || [
@@ -159,12 +171,28 @@
         alert("برجاء تسجيل الدخول أولاً لربط السكانر بالكمبيوتر");
     }
 }
-        function onScanSuccess(text) {
-            if (Date.now() - lastScanTime < 1500) return; 
-            lastScanTime = Date.now();
-            if (isBillMode) { billItems.push(text); document.getElementById('result').innerText = `تخزين (${billItems.length}): ${text}`; }
-            else { masterSend(text + '_ent'); document.getElementById('result').innerText = "تم إرسال: " + text; }
+       function onScanSuccess(text) {
+    if (Date.now() - lastScanTime < 1500) return; 
+    lastScanTime = Date.now();
+
+    // نظام الـ 10 خانات الجديد
+    if (activeSlot !== null) {
+        if (slotsData[activeSlot].length < 15) {
+            slotsData[activeSlot].push(text);
+            localStorage.setItem('v_slots', JSON.stringify(slotsData));
+            renderSlots(); // عشان يحدث الأرقام فوراً
+            document.getElementById('result').innerText = `تم الحفظ في خانة ${activeSlot + 1}: ${text}`;
+        } else {
+            alert("الخانة دي اتملت خلاص (15 صنف)!");
+            activeSlot = null;
+            renderSlots();
         }
+    } else {
+        // لو مفيش خانة تسجيل شغالة، يبعت مباشر زي زمان
+        masterSend(text + '_ent');
+        document.getElementById('result').innerText = "إرسال مباشر: " + text;
+    }
+}
 
         function renderButtons() {
             const container = document.getElementById('dynamic-buttons'); container.innerHTML = '';
@@ -200,6 +228,7 @@
         function saveSettings() { localStorage.setItem('userButtons', JSON.stringify(buttons)); renderButtons(); toggleSettings(false); }
 
         window.onload = () => {
+            renderSlots();
             if (!localStorage.getItem('v_phone')) {
                 document.getElementById('auth-overlay').style.display = 'flex';
                 renderButtons();
@@ -240,6 +269,65 @@
             for (let item of billItems) { masterSend(item + '_ent'); await new Promise(r => setTimeout(r, 1000)); }
             billItems = [];
         }
+        // 1. دالة فتح وإغلاق لوحة الفواتير
+function toggleBillPanel() {
+    const panel = document.getElementById('bill-panel');
+    if(!panel) return;
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    if(panel.style.display === 'block') renderSlots();
+}
+
+// 2. دالة رسم الـ 10 خانات بالزراير بتاعتهم
+function renderSlots() {
+    const container = document.getElementById('slots-container');
+    if(!container) return;
+    container.innerHTML = '';
+    
+    slotsData.forEach((items, index) => {
+        const div = document.createElement('div');
+        div.style = "background:#222; border:1px solid #333; padding:10px; border-radius:8px; margin-bottom:8px; display:flex; flex-direction:column; gap:8px;";
+        div.innerHTML = `
+            <div style="display:flex; justify-content:space-between; color:#00ffcc; font-size:12px;">
+                <span>📦 فاتورة رقم ${index + 1}</span>
+                <span>المحتوى: (${items.length}/15)</span>
+            </div>
+            <div style="display:flex; gap:5px;">
+                <button onclick="activeSlot=(activeSlot===${index}?null:${index}); renderSlots();" 
+                        style="flex:1; padding:10px; border:none; border-radius:5px; color:white; font-weight:bold; background:${activeSlot===index?'#ff0000':'#444'}">
+                    ${activeSlot===index?'🔴 يسجل الآن':'🎤 ابدأ تسجيل'}
+                </button>
+                <button onclick="sendSlot(${index})" style="flex:1; padding:10px; border:none; border-radius:5px; background:#28a745; color:white; font-weight:bold;">📤 إرسال</button>
+                <button onclick="clearSlot(${index})" style="flex:0.4; padding:10px; border:none; border-radius:5px; background:#800; color:white;">🗑️</button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// 3. دالة إرسال الفاتورة للكمبيوتر (واحد ورا التاني بفاصل ثانية)
+async function sendSlot(index) {
+    const items = slotsData[index];
+    if (items.length === 0) return alert("الخانة دي فاضية يا إبراهيم!");
+    
+    if(confirm(`هل تريد إرسال ${items.length} صنف للكمبيوتر؟`)) {
+        for (let item of items) {
+            masterSend(item + '_ent');
+            document.getElementById('result').innerText = `جاري إرسال: ${item}`;
+            await new Promise(r => setTimeout(r, 1000)); 
+        }
+        alert("✅ الفاتورة وصلت الكمبيوتر بنجاح");
+    }
+}
+
+// 4. دالة مسح الفاتورة
+function clearSlot(index) {
+    if(confirm("متأكد إنك عاوز تمسح الفاتورة دي؟")) {
+        slotsData[index] = [];
+        localStorage.setItem('v_slots', JSON.stringify(slotsData));
+        if(activeSlot === index) activeSlot = null;
+        renderSlots();
+    }
+}
     </script>
 </body>
 </html>
