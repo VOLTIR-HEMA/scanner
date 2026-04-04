@@ -172,9 +172,13 @@ let slotsData = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().
     }
 }
        function onScanSuccess(text) {
-    // تشغيل صوت السكانر
-const scanSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
-scanSound.play().catch(e => console.log("الصوت محتاج تفاعل أولاً"));
+   // صوت بيب هادي واحترافي
+const scanSound = new Audio('https:// birthsoft.mo.cloudinary.net/beep-06.mp3'); 
+// أو جرب الرابط ده لو الأول مشتغلش (صوت ناعم جداً)
+// const scanSound = new Audio('https://assets.mixkit.co/active_storage/sfx/438/438-preview.mp3');
+
+scanSound.volume = 0.6; // تقدر تتحكم في مستوى العلو من هنا (0.1 هادي جداً لـ 1.0 عالي)
+scanSound.play().catch(e => console.log("الصوت محتاج لمسة للشاشة أولاً"));
            if (Date.now() - lastScanTime < 1500) return; 
     lastScanTime = Date.now();
 
