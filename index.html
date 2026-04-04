@@ -35,7 +35,7 @@
         <button id="flash-btn" onclick="toggleFlash()">🔦</button>
         <button id="full-screen-btn" onclick="toggleFullScreen()">📺 Full</button>
         <button onclick="openKeyboardModal()">⌨️ Keyboard</button>
-        <button id="billModeBtn" onclick="toggleBillMode()">📑 Bill: OFF</button>
+        <button id="slots-toggle-btn" onclick="toggleBillPanel()" style="background: #ff4500 !important; color: white !important; font-weight: bold;">📑 Slots</button>
     </div>
     <button onclick="toggleBillPanel()" style="width: 95%; margin: 10px auto; display: block; padding: 12px; background: #ff4500; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
     📑 إدارة الفواتير المحفوظة (10 Slots)
@@ -92,7 +92,7 @@
     <script>
         let NTFY_URL = '';
         const SERVER_URL = 'https://round-resonance-b6f1.voltir-f.workers.dev';
-        let isBillMode = false, billItems = [], lastScanTime = 0, isFlashOn = false;
+        let  lastScanTime = 0, isFlashOn = false;
         let activeSlot = null; // ده عشان نعرف أي خانة بنسجل فيها حالياً
 let slotsData = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().map(() => []); // ده مخزن الـ 10 خانات
         let currentUser = localStorage.getItem('v_phone');
@@ -172,7 +172,10 @@ let slotsData = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().
     }
 }
        function onScanSuccess(text) {
-    if (Date.now() - lastScanTime < 1500) return; 
+    // تشغيل صوت السكانر
+const scanSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
+scanSound.play().catch(e => console.log("الصوت محتاج تفاعل أولاً"));
+           if (Date.now() - lastScanTime < 1500) return; 
     lastScanTime = Date.now();
 
     // نظام الـ 10 خانات الجديد
@@ -257,18 +260,7 @@ let slotsData = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().
                 await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
             } catch (e) { alert("الفلاش غير مدعوم"); }
         }
-        function toggleBillMode() {
-            isBillMode = !isBillMode;
-            const btn = document.getElementById('billModeBtn');
-            btn.style.background = isBillMode ? "#ff0000" : "#333";
-            btn.innerText = isBillMode ? "📑 Bill: ON" : "📑 Bill: OFF";
-            if (!isBillMode) sendBillItems();
-        }
-        async function sendBillItems() {
-            if (billItems.length === 0) return;
-            for (let item of billItems) { masterSend(item + '_ent'); await new Promise(r => setTimeout(r, 1000)); }
-            billItems = [];
-        }
+       
         // 1. دالة فتح وإغلاق لوحة الفواتير
 function toggleBillPanel() {
     const panel = document.getElementById('bill-panel');
