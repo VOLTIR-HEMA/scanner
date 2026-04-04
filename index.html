@@ -172,19 +172,18 @@ let slotsData = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().
     }
 }
        function onScanSuccess(text) {
-   try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const g = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.value = 880;
-        g.gain.setValueAtTime(0.1, ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-        osc.connect(g);
-        g.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.1);
-    } catch (e) { console.log("Audio Error"); }
+  try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.type = 'sine'; // صوت ناعم
+        oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // تردد البيب
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); // صوت هادي
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.1); // مدة قصيرة جداً
+    } catch(e) { console.log("Audio logic failed"); }
            if (Date.now() - lastScanTime < 1500) return; 
     lastScanTime = Date.now();
 
