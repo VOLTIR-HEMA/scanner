@@ -23,23 +23,32 @@
 </head>
 <body>
 
-<div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center;">
-    <h2 style="color: #00ffcc;">VoltIR 🛡️</h2>
-    <p>يرجى تسجيل الدخول من الإعدادات</p>
-    <button onclick="document.getElementById('auth-overlay').style.display='none'; toggleSettings(true);" style="padding: 15px 30px; background: #ffcc00; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: black;">فتح الإعدادات ⚙️</button>
+<div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: hsl(216, 28%, 7%); z-index: 3000; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center;">
+    <h1 style="color: #3d60cc;">Just Scan</h1>
+    <p>يرجى تسجيل الدخول</p>
+    <button onclick="document.getElementById('auth-overlay').style.display='none'; toggleSettings(true);" style="padding: 15px 30px; background: #40414b; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: rgb(255, 255, 255);">فتح الإعدادات ⚙️</button>
 </div>
 
     <div class="top-bar">
         
         <button onclick="toggleSettings(true)">⚙️</button>
         <button id="flash-btn" onclick="toggleFlash()">🔦</button>
-        <button id="full-screen-btn" onclick="toggleFullScreen()">📺 Full</button>
         <button onclick="openKeyboardModal()">⌨️ Keyboard</button>
-        <button id="slots-toggle-btn" onclick="toggleBillPanel()" style="background: #ff4500 !important; color: white !important; font-weight: bold;">📑 Slots</button>
+        <button id="slots-toggle-btn" onclick="toggleBillPanel()" style="background: #3d60cc !important; color: white !important; font-weight: bold;">📑 فواتير</button>
     </div>
-    <button onclick="toggleBillPanel()" style="width: 95%; margin: 10px auto; display: block; padding: 12px; background: #ff4500; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
-    📑 إدارة الفواتير المحفوظة (10 Slots)
-</button>
+    <div id="display-controls" style="display: none; gap: 5px; border-top: 1px solid #333; pt-8">
+        <input type="text" id="rename-input-top" placeholder="اسم الفاتورة" style="flex: 1; background: #000; border: 1px solid #444; color: white; border-radius: 4px; padding: 6px; font-size: 0.8em;">
+        <button onclick="saveNameTop()" style="background: #3d60cc; border: none; color: white; padding: 5px 10px; border-radius: 4px; font-size: 0.8em; cursor: pointer;">حفظ</button>
+        <button onclick="sendSlot(activeSlot)" style="background: #3d60cc; border: none; color: white; padding: 5px 10px; border-radius: 4px; font-size: 0.8em; cursor: pointer;">إرسال 📤</button>
+    </div>
+</div>
+    
+    <div id="display-controls" style="display: none; gap: 5px;">
+        <input type="text" id="rename-input-top" style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid white; color: white; border-radius: 4px; padding: 4px; font-size: 0.8em;">
+        <button onclick="saveNameTop()" style="background: #3d60cc; border: none; color: white; padding: 5px 10px; border-radius: 4px; font-size: 0.8em;">حفظ</button>
+        <button onclick="sendSlot(activeSlot)" style="background: #3d60cc; border: none; color: white; padding: 5px 10px; border-radius: 4px; font-size: 0.8em;">إرسال 📤</button>
+    </div>
+</div>
 
 <div id="bill-panel" style="display: none; background: #111; padding: 10px; border: 1px solid #444; margin: 0 10px 10px 10px; border-radius: 10px;">
     <div id="slots-container">
@@ -47,17 +56,17 @@
 </div>
 
     <div id="reader"></div>
-    <div id="result" class="result-box">جاري تشغيل الكاميرا...</div>
+    <div id="result" class="result-box">في انتظار التشغيل</div>
     <div id="dynamic-buttons"></div>
 
     <div id="settings-modal">
         <div class="modal-content">
-            <h3 style="color: #ffcc00; margin-bottom: 15px;">⚙️ الإعدادات</h3>
+            <h3 style="color: #3d60cc; margin-bottom: 15px;">⚙️ الإعدادات</h3>
             
             <div id="auth-section" style="background:#111; padding:15px; border-radius:10px; border:1px solid #444; margin-bottom:20px;">
                 <div id="logged-in-view" style="display:none;">
                     <p style="color:#00ffcc; font-size:0.9em; margin-bottom:10px;">✅ مسجل دخول برقم: <span id="user-display"></span></p>
-                    <button onclick="userLogout()" style="width:100%; padding:10px; background:#800; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل خروج 🚪</button>
+                    <button onclick="userLogout()" style="width:100%; padding:10px; background:#800; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل خروج</button>
                 </div>
                 
                 <div id="logged-out-view">
@@ -99,8 +108,8 @@ let slotsData = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().
         let currentUser = localStorage.getItem('v_phone');
 
         let buttons = JSON.parse(localStorage.getItem('userButtons')) || [
-            { name: "Add", cmd: "f8", useEnter: true, color: "#007bff" },
-            { name: "Save", cmd: "f9", useEnter: true, color: "#28a745" }
+            { name: "جديد", cmd: "f8", useEnter: true, color: "#3d60cc" },
+            { name: "حفظ", cmd: "f9", useEnter: true, color: "#3d60cc" }
         ];
 
         // --- وظائف الحسابات النظيفة ---
@@ -196,7 +205,7 @@ let slotsData = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().
             renderSlots(); // عشان يحدث الأرقام فوراً
             document.getElementById('result').innerText = `تم الحفظ في خانة ${activeSlot + 1}: ${text}`;
         } else {
-            alert("الخانة دي اتملت خلاص (15 صنف)!");
+            alert("الفاتورة دي اتملت خلاص (15 صنف)!");
             activeSlot = null;
             renderSlots();
         }
@@ -248,8 +257,8 @@ let slotsData = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().
                 return;
             }
             const scanner = new Html5QrcodeScanner("reader", { 
-                fps: 25, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0,
-                showTorchButtonIfSupported: true, showZoomSliderIfSupported: true, defaultZoomValueIfSupported: 2
+                fps: 40, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0,
+                showTorchButtonIfSupported: false, showZoomSliderIfSupported: true, defaultZoomValueIfSupported: 1
             });
             scanner.render(onScanSuccess);
             renderButtons();
@@ -340,6 +349,7 @@ function clearSlot(index) {
         renderSlots();
     }
 }
+
     </script>
 </body>
 </html>
