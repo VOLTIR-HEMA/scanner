@@ -2,46 +2,87 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>لوحة تحكم VOLTIR - الإدارة 🛡️</title>
+    <title>لوحة تحكم VOLTIR - الإدارة الاحترافية 🛡️</title>
     <style>
-        body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; text-align: center; }
-        .container { max-width: 900px; margin: auto; background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #334155; padding: 12px; text-align: center; }
-        th { background: #334155; color: #38bdf8; }
-        input { background: #0f172a; color: #22c55e; border: 1px solid #475569; padding: 5px; border-radius: 4px; text-align: center; }
-        .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin: 2px; }
-        .btn-update { background: #22c55e; color: white; }
+        :root { --primary: #38bdf8; --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+        .container { max-width: 1100px; margin: auto; background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        
+        /* أدوات البحث والفلترة */
+        .controls { display: flex; flex-wrap: wrap; gap: 15 shadow; margin-bottom: 20px; align-items: center; justify-content: space-between; background: #0f172a; padding: 15px; border-radius: 10px; }
+        .search-box { flex: 1; min-width: 250px; position: relative; }
+        .search-box input { width: 100%; padding: 12px; background: #1e293b; border: 1px solid #475569; color: #22c55e; border-radius: 8px; box-sizing: border-box; }
+        
+        .filter-btns { display: flex; gap: 8px; }
+        .btn-f { padding: 8px 15px; border: 1px solid #334155; background: #1e293b; color: white; border-radius: 6px; cursor: pointer; transition: 0.3s; }
+        .btn-f.active { background: var(--primary); border-color: var(--primary); color: #000; font-weight: bold; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
+        th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: center; }
+        th { background: #334155; color: var(--primary); position: sticky; top: 0; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+
+        /* الأيام والاشتراك */
+        .days-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; }
+        .expired { background: #ef4444; color: white; }
+        .active-sub { background: #22c55e; color: white; }
+        .progress-container { width: 100px; height: 8px; background: #334155; border-radius: 4px; margin: 5px auto; overflow: hidden; }
+        .progress-bar { height: 100%; background: var(--primary); }
+
+        .btn { padding: 6px 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8em; margin: 2px; }
+        .btn-update { background: #3b82f6; color: white; }
+        .btn-extend { background: #8b5cf6; color: white; }
         .btn-delete { background: #ef4444; color: white; }
-        .btn-load { background: #3b82f6; color: white; padding: 10px 20px; margin-bottom: 10px; }
+        .btn-load { background: var(--primary); color: #000; padding: 12px 25px; margin-bottom: 15px; width: 100%; font-size: 1em; }
+        
+        .user-info { text-align: right; }
+        .user-info small { color: #94a3b8; display: block; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🛡️ مدير حسابات Just Scan</h2>
-    <button class="btn btn-load" onclick="loadUsers()">🔄 تحديث قائمة المشتركين</button>
+    <h2>🛡️ نظام إدارة Voltir Pro</h2>
     
-    <table>
-        <thead>
-            <tr>
-                <th>رقم الموبايل</th>
-                <th>كلمة السر (تعديل)</th>
-                <th>إجراءات</th>
-            </tr>
-        </thead>
-        <tbody id="userList">
-            </tbody>
-    </table>
+    <button class="btn btn-load" onclick="loadUsers()">🔄 تحديث وقراءة البيانات من السيرفر</button>
+
+    <div class="controls">
+        <div class="search-box">
+            <input type="text" id="searchInput" onkeyup="filterData()" placeholder="🔍 ابحث بالاسم، الرقم، أو النشاط...">
+        </div>
+        <div class="filter-btns">
+            <button class="btn-f active" onclick="setFilter('الكل', this)">الكل</button>
+            <button class="btn-f" onclick="setFilter('صيدلية', this)">صيدليات</button>
+            <button class="btn-f" onclick="setFilter('محل', this)">محلات</button>
+            <button class="btn-f" onclick="setFilter('أخرى', this)">أخرى</button>
+        </div>
+    </div>
+    
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>المشترك</th>
+                    <th>النشاط</th>
+                    <th>كلمة السر</th>
+                    <th>حالة الاشتراك</th>
+                    <th>إجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="userList">
+                </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
-    // ⚠️ حط رابط الوركر بتاعك هنا
     const SERVER_URL = "https://round-resonance-b6f1.voltir-f.workers.dev";
+    let allUsers = []; // مخزن البيانات الأصلي للفلترة
+    let currentFilter = 'الكل';
 
     async function loadUsers() {
         const list = document.getElementById('userList');
-        list.innerHTML = '<tr><td colspan="3">جاري التحميل...</td></tr>';
+        list.innerHTML = '<tr><td colspan="5">⏳ جاري جلب المشتركين من KV Storage...</td></tr>';
         
         try {
             const res = await fetch(SERVER_URL, {
@@ -49,28 +90,70 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'admin-data', phone: 'admin', password: 'admin' }) 
             });
-            const users = await res.json();
-            
-            list.innerHTML = '';
-            users.forEach(user => {
-                list.innerHTML += `
-                    <tr>
-                        <td><b>${user.phone}</b></td>
-                        <td><input type="text" id="pass-${user.phone}" value="${user.password}"></td>
-                        <td>
-                            <button class="btn btn-update" onclick="manage('${user.phone}', 'update')">حفظ التعديل</button>
-                            <button class="btn btn-delete" onclick="manage('${user.phone}', 'delete')">حذف</button>
-                        </td>
-                    </tr>`;
-            });
+            allUsers = await res.json();
+            renderTable(allUsers);
         } catch (e) {
-            list.innerHTML = '<tr><td colspan="3">فشل جلب البيانات. تأكد من الـ Deploy في كلاود فلير</td></tr>';
+            list.innerHTML = '<tr><td colspan="5">❌ فشل الاتصال بالسيرفر. تأكد من إعدادات الـ CORS في الوركر.</td></tr>';
         }
+    }
+
+    function renderTable(data) {
+        const list = document.getElementById('userList');
+        list.innerHTML = '';
+        
+        data.forEach(user => {
+            // حساب الأيام المتبقية (بافتراض السيرفر بيبعت expiryDate)
+            const expiry = new Date(user.expiryDate || Date.now());
+            const today = new Date();
+            const diffTime = expiry - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const statusClass = diffDays > 0 ? 'active-sub' : 'expired';
+            const progressWidth = Math.min(100, Math.max(0, (diffDays / 30) * 100)); // نسبة مئوية من الشهر
+
+            list.innerHTML += `
+                <tr data-type="${user.activity}">
+                    <td class="user-info">
+                        <b>${user.name || 'بدون اسم'}</b>
+                        <small>📱 ${user.phone}</small>
+                    </td>
+                    <td><span style="color:#94a3b8">${user.activity || 'غير محدد'}</span></td>
+                    <td><input type="text" id="pass-${user.phone}" value="${user.password}" style="width:80px; font-size:12px;"></td>
+                    <td>
+                        <div class="days-badge ${statusClass}">${diffDays > 0 ? 'باقي ' + diffDays + ' يوم' : 'منتهي'}</div>
+                        <div class="progress-container"><div class="progress-bar" style="width: ${progressWidth}%"></div></div>
+                    </td>
+                    <td>
+                        <button class="btn btn-update" onclick="manage('${user.phone}', 'update')">حفظ</button>
+                        <button class="btn btn-extend" onclick="manage('${user.phone}', 'extend')">+30 يوم</button>
+                        <button class="btn btn-delete" onclick="manage('${user.phone}', 'delete')">حذف</button>
+                    </td>
+                </tr>`;
+        });
+    }
+
+    // وظيفة الفلترة والبحث
+    function filterData() {
+        const term = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = allUsers.filter(user => {
+            const matchSearch = user.name?.toLowerCase().includes(term) || 
+                              user.phone.includes(term) || 
+                              user.activity?.toLowerCase().includes(term);
+            const matchType = currentFilter === 'الكل' || (user.activity && user.activity.includes(currentFilter));
+            return matchSearch && matchType;
+        });
+        renderTable(filtered);
+    }
+
+    function setFilter(type, btn) {
+        currentFilter = type;
+        document.querySelectorAll('.btn-f').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filterData();
     }
 
     async function manage(phone, subAction) {
         const newPass = document.getElementById('pass-' + phone).value;
-        if(subAction === 'delete' && !confirm('هل أنت متأكد من حذف هذا الحساب؟')) return;
+        if(subAction === 'delete' && !confirm('سيتم حذف المستخدم نهائياً، هل أنت متأكد؟')) return;
 
         try {
             const res = await fetch(SERVER_URL, {
@@ -81,19 +164,18 @@
                     subAction: subAction,
                     targetPhone: phone, 
                     newPass: newPass,
-                    phone: 'admin', // بيانات وهمية لتخطي فحص الوركر الحالي
+                    phone: 'admin', 
                     password: 'admin'
                 })
             });
             const result = await res.json();
             alert(result.success || result.error);
-            loadUsers(); // تحديث الجدول
+            loadUsers();
         } catch (e) {
             alert("حدث خطأ في الاتصال");
         }
     }
 
-    // تحميل البيانات أول ما تفتح الصفحة
     loadUsers();
 </script>
 
