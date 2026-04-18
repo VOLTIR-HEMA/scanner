@@ -38,6 +38,7 @@
 
 <div class="top-bar">
     <button onclick="toggleSettings(true)">⚙️</button>
+    <button onclick="syncData(true)" style="background: #28a745 !important;">تحديث</button>
     <button id="flash-btn" onclick="toggleFlash()">🔦</button>
     <button onclick="openKeyboardModal()">⌨️ Keyboard</button>
     <button id="slots-toggle-btn" onclick="toggleBillPanel()" style="background: #3d60cc !important; color: white !important; font-weight: bold;">📑 فواتير</button>
@@ -197,8 +198,7 @@
         } catch (e) { alert("تعذر الاتصال بالسيرفر"); }
     }
 
-    // دالة لتحديث البيانات من السيرفر (التزامن)
-    async function syncData() {
+  async function syncData(manual = false) {
         const phone = localStorage.getItem('v_phone');
         const pass = localStorage.getItem('v_pass');
         if(!phone || !pass) return;
@@ -211,14 +211,32 @@
             });
             const result = await res.json();
             if(result.success) {
+                // 1. تحديث البيانات الأساسية
                 localStorage.setItem('v_name', result.name);
                 localStorage.setItem('v_activity', result.activity);
                 localStorage.setItem('v_expiry', result.expiryDate);
                 
-                if(result.isExpired) {
-                    showLock(result.name, phone);
+                // 2. تحديث الزراير (Buttons)
+                if(result.customButtons) {
+                    localStorage.setItem('userButtons', JSON.stringify(result.customButtons));
+                    buttons = result.customButtons; 
+                    renderButtons(); 
                 }
+                
+                // 3. تحديث الفواتير (Slots)
+                if(result.invoices) {
+                    localStorage.setItem('v_slots', JSON.stringify(result.invoices));
+                    slotsData = result.invoices; 
+                    if (typeof renderSlots === "function") renderSlots();
+                }
+
+                if(manual) alert("✅ تم تحديث البيانات من السيرفر");
+                if(result.isExpired) showLock(result.name, phone);
             }
+        } catch(e) { 
+            if(manual) alert("❌ فشل الاتصال بالسيرفر"); 
+        }
+    }
         } catch(e) {}
     }
 
