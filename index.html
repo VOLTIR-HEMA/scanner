@@ -10,8 +10,8 @@
         .top-bar { display: flex; justify-content: space-around; align-items: center; padding: 8px; background: #1a1a1a; border-bottom: 1px solid #333; flex-wrap: wrap; gap: 5px; }
         .top-bar button { background: #333; color: white; border: 1px solid #555; padding: 6px 10px; border-radius: 6px; font-size: 0.75em; cursor: pointer; }
         #reader { width: 100% !important; max-width: 500px; margin: 5px auto; border: none !important; min-height: 250px; background: #000; }
-        /* إخفاء واجهة اختيار الكاميرا الأصلية لجعل الشكل احترافي */
-        #reader__dashboard_section_csr button { display:none !important; } 
+        #reader button { background: #444 !important; color: white !important; padding: 8px !important; border-radius: 5px !important; margin: 5px !important; border: 1px solid #666 !important; }
+        #reader select { background: #222 !important; color: white !important; padding: 5px !important; border-radius: 5px !important; }
         .result-box { margin: 5px 10px; padding: 8px; background: #111; border-radius: 8px; color: #00ff00; font-size: 0.85em; border: 1px solid #222; min-height: 20px; }
         #dynamic-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 8px; }
         .custom-btn { padding: 12px 2px; border-radius: 6px; border: 1px solid #444; color: white; font-weight: bold; font-size: 0.75em; text-align: center; cursor: pointer; }
@@ -25,7 +25,7 @@
 
 <div id="lock-screen" style="z-index: 4000; background: #0f172a; flex-direction: column; align-items: center; justify-content: center; display: none;">
     <h1 style="color: #ef4444;">⚠️ انتهى الاشتراك</h1>
-    <p id="lock-msg" style="padding: 0 20px; text-align: center;"></p>
+    <p id="lock-msg" style="padding: 0 20px;"></p>
     <a id="wa-link" href="#" class="btn-link" style="background: #25d366; width: 80%;">تفعيل عبر واتساب 💬</a>
     <a id="web-link" href="#" class="btn-link" style="background: #3b82f6; width: 80%;">تحميل نسخ الكمبيوتر والموبايل 💻</a>
 </div>
@@ -43,115 +43,4 @@
     <button id="slots-toggle-btn" onclick="toggleBillPanel()" style="background: #3d60cc !important; color: white !important; font-weight: bold;">📑 فواتير</button>
 </div>
 
-<div id="bill-panel" style="display: none; background: #111; padding: 10px; border: 1px solid #444; margin: 0 10px 10px 10px; border-radius: 10px;">
-    <div id="slots-container"></div>
-</div>
-
-<div id="reader"></div>
-<div id="result" class="result-box">في انتظار التشغيل</div>
-<div id="dynamic-buttons"></div>
-
-<div id="settings-modal">
-    <div class="modal-content">
-        <h3 style="color: #3d60cc; margin-bottom: 15px;">⚙️ الإعدادات والبروفايل</h3>
-        <div id="auth-section" style="margin-bottom:20px;">
-            <div id="logged-in-view" style="display:none;"></div>
-            <div id="logged-out-view">
-                <input type="text" id="u-name" placeholder="الاسم بالكامل" style="width:100%; padding:10px; margin-bottom:8px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
-                <input type="tel" id="u-phone" placeholder="رقم الموبايل (11 رقم)" style="width:100%; padding:10px; margin-bottom:8px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
-                <input type="text" id="u-activity" placeholder="نوع النشاط (صيدلية، محل...)" style="width:100%; padding:10px; margin-bottom:8px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
-                <input type="password" id="u-pass" placeholder="كلمة المرور" style="width:100%; padding:10px; margin-bottom:10px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
-                <div style="display:flex; gap:5px;">
-                    <button onclick="handleAuth('login')" style="flex:1; padding:10px; background:#333; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">دخول</button>
-                    <button onclick="handleAuth('register')" style="flex:1; padding:10px; background:#3d60cc; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل جديد</button>
-                </div>
-            </div>
-        </div>
-        <div id="settings-list"></div>
-        <button onclick="addNewButtonSetting()" style="width:100%; padding:10px; background:#444; color:white; border:none; border-radius:8px; margin-top:10px; cursor:pointer;">➕ إضافة زر جديد</button>
-        <button onclick="saveSettings()" style="width:100%; padding:15px; background:#28a745; color:white; border:none; border-radius:10px; margin-top:15px; font-weight:bold; cursor:pointer;">حفظ وإغلاق</button>
-        <div style="margin-top: 20px; border-top: 1px solid #444; padding-top: 10px;">
-            <a id="wa-btn-settings" href="#" class="btn-link" style="background:#25d366; font-size: 0.8em;">تواصل مع الدعم (واتساب)</a>
-            <a id="web-btn-settings" href="#" class="btn-link" style="background:#3b82f6; font-size: 0.8em;">موقع تحميل النسخ</a>
-        </div>
-    </div>
-</div>
-
-<div id="keyboard-modal">
-    <div class="modal-content" style="text-align: center; margin-top: 50px;">
-        <h4 style="color: #ff0000;">إدخال مستمر</h4>
-        <input type="text" id="manual-input" style="width: 80%; padding: 15px; background: #000; color: #00ff00; border: 1px solid #444; border-radius: 8px; font-size: 1.2em;" onkeypress="if(event.key==='Enter') submitManualInput()">
-        <br><br>
-        <div style="display: flex; gap: 5px; justify-content: center;">
-            <button onclick="submitManualInput()" style="flex: 1; padding: 10px; background: #28a745; color: white; border: none; border-radius: 8px;">إرسال</button>
-            <button onclick="sendManualEnter()" style="flex: 1; padding: 10px; background: #007bff; color: white; border: none; border-radius: 8px;">Enter ⏎</button>
-            <button onclick="closeKeyboardModal()" style="flex: 1; padding: 10px; background: #444; color: white; border: none; border-radius: 8px;">إغلاق</button>
-        </div>
-    </div>
-</div>
-
-<script>
-    const WHATSAPP_NUM = "201147534998"; 
-    const DOWNLOAD_SITE = "https://your-download-link.com"; 
-    const SERVER_URL = 'https://round-resonance-b6f1.voltir-f.workers.dev';
-    
-    let lastScanTime = 0, isFlashOn = false, activeSlot = null;
-    let html5QrCode = null; 
-
-    let slotsData = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().map(() => []);
-    let slotsNames = JSON.parse(localStorage.getItem('v_slots_names')) || Array(10).fill().map((_, i) => `فاتورة ${i + 1}`);
-    let buttons = JSON.parse(localStorage.getItem('userButtons')) || [
-        { name: "جديد", cmd: "f8", useEnter: true, color: "#3d60cc" },
-        { name: "حفظ", cmd: "f9", useEnter: true, color: "#3d60cc" }
-    ];
-
-    const fingerprint = navigator.userAgent + screen.width + screen.height;
-
-    function updateAuthUI() {
-        const phone = localStorage.getItem('v_phone'), name = localStorage.getItem('v_name') || 'مستخدم جديد';
-        const activity = localStorage.getItem('v_activity') || 'غير محدد', expiry = localStorage.getItem('v_expiry');
-        const loggedInView = document.getElementById('logged-in-view'), loggedOutView = document.getElementById('logged-out-view');
-
-        if (phone) {
-            let daysLeft = expiry ? Math.ceil((parseInt(expiry) - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
-            const statusText = daysLeft > 0 ? `باقي ${daysLeft} يوم` : "منتهي";
-            const statusColor = daysLeft > 0 ? "#22c55e" : "#ef4444";
-            loggedInView.style.display = 'block'; loggedOutView.style.display = 'none';
-            loggedInView.innerHTML = `
-                <div style="background:#111; padding:12px; border-radius:10px; border:1px solid #3d60cc; margin-bottom:10px; text-align:right;">
-                    <div style="color:#3d60cc; font-size:0.9em; margin-bottom:4px;">👤 الاسم: <span style="color:#fff">${name}</span></div>
-                    <div style="color:#3d60cc; font-size:0.9em; margin-bottom:4px;">🏢 النشاط: <span style="color:#fff">${activity}</span></div>
-                    <div style="color:#3d60cc; font-size:0.9em; margin-bottom:4px;">📱 الرقم: <span style="color:#fff">${phone}</span></div>
-                    <div style="color:#3d60cc; font-size:0.9em;">⏳ الاشتراك: <span style="color:${statusColor}">${statusText}</span></div>
-                </div>
-                <button onclick="userLogout()" style="width:100%; padding:10px; background:#800; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل خروج 🚪</button>
-            `;
-        } else { loggedInView.style.display = 'none'; loggedOutView.style.display = 'block'; }
-    }
-
-    async function handleAuth(action) {
-        const phone = document.getElementById('u-phone').value.trim(), pass = document.getElementById('u-pass').value.trim();
-        const name = document.getElementById('u-name').value.trim(), activity = document.getElementById('u-activity').value.trim();
-        try {
-            const res = await fetch(SERVER_URL, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action, phone, password: pass, name, activity, fingerprint })
-            });
-            const result = await res.json();
-            if (res.ok) {
-                localStorage.setItem('v_phone', phone); localStorage.setItem('v_pass', pass);
-                localStorage.setItem('v_name', result.name || name); localStorage.setItem('v_activity', result.activity || activity);
-                localStorage.setItem('v_expiry', result.expiryDate); location.reload();
-            } else alert(result.error || "خطأ");
-        } catch (e) { alert("خطأ اتصال"); }
-    }
-
-    // --- تشغيل الكاميرا الخلفية فوراً ---
-    function startAutoScanner() {
-        if (html5QrCode) return; // منع التكرار
-        html5QrCode = new Html5Qrcode("reader");
-        const config = { fps: 40, qrbox: { width: 250, height: 150 } };
-        
-        // استخدامfacingMode لإجبار الكاميرا الخلفية
-        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess
-                          
+<div id="bill-panel" style="display:
