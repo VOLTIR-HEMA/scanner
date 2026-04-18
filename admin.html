@@ -2,182 +2,167 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>لوحة تحكم VOLTIR - الإدارة الاحترافية 🛡️</title>
+    <title>إدارة Voltir Pro - لوحة التحكم</title>
     <style>
         :root { --primary: #38bdf8; --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
-        .container { max-width: 1100px; margin: auto; background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 15px; }
+        .container { max-width: 1000px; margin: auto; }
         
-        /* أدوات البحث والفلترة */
-        .controls { display: flex; flex-wrap: wrap; gap: 15 shadow; margin-bottom: 20px; align-items: center; justify-content: space-between; background: #0f172a; padding: 15px; border-radius: 10px; }
-        .search-box { flex: 1; min-width: 250px; position: relative; }
-        .search-box input { width: 100%; padding: 12px; background: #1e293b; border: 1px solid #475569; color: #22c55e; border-radius: 8px; box-sizing: border-box; }
+        /* البطاقة التعريفية المصغرة في الجدول */
+        .user-row { background: var(--card); border: 1px solid #334155; margin-bottom: 10px; padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .user-info-brief { text-align: right; }
+        .user-info-brief b { font-size: 1.1em; color: var(--primary); display: block; }
+        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.8em; font-weight: bold; }
         
-        .filter-btns { display: flex; gap: 8px; }
-        .btn-f { padding: 8px 15px; border: 1px solid #334155; background: #1e293b; color: white; border-radius: 6px; cursor: pointer; transition: 0.3s; }
-        .btn-f.active { background: var(--primary); border-color: var(--primary); color: #000; font-weight: bold; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
-        th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: center; }
-        th { background: #334155; color: var(--primary); position: sticky; top: 0; }
-        tr:hover { background: rgba(255,255,255,0.02); }
-
-        /* الأيام والاشتراك */
-        .days-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; }
-        .expired { background: #ef4444; color: white; }
-        .active-sub { background: #22c55e; color: white; }
-        .progress-container { width: 100px; height: 8px; background: #334155; border-radius: 4px; margin: 5px auto; overflow: hidden; }
-        .progress-bar { height: 100%; background: var(--primary); }
-
-        .btn { padding: 6px 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8em; margin: 2px; }
-        .btn-update { background: #3b82f6; color: white; }
-        .btn-extend { background: #8b5cf6; color: white; }
-        .btn-delete { background: #ef4444; color: white; }
-        .btn-load { background: var(--primary); color: #000; padding: 12px 25px; margin-bottom: 15px; width: 100%; font-size: 1em; }
+        /* النافذة المنبثقة (بطاقة البيانات) */
+        #userModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; }
+        .modal-content { background: var(--card); width: 90%; max-width: 500px; margin: 40px auto; padding: 20px; border-radius: 15px; border: 1px solid var(--primary); }
+        .modal-content h3 { color: var(--primary); border-bottom: 1px solid #334155; padding-bottom: 10px; }
         
-        .user-info { text-align: right; }
-        .user-info small { color: #94a3b8; display: block; }
+        input, select { width: 100%; padding: 10px; margin: 8px 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px; box-sizing: border-box; }
+        .grid-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .btn { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-save { background: #22c55e; color: white; }
+        .btn-close { background: #64748b; color: white; }
+        .btn-action { background: #3b82f6; color: white; font-size: 0.8em; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🛡️ نظام إدارة Voltir Pro</h2>
+    <h2>🛡️ إدارة المشتركين</h2>
+    <input type="text" id="searchInput" onkeyup="filterUsers()" placeholder="🔍 ابحث بالاسم أو الرقم..." style="margin-bottom: 20px;">
     
-    <button class="btn btn-load" onclick="loadUsers()">🔄 تحديث وقراءة البيانات من السيرفر</button>
+    <div id="userList">
+        </div>
+</div>
 
-    <div class="controls">
-        <div class="search-box">
-            <input type="text" id="searchInput" onkeyup="filterData()" placeholder="🔍 ابحث بالاسم، الرقم، أو النشاط...">
+<div id="userModal">
+    <div class="modal-content" id="modalData">
         </div>
-        <div class="filter-btns">
-            <button class="btn-f active" onclick="setFilter('الكل', this)">الكل</button>
-            <button class="btn-f" onclick="setFilter('صيدلية', this)">صيدليات</button>
-            <button class="btn-f" onclick="setFilter('محل', this)">محلات</button>
-            <button class="btn-f" onclick="setFilter('أخرى', this)">أخرى</button>
-        </div>
-    </div>
-    
-    <div style="overflow-x: auto;">
-        <table>
-            <thead>
-                <tr>
-                    <th>المشترك</th>
-                    <th>النشاط</th>
-                    <th>كلمة السر</th>
-                    <th>حالة الاشتراك</th>
-                    <th>إجراءات</th>
-                </tr>
-            </thead>
-            <tbody id="userList">
-                </tbody>
-        </table>
-    </div>
 </div>
 
 <script>
     const SERVER_URL = "https://round-resonance-b6f1.voltir-f.workers.dev";
-    let allUsers = []; // مخزن البيانات الأصلي للفلترة
-    let currentFilter = 'الكل';
+    let users = [];
 
     async function loadUsers() {
-        const list = document.getElementById('userList');
-        list.innerHTML = '<tr><td colspan="5">⏳ جاري جلب المشتركين من KV Storage...</td></tr>';
-        
+        document.getElementById('userList').innerHTML = "⏳ جاري التحميل...";
         try {
             const res = await fetch(SERVER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'admin-data', phone: 'admin', password: 'admin' }) 
+                body: JSON.stringify({ action: 'admin-data', phone: 'admin', password: 'admin' })
             });
-            allUsers = await res.json();
-            renderTable(allUsers);
-        } catch (e) {
-            list.innerHTML = '<tr><td colspan="5">❌ فشل الاتصال بالسيرفر. تأكد من إعدادات الـ CORS في الوركر.</td></tr>';
+            users = await res.json();
+            renderUsers(users);
+        } catch (e) { alert("خطأ في جلب البيانات"); }
+    }
+
+    function renderUsers(data) {
+        const container = document.getElementById('userList');
+        container.innerHTML = '';
+        data.forEach(user => {
+            const expiry = new Date(user.expiryDate);
+            const daysLeft = Math.ceil((expiry - Date.now()) / (1000 * 60 * 60 * 24));
+            const statusColor = daysLeft > 0 ? '#22c55e' : '#ef4444';
+
+            container.innerHTML += `
+                <div class="user-row">
+                    <div class="user-info-brief">
+                        <b>${user.name}</b>
+                        <span>📱 ${user.phone} | 🏢 ${user.activity}</span>
+                    </div>
+                    <div style="text-align: left;">
+                        <span class="status-pill" style="border: 1px solid ${statusColor}; color: ${statusColor}">
+                            ${daysLeft > 0 ? 'باقي ' + daysLeft + ' يوم' : 'منتهي'}
+                        </span>
+                        <button class="btn btn-action" style="margin-right:10px;" onclick="openCard('${user.phone}')">تعديل البطاقة ⚙️</button>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function openCard(phone) {
+        const user = users.find(u => u.phone === phone);
+        const modal = document.getElementById('userModal');
+        const content = document.getElementById('modalData');
+        
+        content.innerHTML = `
+            <h3>🪪 بطاقة: ${user.name}</h3>
+            <label>الاسم:</label> <input type="text" id="m-name" value="${user.name}">
+            <label>النشاط:</label> <input type="text" id="m-act" value="${user.activity}">
+            <label>الباسورد:</label> <input type="text" id="m-pass" value="${user.password}">
+            <button class="btn btn-save" style="width:100%" onclick="saveFullUpdate('${user.phone}')">حفظ التغييرات الأساسية</button>
+            
+            <hr style="border:0; border-top:1px solid #334155; margin:15px 0;">
+            
+            <label>➕ إضافة أيام محددة فوق الحالي:</label>
+            <div style="display:flex; gap:5px;">
+                <input type="number" id="m-days" placeholder="عدد الأيام" style="margin:0;">
+                <button class="btn btn-save" onclick="addCustomDays('${user.phone}')">إضافة</button>
+            </div>
+
+            <div class="grid-btns">
+                <button class="btn btn-action" onclick="setPreset('${user.phone}', 30)">شهر جديد</button>
+                <button class="btn btn-action" onclick="setPreset('${user.phone}', 365)">سنة جديدة</button>
+                <button class="btn btn-action" style="background:#ef4444" onclick="deleteUser('${user.phone}')">حذف الحساب</button>
+                <button class="btn btn-close" onclick="closeCard()">إغلاق</button>
+            </div>
+        `;
+        modal.style.display = 'block';
+    }
+
+    function closeCard() { document.getElementById('userModal').style.display = 'none'; }
+
+    async function saveFullUpdate(phone) {
+        const data = {
+            name: document.getElementById('m-name').value,
+            activity: document.getElementById('m-act').value,
+            password: document.getElementById('m-pass').value
+        };
+        await adminAction(phone, 'full-update', data);
+    }
+
+    async function addCustomDays(phone) {
+        const days = parseInt(document.getElementById('m-days').value);
+        if(!days) return alert("اكتب عدد الأيام");
+        await adminAction(phone, 'add-days', { days: days });
+    }
+
+    async function setPreset(phone, days) {
+        if(confirm(`سيتم تفعيل ${days} يوم للمشترك، هل تريد البدء من الآن (صفر)؟ كنسل لو عاوزهم يتضافوا فوق اشتراكه الحالي.`)) {
+            await adminAction(phone, 'set-preset', { days: days, fromScratch: true });
+        } else {
+            await adminAction(phone, 'add-days', { days: days });
         }
     }
 
-    function renderTable(data) {
-        const list = document.getElementById('userList');
-        list.innerHTML = '';
-        
-        data.forEach(user => {
-            // حساب الأيام المتبقية (بافتراض السيرفر بيبعت expiryDate)
-            const expiry = new Date(user.expiryDate || Date.now());
-            const today = new Date();
-            const diffTime = expiry - today;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const statusClass = diffDays > 0 ? 'active-sub' : 'expired';
-            const progressWidth = Math.min(100, Math.max(0, (diffDays / 30) * 100)); // نسبة مئوية من الشهر
-
-            list.innerHTML += `
-                <tr data-type="${user.activity}">
-                    <td class="user-info">
-                        <b>${user.name || 'بدون اسم'}</b>
-                        <small>📱 ${user.phone}</small>
-                    </td>
-                    <td><span style="color:#94a3b8">${user.activity || 'غير محدد'}</span></td>
-                    <td><input type="text" id="pass-${user.phone}" value="${user.password}" style="width:80px; font-size:12px;"></td>
-                    <td>
-                        <div class="days-badge ${statusClass}">${diffDays > 0 ? 'باقي ' + diffDays + ' يوم' : 'منتهي'}</div>
-                        <div class="progress-container"><div class="progress-bar" style="width: ${progressWidth}%"></div></div>
-                    </td>
-                    <td>
-                        <button class="btn btn-update" onclick="manage('${user.phone}', 'update')">حفظ</button>
-                        <button class="btn btn-extend" onclick="manage('${user.phone}', 'extend')">+30 يوم</button>
-                        <button class="btn btn-delete" onclick="manage('${user.phone}', 'delete')">حذف</button>
-                    </td>
-                </tr>`;
-        });
+    async function deleteUser(phone) {
+        if(confirm("حذف نهائي؟")) await adminAction(phone, 'delete', {});
     }
 
-    // وظيفة الفلترة والبحث
-    function filterData() {
-        const term = document.getElementById('searchInput').value.toLowerCase();
-        const filtered = allUsers.filter(user => {
-            const matchSearch = user.name?.toLowerCase().includes(term) || 
-                              user.phone.includes(term) || 
-                              user.activity?.toLowerCase().includes(term);
-            const matchType = currentFilter === 'الكل' || (user.activity && user.activity.includes(currentFilter));
-            return matchSearch && matchType;
-        });
-        renderTable(filtered);
-    }
-
-    function setFilter(type, btn) {
-        currentFilter = type;
-        document.querySelectorAll('.btn-f').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        filterData();
-    }
-
-    async function manage(phone, subAction) {
-        const newPass = document.getElementById('pass-' + phone).value;
-        if(subAction === 'delete' && !confirm('سيتم حذف المستخدم نهائياً، هل أنت متأكد؟')) return;
-
+    async function adminAction(targetPhone, subAction, updateData) {
         try {
             const res = await fetch(SERVER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    action: 'admin-action', 
-                    subAction: subAction,
-                    targetPhone: phone, 
-                    newPass: newPass,
-                    phone: 'admin', 
-                    password: 'admin'
-                })
+                body: JSON.stringify({ action: 'admin-action', targetPhone, subAction, updateData, phone: 'admin', password: 'admin' })
             });
             const result = await res.json();
             alert(result.success || result.error);
+            closeCard();
             loadUsers();
-        } catch (e) {
-            alert("حدث خطأ في الاتصال");
-        }
+        } catch (e) { alert("فشل الاتصال"); }
+    }
+
+    function filterUsers() {
+        const term = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = users.filter(u => u.name.toLowerCase().includes(term) || u.phone.includes(term));
+        renderUsers(filtered);
     }
 
     loadUsers();
 </script>
-
 </body>
 </html>
