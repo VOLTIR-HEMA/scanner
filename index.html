@@ -178,9 +178,20 @@
                 localStorage.setItem('v_activity', result.activity || activity);
                 localStorage.setItem('v_expiry', result.expiryDate);
                 
-                alert(action === 'login' ? "أهلاً بك" : "تم التسجيل بنجاح (فترة تجريبية 7 أيام)");
+                // تحديث الزراير من السيرفر
+                if (result.customButtons) {
+                    localStorage.setItem('userButtons', JSON.stringify(result.customButtons));
+                }
+                
+                // تحديث الفواتير من السيرفر 📥
+                if (result.invoices) {
+                    localStorage.setItem('v_slots', JSON.stringify(result.invoices));
+                }
+
+                alert(action === 'login' ? "أهلاً بك" : "تم التسجيل بنجاح");
                 location.reload();
-            } else {
+            }
+            else {
                 alert(result.error || "خطأ في البيانات");
             }
         } catch (e) { alert("تعذر الاتصال بالسيرفر"); }
@@ -305,8 +316,33 @@
     }
 
     function addNewButtonSetting() { buttons.push({name:"جديد", cmd:"f1", useEnter: true}); renderSettingsList(); }
-    function saveSettings() { localStorage.setItem('userButtons', JSON.stringify(buttons)); renderButtons(); toggleSettings(false); }
-
+    async function saveSettings() {
+        // 1. الحفظ المحلي في الموبايل
+        localStorage.setItem('userButtons', JSON.stringify(buttons));
+        localStorage.setItem('v_slots', JSON.stringify(slotsData)); // حفظ الفواتير محلياً
+        renderButtons();
+        
+        // 2. الحفظ سحابياً
+        const phone = localStorage.getItem('v_phone');
+        if (phone) {
+            try {
+                await fetch(SERVER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'save-user-data', 
+                        phone: phone, 
+                        customButtons: buttons,
+                        invoices: slotsData // إرسال الفواتير للسيرفر 📤
+                    })
+                });
+            } catch (e) { console.log("خطأ في الحفظ السحابي"); }
+        }
+        
+        toggleSettings(false);
+        if (typeof renderSlots === "function") renderSlots();
+    }
+    
     window.onload = () => {
         if (!localStorage.getItem('v_phone')) {
             document.getElementById('auth-overlay').style.display = 'flex';
