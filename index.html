@@ -15,12 +15,20 @@
         .result-box { margin: 5px 10px; padding: 8px; background: #111; border-radius: 8px; color: #00ff00; font-size: 0.85em; border: 1px solid #222; min-height: 20px; }
         #dynamic-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 8px; }
         .custom-btn { padding: 12px 2px; border-radius: 6px; border: 1px solid #444; color: white; font-weight: bold; font-size: 0.75em; text-align: center; cursor: pointer; }
-        #settings-modal, #keyboard-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; overflow-y: auto; }
+        #settings-modal, #keyboard-modal, #lock-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; overflow-y: auto; }
         .modal-content { background: #222; width: 85%; margin: 20px auto; padding: 15px; border-radius: 15px; text-align: left; border: 1px solid #444; }
         .setting-row { background: #333; padding: 10px; margin-bottom: 10px; border-radius: 8px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+        .btn-link { display: block; width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; text-decoration: none; font-weight: bold; text-align: center; color: white; }
     </style>
 </head>
 <body>
+
+<div id="lock-screen" style="z-index: 4000; background: #0f172a; flex-direction: column; align-items: center; justify-content: center; display: none;">
+    <h1 style="color: #ef4444;">⚠️ انتهى الاشتراك</h1>
+    <p id="lock-msg" style="padding: 0 20px;"></p>
+    <a id="wa-link" href="#" class="btn-link" style="background: #25d366; width: 80%;">تفعيل عبر واتساب 💬</a>
+    <a id="web-link" href="#" class="btn-link" style="background: #3b82f6; width: 80%;">تحميل نسخ الكمبيوتر والموبايل 💻</a>
+</div>
 
 <div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: hsl(216, 28%, 7%); z-index: 3000; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center;">
     <h1 style="color: #3d60cc;">Just Scan</h1>
@@ -66,6 +74,11 @@
         <div id="settings-list"></div>
         <button onclick="addNewButtonSetting()" style="width:100%; padding:10px; background:#444; color:white; border:none; border-radius:8px; margin-top:10px; cursor:pointer;">➕ إضافة زر جديد</button>
         <button onclick="saveSettings()" style="width:100%; padding:15px; background:#28a745; color:white; border:none; border-radius:10px; margin-top:15px; font-weight:bold; cursor:pointer;">حفظ وإغلاق</button>
+        
+        <div style="margin-top: 20px; border-top: 1px solid #444; padding-top: 10px;">
+            <a id="wa-btn-settings" href="#" class="btn-link" style="background:#25d366; font-size: 0.8em;">تواصل مع الدعم (واتساب)</a>
+            <a id="web-btn-settings" href="#" class="btn-link" style="background:#3b82f6; font-size: 0.8em;">موقع تحميل النسخ</a>
+        </div>
     </div>
 </div>
 
@@ -83,37 +96,58 @@
 </div>
 
 <script>
-    let NTFY_URL = '';
+    // --- بيانات الإدارة الأساسية ---
+    const WHATSAPP_NUM = "201147534998"; 
+    const DOWNLOAD_SITE = "https://your-download-link.com"; // ضع رابط موقعك هنا
     const SERVER_URL = 'https://round-resonance-b6f1.voltir-f.workers.dev';
+    
+    let NTFY_URL = '';
     let lastScanTime = 0, isFlashOn = false;
     let activeSlot = null;
     let slotsData = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().map(() => []);
     let slotsNames = JSON.parse(localStorage.getItem('v_slots_names')) || Array(10).fill().map((_, i) => `فاتورة ${i + 1}`);
-    
     let buttons = JSON.parse(localStorage.getItem('userButtons')) || [
         { name: "جديد", cmd: "f8", useEnter: true, color: "#3d60cc" },
         { name: "حفظ", cmd: "f9", useEnter: true, color: "#3d60cc" }
     ];
 
+    // بصمة الجهاز
+    const fingerprint = navigator.userAgent + screen.width + screen.height;
+
     function updateAuthUI() {
         const phone = localStorage.getItem('v_phone');
         const name = localStorage.getItem('v_name') || 'مستخدم جديد';
         const activity = localStorage.getItem('v_activity') || 'غير محدد';
+        const expiry = localStorage.getItem('v_expiry');
+        
         const loggedInView = document.getElementById('logged-in-view');
         const loggedOutView = document.getElementById('logged-out-view');
 
         if (phone) {
             NTFY_URL = `https://ntfy.sh/voltir_${phone}`;
+            
+            // حساب الأيام المتبقية
+            let daysLeft = 0;
+            if(expiry) daysLeft = Math.ceil((parseInt(expiry) - Date.now()) / (1000 * 60 * 60 * 24));
+            const statusText = daysLeft > 0 ? `باقي ${daysLeft} يوم` : "منتهي";
+            const statusColor = daysLeft > 0 ? "#22c55e" : "#ef4444";
+
             loggedInView.style.display = 'block';
             loggedOutView.style.display = 'none';
             loggedInView.innerHTML = `
                 <div style="background:#111; padding:12px; border-radius:10px; border:1px solid #3d60cc; margin-bottom:10px; text-align:right;">
                     <div style="color:#3d60cc; font-size:0.9em; margin-bottom:4px;">👤 الاسم: <span style="color:#fff">${name}</span></div>
                     <div style="color:#3d60cc; font-size:0.9em; margin-bottom:4px;">🏢 النشاط: <span style="color:#fff">${activity}</span></div>
-                    <div style="color:#3d60cc; font-size:0.9em;">📱 الرقم: <span style="color:#fff">${phone}</span></div>
+                    <div style="color:#3d60cc; font-size:0.9em; margin-bottom:4px;">📱 الرقم: <span style="color:#fff">${phone}</span></div>
+                    <div style="color:#3d60cc; font-size:0.9em;">⏳ الاشتراك: <span style="color:${statusColor}">${statusText}</span></div>
                 </div>
                 <button onclick="userLogout()" style="width:100%; padding:10px; background:#800; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل خروج 🚪</button>
             `;
+            
+            // تحديث روابط التواصل
+            const waMsg = encodeURIComponent(`يا هيما محتاج دعم فني لحسابي: ${phone}`);
+            document.getElementById('wa-btn-settings').href = `https://wa.me/${WHATSAPP_NUM}?text=${waMsg}`;
+            document.getElementById('web-btn-settings').href = DOWNLOAD_SITE;
         } else {
             loggedInView.style.display = 'none';
             loggedOutView.style.display = 'block';
@@ -134,14 +168,17 @@
             const res = await fetch(SERVER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action, phone, password: pass, name, activity })
+                body: JSON.stringify({ action, phone, password: pass, name, activity, fingerprint })
             });
             const result = await res.json();
             if (res.ok) {
                 localStorage.setItem('v_phone', phone);
+                localStorage.setItem('v_pass', pass);
                 localStorage.setItem('v_name', result.name || name);
                 localStorage.setItem('v_activity', result.activity || activity);
-                alert(action === 'login' ? "أهلاً بك" : "تم التسجيل بنجاح");
+                localStorage.setItem('v_expiry', result.expiryDate);
+                
+                alert(action === 'login' ? "أهلاً بك" : "تم التسجيل بنجاح (فترة تجريبية 7 أيام)");
                 location.reload();
             } else {
                 alert(result.error || "خطأ في البيانات");
@@ -149,26 +186,57 @@
         } catch (e) { alert("تعذر الاتصال بالسيرفر"); }
     }
 
+    // دالة لتحديث البيانات من السيرفر (التزامن)
+    async function syncData() {
+        const phone = localStorage.getItem('v_phone');
+        const pass = localStorage.getItem('v_pass');
+        if(!phone || !pass) return;
+
+        try {
+            const res = await fetch(SERVER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'login', phone, password: pass })
+            });
+            const result = await res.json();
+            if(result.success) {
+                localStorage.setItem('v_name', result.name);
+                localStorage.setItem('v_activity', result.activity);
+                localStorage.setItem('v_expiry', result.expiryDate);
+                
+                if(result.isExpired) {
+                    showLock(result.name, phone);
+                }
+            }
+        } catch(e) {}
+    }
+
+    function showLock(name, phone) {
+        const lock = document.getElementById('lock-screen');
+        const msg = document.getElementById('lock-msg');
+        lock.style.display = 'flex';
+        msg.innerText = `يا ${name}، اشتراكك انتهى. تواصل معنا للتفعيل.`;
+        
+        const waMsg = encodeURIComponent(`يا هيما عاوز افعل اشتراك Just Scan لرقمي: ${phone}`);
+        document.getElementById('wa-link').href = `https://wa.me/${WHATSAPP_NUM}?text=${waMsg}`;
+        document.getElementById('web-link').href = DOWNLOAD_SITE;
+    }
+
     function userLogout() {
         if (confirm("هل تريد تسجيل الخروج؟")) {
-            localStorage.removeItem('v_phone');
-            localStorage.removeItem('v_name');
-            localStorage.removeItem('v_activity');
+            localStorage.clear();
             location.reload();
         }
     }
 
     function masterSend(text) {
         const phone = localStorage.getItem('v_phone');
+        const expiry = localStorage.getItem('v_expiry');
         if (!phone) return alert("سجل دخول أولاً");
+        if (expiry && Date.now() > parseInt(expiry)) return showLock(localStorage.getItem('v_name'), phone);
         
         const dynamicNtfy = `https://ntfy.sh/voltir_${phone}`;
         fetch(dynamicNtfy, { method: 'POST', body: text });
-        fetch(SERVER_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'scan', phone, code: text })
-        });
     }
 
     function onScanSuccess(text) {
@@ -212,7 +280,12 @@
 
     function toggleSettings(show) {
         document.getElementById('settings-modal').style.display = show ? 'block' : 'none';
-        if (show) { renderSettingsList(); updateAuthUI(); }
+        if (show) { 
+            syncData().then(() => {
+                renderSettingsList(); 
+                updateAuthUI(); 
+            });
+        }
     }
 
     function renderSettingsList() {
@@ -238,8 +311,10 @@
         if (!localStorage.getItem('v_phone')) {
             document.getElementById('auth-overlay').style.display = 'flex';
         } else {
-            const scanner = new Html5QrcodeScanner("reader", { fps: 40, qrbox: { width: 250, height: 150 } });
-            scanner.render(onScanSuccess);
+            syncData().then(() => {
+                const scanner = new Html5QrcodeScanner("reader", { fps: 40, qrbox: { width: 250, height: 150 } });
+                scanner.render(onScanSuccess);
+            });
         }
         renderSlots();
         renderButtons();
@@ -268,8 +343,8 @@
             div.style = "background:#222; border:1px solid #333; padding:10px; border-radius:8px; margin-bottom:8px; display:flex; flex-direction:column; gap:8px;";
             div.innerHTML = `
                 <div style="display:flex; justify-content:space-between; color:#00ffcc; font-size:12px;">
-                   <span>📦 ${slotsNames[index]} <span onclick="editSlotName(${index})" style="cursor:pointer; color:#ffcc00;">✏️</span></span>
-                   <span>(${items.length}/15)</span>
+                    <span>📦 ${slotsNames[index]} <span onclick="editSlotName(${index})" style="cursor:pointer; color:#ffcc00;">✏️</span></span>
+                    <span>(${items.length}/15)</span>
                 </div>
                 <div style="display:flex; gap:5px;">
                     <button onclick="activeSlot=(activeSlot===${index}?null:${index}); renderSlots();" 
