@@ -30,7 +30,10 @@
 <body>
 
 <div class="container">
-    <h2>🛡️ إدارة المشتركين</h2>
+   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2 style="margin: 0;">🛡️ إدارة المشتركين</h2>
+    <button onclick="loadUsers()" class="btn btn-action" style="background: #28a745; padding: 8px 15px;">🔄 تحديث البيانات</button>
+</div>
     <input type="text" id="searchInput" onkeyup="filterUsers()" placeholder="🔍 ابحث بالاسم أو الرقم..." style="margin-bottom: 20px;">
     
     <div id="userList">
