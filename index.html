@@ -22,67 +22,63 @@
     </style>
 </head>
 <body>
+</style>
+</head>
+<body>
 
-<div id="lock-screen" style="z-index: 4000; background: #0f172a; flex-direction: column; align-items: center; justify-content: center; display: none;">
-    <h1 style="color: #ef4444;">⚠️ انتهى الاشتراك</h1>
-    <p id="lock-msg" style="padding: 0 20px;"></p>
-    <a id="wa-link" href="#" class="btn-link" style="background: #25d366; width: 80%;">تفعيل عبر واتساب 💬</a>
-    <a id="web-link" href="#" class="btn-link" style="background: #3b82f6; width: 80%;">تحميل نسخ الكمبيوتر والموبايل 💻</a>
+<div class="container">
+    <div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: hsl(216, 28%, 7%); z-index: 3000; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center;">
+        <h1 style="color: #3d60cc;">Just Scan</h1>
+        <p>يرجى تسجيل الدخول</p>
+        <button onclick="document.getElementById('auth-overlay').style.display='none'; toggleSettings(true);" style="padding: 15px 30px; background: #40414b; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: white;">فتح الإعدادات ⚙️</button>
+    </div>
+
+    <div class="top-bar">
+        <button onclick="toggleSettings(true)">⚙️</button>
+        <button onclick="syncData(true)" style="background: #28a745 !important;">تحديث</button>
+        <button id="flash-btn" onclick="toggleFlash()">🔦</button>
+        <button onclick="openKeyboardModal()">⌨️ Keyboard</button>
+        <button id="slots-toggle-btn" onclick="toggleBillPanel()" style="background: #3d60cc !important; color: white !important; font-weight: bold;">📑 فواتير</button>
+    </div>
+
+    <div id="bill-panel" style="display: none; background: #111; padding: 10px; border: 1px solid #444; margin: 0 10px 10px 10px; border-radius: 10px;">
+        <div id="slots-container"></div>
+    </div>
+
+    <div id="reader"></div>
+    <div id="result" class="result-box">في انتظار التشغيل</div>
+    <div id="dynamic-buttons"></div>
+
+</div> <div id="settings-modal">
+    <div class="modal-content"> 
+        <h3 style="color: #3d60cc; margin-bottom: 15px;">⚙️ الإعدادات والبروفايل</h3>
+        
+        <div id="auth-section" style="margin-bottom:20px;">
+            <div id="logged-in-view" style="display:none;"></div>
+            
+            <div id="logged-out-view">
+                <input type="text" id="u-name" placeholder="الاسم بالكامل" style="width:100%; padding:10px; margin-bottom:8px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
+                <input type="tel" id="u-phone" placeholder="رقم الموبايل (11 رقم)" style="width:100%; padding:10px; margin-bottom:8px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
+                <input type="text" id="u-activity" placeholder="نوع النشاط (صيدلية، محل...)" style="width:100%; padding:10px; margin-bottom:8px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
+                <input type="password" id="u-pass" placeholder="كلمة المرور" style="width:100%; padding:10px; margin-bottom:10px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
+                
+                <div style="display:flex; gap:5px;">
+                    <button onclick="handleAuth('login')" style="flex:1; padding:10px; background:#333; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">دخول</button>
+                    <button onclick="handleAuth('register')" style="flex:1; padding:10px; background:#3d60cc; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل جديد</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="settings-list"></div>
+        <button onclick="addNewButtonSetting()" style="width:100%; padding:10px; background:#444; color:white; border:none; border-radius:8px; margin-top:10px; cursor:pointer;">➕ إضافة زر جديد</button>
+        <button onclick="saveSettings()" style="width:100%; padding:15px; background:#28a745; color:white; border:none; border-radius:10px; margin-top:15px; font-weight:bold; cursor:pointer;">حفظ وإغلاق</button>
+        
+        <div style="margin-top: 20px; border-top: 1px solid #444; padding-top: 10px;">
+            <a id="wa-btn-settings" href="#" class="btn-link" style="background:#25d366; font-size: 0.8em;">تواصل مع الدعم (واتساب)</a>
+            <a id="web-btn-settings" href="#" class="btn-link" style="background:#3b82f6; font-size: 0.8em;">موقع التحميل </a>
+        </div>
+    </div>
 </div>
-
-<div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: hsl(216, 28%, 7%); z-index: 3000; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center;">
-    <h1 style="color: #3d60cc;">Just Scan</h1>
-    <p>يرجى تسجيل الدخول</p>
-    <button onclick="document.getElementById('auth-overlay').style.display='none'; toggleSettings(true);" style="padding: 15px 30px; background: #40414b; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: white;">فتح الإعدادات ⚙️</button>
-</div>
-
-<div class="top-bar">
-    <button onclick="toggleSettings(true)">⚙️</button>
-    <button onclick="syncData(true)" style="background: #28a745 !important;">تحديث</button>
-    <button id="flash-btn" onclick="toggleFlash()">🔦</button>
-    <button onclick="openKeyboardModal()">⌨️ Keyboard</button>
-    <button id="slots-toggle-btn" onclick="toggleBillPanel()" style="background: #3d60cc !important; color: white !important; font-weight: bold;">📑 فواتير</button>
-</div>
-
-<div id="bill-panel" style="display: none; background: #111; padding: 10px; border: 1px solid #444; margin: 0 10px 10px 10px; border-radius: 10px;">
-    <div id="slots-container"></div>
-</div>
-
-<div id="reader"></div>
-<div id="result" class="result-box">في انتظار التشغيل</div>
-<div id="dynamic-buttons"></div>
-
-<div id="settings-modal">
-    <div class="modal-content">
-        <h3 style="color: #3d60cc; margin-bottom: 15px;">⚙️ الإعدادات والبروفايل</h3>
-        
-        <div id="auth-section" style="margin-bottom:20px;">
-            <div id="logged-in-view" style="display:none;"></div>
-            
-            <div id="logged-out-view">
-                <input type="text" id="u-name" placeholder="الاسم بالكامل" style="width:100%; padding:10px; margin-bottom:8px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
-                <input type="tel" id="u-phone" placeholder="رقم الموبايل (11 رقم)" style="width:100%; padding:10px; margin-bottom:8px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
-                <input type="text" id="u-activity" placeholder="نوع النشاط (صيدلية، محل...)" style="width:100%; padding:10px; margin-bottom:8px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
-                <input type="password" id="u-pass" placeholder="كلمة المرور" style="width:100%; padding:10px; margin-bottom:10px; background:#000; color:#0f0; border:1px solid #333; border-radius:5px; box-sizing:border-box;">
-                
-                <div style="display:flex; gap:5px;">
-                    <button onclick="handleAuth('login')" style="flex:1; padding:10px; background:#333; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">دخول</button>
-                    <button onclick="handleAuth('register')" style="flex:1; padding:10px; background:#3d60cc; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل جديد</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="settings-list"></div>
-        <button onclick="addNewButtonSetting()" style="width:100%; padding:10px; background:#444; color:white; border:none; border-radius:8px; margin-top:10px; cursor:pointer;">➕ إضافة زر جديد</button>
-        <button onclick="saveSettings()" style="width:100%; padding:15px; background:#28a745; color:white; border:none; border-radius:10px; margin-top:15px; font-weight:bold; cursor:pointer;">حفظ وإغلاق</button>
-        
-        <div style="margin-top: 20px; border-top: 1px solid #444; padding-top: 10px;">
-            <a id="wa-btn-settings" href="#" class="btn-link" style="background:#25d366; font-size: 0.8em;">تواصل مع الدعم (واتساب)</a>
-            <a id="web-btn-settings" href="#" class="btn-link" style="background:#3b82f6; font-size: 0.8em;">موقع التحميل </a>
-        </div>
-    </div>
-</div>
-
 <div id="keyboard-modal">
     <div class="modal-content" style="text-align: center; margin-top: 50px;">
         <h4 style="color: #ff0000;">إدخال مستمر</h4>
