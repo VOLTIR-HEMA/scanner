@@ -1,28 +1,25 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Just Scan - Ibrahim Edition</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <style>
-        body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 0; overflow-x: hidden; }
-        .top-bar { display: flex; justify-content: space-around; align-items: center; padding: 8px; background: #1a1a1a; border-bottom: 1px solid #333; flex-wrap: wrap; gap: 5px; }
-        .top-bar button { background: #333; color: white; border: 1px solid #555; padding: 6px 10px; border-radius: 6px; font-size: 0.75em; cursor: pointer; }
-        #reader { width: 100% !important; max-width: 500px; margin: 5px auto; border: none !important; min-height: 250px; background: #000; }
-        #reader button { background: #444 !important; color: white !important; padding: 8px !important; border-radius: 5px !important; margin: 5px !important; border: 1px solid #666 !important; }
-        #reader select { background: #222 !important; color: white !important; padding: 5px !important; border-radius: 5px !important; }
-        .result-box { margin: 5px 10px; padding: 8px; background: #111; border-radius: 8px; color: #00ff00; font-size: 0.85em; border: 1px solid #222; min-height: 20px; }
-        #dynamic-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 8px; }
-        .custom-btn { padding: 12px 2px; border-radius: 6px; border: 1px solid #444; color: white; font-weight: bold; font-size: 0.75em; text-align: center; cursor: pointer; }
-        #settings-modal, #keyboard-modal, #lock-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; overflow-y: auto; }
-        .modal-content { background: #222; width: 85%; margin: 20px auto; padding: 15px; border-radius: 15px; text-align: left; border: 1px solid #444; }
-        .setting-row { background: #333; padding: 10px; margin-bottom: 10px; border-radius: 8px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
-        .btn-link { display: block; width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; text-decoration: none; font-weight: bold; text-align: center; color: white; }
-    </style>
-</head>
-<body>
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Just Scan - Ibrahim Edition</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 0; overflow-x: hidden; }
+        .top-bar { display: flex; justify-content: space-around; align-items: center; padding: 8px; background: #1a1a1a; border-bottom: 1px solid #333; flex-wrap: wrap; gap: 5px; }
+        .top-bar button { background: #333; color: white; border: 1px solid #555; padding: 6px 10px; border-radius: 6px; font-size: 0.75em; cursor: pointer; }
+        #reader { width: 100% !important; max-width: 500px; margin: 5px auto; border: none !important; min-height: 250px; background: #000; }
+        #reader button { background: #444 !important; color: white !important; padding: 8px !important; border-radius: 5px !important; margin: 5px !important; border: 1px solid #666 !important; }
+        #reader select { background: #222 !important; color: white !important; padding: 5px !important; border-radius: 5px !important; }
+        .result-box { margin: 5px 10px; padding: 8px; background: #111; border-radius: 8px; color: #00ff00; font-size: 0.85em; border: 1px solid #222; min-height: 20px; }
+        #dynamic-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 8px; }
+        .custom-btn { padding: 12px 2px; border-radius: 6px; border: 1px solid #444; color: white; font-weight: bold; font-size: 0.75em; text-align: center; cursor: pointer; }
+        #settings-modal, #keyboard-modal, #lock-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; overflow-y: auto; }
+        .modal-content { background: #222; width: 85%; margin: 20px auto; padding: 15px; border-radius: 15px; text-align: left; border: 1px solid #444; }
+        .setting-row { background: #333; padding: 10px; margin-bottom: 10px; border-radius: 8px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+        .btn-link { display: block; width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; text-decoration: none; font-weight: bold; text-align: center; color: white; }
+    </style>
 </head>
 <body>
 
@@ -48,8 +45,9 @@
     <div id="reader"></div>
     <div id="result" class="result-box">في انتظار التشغيل</div>
     <div id="dynamic-buttons"></div>
+</div> 
 
-</div> <div id="settings-modal">
+<div id="settings-modal">
     <div class="modal-content"> 
         <h3 style="color: #3d60cc; margin-bottom: 15px;">⚙️ الإعدادات والبروفايل</h3>
         
@@ -79,372 +77,378 @@
         </div>
     </div>
 </div>
+
 <div id="keyboard-modal">
-    <div class="modal-content" style="text-align: center; margin-top: 50px;">
-        <h4 style="color: #ff0000;">إدخال مستمر</h4>
-        <input type="text" id="manual-input" style="width: 80%; padding: 15px; background: #000; color: #00ff00; border: 1px solid #444; border-radius: 8px; font-size: 1.2em;" onkeypress="if(event.key==='Enter') submitManualInput()">
-        <br><br>
-        <div style="display: flex; gap: 5px; justify-content: center;">
-            <button onclick="submitManualInput()" style="flex: 1; padding: 10px; background: #28a745; color: white; border: none; border-radius: 8px;">إرسال</button>
-            <button onclick="sendManualEnter()" style="flex: 1; padding: 10px; background: #007bff; color: white; border: none; border-radius: 8px;">Enter ⏎</button>
-            <button onclick="closeKeyboardModal()" style="flex: 1; padding: 10px; background: #444; color: white; border: none; border-radius: 8px;">إغلاق</button>
-        </div>
-    </div>
+    <div class="modal-content" style="text-align: center; margin-top: 50px;">
+        <h4 style="color: #ff0000;">إدخال مستمر</h4>
+        <input type="text" id="manual-input" style="width: 80%; padding: 15px; background: #000; color: #00ff00; border: 1px solid #444; border-radius: 8px; font-size: 1.2em;" onkeypress="if(event.key==='Enter') submitManualInput()">
+        <br><br>
+        <div style="display: flex; gap: 5px; justify-content: center;">
+            <button onclick="submitManualInput()" style="flex: 1; padding: 10px; background: #28a745; color: white; border: none; border-radius: 8px;">إرسال</button>
+            <button onclick="sendManualEnter()" style="flex: 1; padding: 10px; background: #007bff; color: white; border: none; border-radius: 8px;">Enter ⏎</button>
+            <button onclick="closeKeyboardModal()" style="flex: 1; padding: 10px; background: #444; color: white; border: none; border-radius: 8px;">إغلاق</button>
+        </div>
+    </div>
+</div>
+
+<div id="lock-screen" style="z-index: 4000; background: #0f172a; flex-direction: column; align-items: center; justify-content: center; display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
+    <h1 style="color: #ef4444;">⚠️ انتهى الاشتراك</h1>
+    <p id="lock-msg" style="padding: 0 20px;"></p>
+    <a id="wa-link" href="#" class="btn-link" style="background: #25d366; width: 80%;">تفعيل عبر واتساب 💬</a>
+    <a id="web-link" href="#" class="btn-link" style="background: #3b82f6; width: 80%;">تحميل نسخ الكمبيوتر والموبايل 💻</a>
 </div>
 
 <script>
-    // --- بيانات الإدارة الأساسية ---
-    const WHATSAPP_NUM = "201147534998"; 
-    const DOWNLOAD_SITE = "https://voltir-hema.github.io/Scan-Search/"; // ضع رابط موقعك هنا
-    const SERVER_URL = 'https://round-resonance-b6f1.voltir-f.workers.dev';
-    
-    let NTFY_URL = '';
-    let lastScanTime = 0, isFlashOn = false;
-    let activeSlot = null;
-    let slotsData = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().map(() => []);
-    let slotsNames = JSON.parse(localStorage.getItem('v_slots_names')) || Array(10).fill().map((_, i) => `فاتورة ${i + 1}`);
-    let buttons = JSON.parse(localStorage.getItem('userButtons')) || [
-        { name: "جديد", cmd: "f8", useEnter: true, color: "#3d60cc" },
-        { name: "حفظ", cmd: "f9", useEnter: true, color: "#3d60cc" }
-    ];
+    // --- بيانات الإدارة الأساسية ---
+    const WHATSAPP_NUM = "201147534998"; 
+    const DOWNLOAD_SITE = "https://voltir-hema.github.io/Scan-Search/"; 
+    const SERVER_URL = 'https://round-resonance-b6f1.voltir-f.workers.dev';
+    
+    let NTFY_URL = '';
+    let lastScanTime = 0, isFlashOn = false;
+    let activeSlot = null;
+    let slotsData = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().map(() => []);
+    let slotsNames = JSON.parse(localStorage.getItem('v_slots_names')) || Array(10).fill().map((_, i) => `فاتورة ${i + 1}`);
+    let buttons = JSON.parse(localStorage.getItem('userButtons')) || [
+        { name: "جديد", cmd: "f8", useEnter: true, color: "#3d60cc" },
+        { name: "حفظ", cmd: "f9", useEnter: true, color: "#3d60cc" }
+    ];
 
-    // بصمة الجهاز
-    const fingerprint = navigator.userAgent + screen.width + screen.height;
+    // بصمة الجهاز
+    const fingerprint = navigator.userAgent + screen.width + screen.height;
 
-    function updateAuthUI() {
-        const phone = localStorage.getItem('v_phone');
-        const name = localStorage.getItem('v_name') || 'مستخدم جديد';
-        const activity = localStorage.getItem('v_activity') || 'غير محدد';
-        const expiry = localStorage.getItem('v_expiry');
-        
-        const loggedInView = document.getElementById('logged-in-view');
-        const loggedOutView = document.getElementById('logged-out-view');
+    function updateAuthUI() {
+        const phone = localStorage.getItem('v_phone');
+        const name = localStorage.getItem('v_name') || 'مستخدم جديد';
+        const activity = localStorage.getItem('v_activity') || 'غير محدد';
+        const expiry = localStorage.getItem('v_expiry');
+        
+        const loggedInView = document.getElementById('logged-in-view');
+        const loggedOutView = document.getElementById('logged-out-view');
 
-        if (phone) {
-            NTFY_URL = `https://ntfy.sh/voltir_${phone}`;
-            
-            // حساب الأيام المتبقية
-            let daysLeft = 0;
-            if(expiry) daysLeft = Math.ceil((parseInt(expiry) - Date.now()) / (1000 * 60 * 60 * 24));
-            const statusText = daysLeft > 0 ? `باقي ${daysLeft} يوم` : "منتهي";
-            const statusColor = daysLeft > 0 ? "#22c55e" : "#ef4444";
+        if (phone) {
+            NTFY_URL = `https://ntfy.sh/voltir_${phone}`;
+            
+            // حساب الأيام المتبقية
+            let daysLeft = 0;
+            if(expiry) daysLeft = Math.ceil((parseInt(expiry) - Date.now()) / (1000 * 60 * 60 * 24));
+            const statusText = daysLeft > 0 ? `باقي ${daysLeft} يوم` : "منتهي";
+            const statusColor = daysLeft > 0 ? "#22c55e" : "#ef4444";
 
-            loggedInView.style.display = 'block';
-            loggedOutView.style.display = 'none';
-            loggedInView.innerHTML = `
-                <div style="background:#111; padding:12px; border-radius:10px; border:1px solid #3d60cc; margin-bottom:10px; text-align:right;">
-                    <div style="color:#3d60cc; font-size:0.9em; margin-bottom:4px;">👤 الاسم: <span style="color:#fff">${name}</span></div>
-                    <div style="color:#3d60cc; font-size:0.9em; margin-bottom:4px;">🏢 النشاط: <span style="color:#fff">${activity}</span></div>
-                    <div style="color:#3d60cc; font-size:0.9em; margin-bottom:4px;">📱 الرقم: <span style="color:#fff">${phone}</span></div>
-                    <div style="color:#3d60cc; font-size:0.9em;">⏳ الاشتراك: <span style="color:${statusColor}">${statusText}</span></div>
-                </div>
-                <button onclick="userLogout()" style="width:100%; padding:10px; background:#800; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل خروج 🚪</button>
-            `;
-            
-            // تحديث روابط التواصل
-            const waMsg = encodeURIComponent(`يا هيما محتاج دعم فني لحسابي: ${phone}`);
-            document.getElementById('wa-btn-settings').href = `https://wa.me/${WHATSAPP_NUM}?text=${waMsg}`;
-            document.getElementById('web-btn-settings').href = DOWNLOAD_SITE;
-        } else {
-            loggedInView.style.display = 'none';
-            loggedOutView.style.display = 'block';
-        }
-    }
+            loggedInView.style.display = 'block';
+            loggedOutView.style.display = 'none';
+            loggedInView.innerHTML = `
+                <div style="background:#111; padding:12px; border-radius:10px; border:1px solid #3d60cc; margin-bottom:10px; text-align:right;">
+                    <div style="color:#3d60cc; font-size:0.9em; margin-bottom:4px;">👤 الاسم: <span style="color:#fff">${name}</span></div>
+                    <div style="color:#3d60cc; font-size:0.9em; margin-bottom:4px;">🏢 النشاط: <span style="color:#fff">${activity}</span></div>
+                    <div style="color:#3d60cc; font-size:0.9em; margin-bottom:4px;">📱 الرقم: <span style="color:#fff">${phone}</span></div>
+                    <div style="color:#3d60cc; font-size:0.9em;">⏳ الاشتراك: <span style="color:${statusColor}">${statusText}</span></div>
+                </div>
+                <button onclick="userLogout()" style="width:100%; padding:10px; background:#800; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل خروج 🚪</button>
+            `;
+            
+            // تحديث روابط التواصل
+            const waMsg = encodeURIComponent(`يا هيما محتاج دعم فني لحسابي: ${phone}`);
+            document.getElementById('wa-btn-settings').href = `https://wa.me/${WHATSAPP_NUM}?text=${waMsg}`;
+            document.getElementById('web-btn-settings').href = DOWNLOAD_SITE;
+        } else {
+            loggedInView.style.display = 'none';
+            loggedOutView.style.display = 'block';
+        }
+    }
 
-    async function handleAuth(action) {
-        const phone = document.getElementById('u-phone').value.trim();
-        const pass = document.getElementById('u-pass').value.trim();
-        const name = document.getElementById('u-name').value.trim();
-        const activity = document.getElementById('u-activity').value.trim();
+    async function handleAuth(action) {
+        const phone = document.getElementById('u-phone').value.trim();
+        const pass = document.getElementById('u-pass').value.trim();
+        const name = document.getElementById('u-name').value.trim();
+        const activity = document.getElementById('u-activity').value.trim();
 
-        if (phone.length !== 11 || isNaN(phone)) return alert("رقم الموبايل غير صحيح");
-        if (!pass) return alert("اكتب كلمة المرور");
-        if (action === 'register' && (!name || !activity)) return alert("اكمل بيانات الاسم والنشاط للتسجيل");
+        if (phone.length !== 11 || isNaN(phone)) return alert("رقم الموبايل غير صحيح");
+        if (!pass) return alert("اكتب كلمة المرور");
+        if (action === 'register' && (!name || !activity)) return alert("اكمل بيانات الاسم والنشاط للتسجيل");
 
-        try {
-            const res = await fetch(SERVER_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action, phone, password: pass, name, activity, fingerprint })
-            });
-            const result = await res.json();
-            if (res.ok) {
-                localStorage.setItem('v_phone', phone);
-                localStorage.setItem('v_pass', pass);
-                localStorage.setItem('v_name', result.name || name);
-                localStorage.setItem('v_activity', result.activity || activity);
-                localStorage.setItem('v_expiry', result.expiryDate);
-                
-                // تحديث الزراير من السيرفر
-                if (result.customButtons) {
-                    localStorage.setItem('userButtons', JSON.stringify(result.customButtons));
-                }
-                
-                // تحديث الفواتير من السيرفر 📥
-                if (result.invoices) {
-                    localStorage.setItem('v_slots', JSON.stringify(result.invoices));
-                }
+        try {
+            const res = await fetch(SERVER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, phone, password: pass, name, activity, fingerprint })
+            });
+            const result = await res.json();
+            if (res.ok) {
+                localStorage.setItem('v_phone', phone);
+                localStorage.setItem('v_pass', pass);
+                localStorage.setItem('v_name', result.name || name);
+                localStorage.setItem('v_activity', result.activity || activity);
+                localStorage.setItem('v_expiry', result.expiryDate);
+                
+                // تحديث الزراير من السيرفر
+                if (result.customButtons) {
+                    localStorage.setItem('userButtons', JSON.stringify(result.customButtons));
+                }
+                
+                // تحديث الفواتير من السيرفر 📥
+                if (result.invoices) {
+                    localStorage.setItem('v_slots', JSON.stringify(result.invoices));
+                }
 
-                alert(action === 'login' ? "أهلاً بك" : "تم التسجيل بنجاح");
-                location.reload();
-            }
-            else {
-                alert(result.error || "خطأ في البيانات");
-            }
-        } catch (e) { alert("تعذر الاتصال بالسيرفر"); }
-    }
+                alert(action === 'login' ? "أهلاً بك" : "تم التسجيل بنجاح");
+                location.reload();
+            }
+            else {
+                alert(result.error || "خطأ في البيانات");
+            }
+        } catch (e) { alert("تعذر الاتصال بالسيرفر"); }
+    }
 
-  async function syncData(manual = false) {
-        const phone = localStorage.getItem('v_phone');
-        const pass = localStorage.getItem('v_pass');
-        if(!phone || !pass) return;
+  async function syncData(manual = false) {
+        const phone = localStorage.getItem('v_phone');
+        const pass = localStorage.getItem('v_pass');
+        if(!phone || !pass) return;
 
-        try {
-            const res = await fetch(SERVER_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'login', phone, password: pass })
-            });
-            const result = await res.json();
-            if(result.success) {
-                // 1. تحديث البيانات الأساسية
-                localStorage.setItem('v_name', result.name);
-                localStorage.setItem('v_activity', result.activity);
-                localStorage.setItem('v_expiry', result.expiryDate);
-                
-                // 2. تحديث الزراير (Buttons)
-                if(result.customButtons) {
-                    localStorage.setItem('userButtons', JSON.stringify(result.customButtons));
-                    buttons = result.customButtons; 
-                    renderButtons(); 
-                }
-                
-                // 3. تحديث الفواتير (Slots)
-                if(result.invoices) {
-                    localStorage.setItem('v_slots', JSON.stringify(result.invoices));
-                    slotsData = result.invoices; 
-                    if (typeof renderSlots === "function") renderSlots();
-                }
+        try {
+            const res = await fetch(SERVER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'login', phone, password: pass })
+            });
+            const result = await res.json();
+            if(result.success) {
+                // 1. تحديث البيانات الأساسية
+                localStorage.setItem('v_name', result.name);
+                localStorage.setItem('v_activity', result.activity);
+                localStorage.setItem('v_expiry', result.expiryDate);
+                
+                // 2. تحديث الزراير (Buttons)
+                if(result.customButtons) {
+                    localStorage.setItem('userButtons', JSON.stringify(result.customButtons));
+                    buttons = result.customButtons; 
+                    renderButtons(); 
+                }
+                
+                // 3. تحديث الفواتير (Slots)
+                if(result.invoices) {
+                    localStorage.setItem('v_slots', JSON.stringify(result.invoices));
+                    slotsData = result.invoices; 
+                    if (typeof renderSlots === "function") renderSlots();
+                }
                 updateAuthUI();
-                if(manual) alert("✅ تم تحديث البيانات من السيرفر");
-                if(result.isExpired) showLock(result.name, phone);
-            }
-        } catch(e) { 
-            if(manual) alert("❌ فشل الاتصال بالسيرفر"); 
-        }
-    }
-    
-    }
+                if(manual) alert("✅ تم تحديث البيانات من السيرفر");
+                if(result.isExpired) showLock(result.name, phone);
+            }
+        } catch(e) { 
+            if(manual) alert("❌ فشل الاتصال بالسيرفر"); 
+        }
+    }
 
-    function showLock(name, phone) {
-        const lock = document.getElementById('lock-screen');
-        const msg = document.getElementById('lock-msg');
-        lock.style.display = 'flex';
-        msg.innerText = `يا ${name}، اشتراكك انتهى. تواصل معنا للتفعيل.`;
-        
-        const waMsg = encodeURIComponent(`يا هيما عاوز افعل اشتراك Just Scan لرقمي: ${phone}`);
-        document.getElementById('wa-link').href = `https://wa.me/${WHATSAPP_NUM}?text=${waMsg}`;
-        document.getElementById('web-link').href = DOWNLOAD_SITE;
-    }
+    function showLock(name, phone) {
+        const lock = document.getElementById('lock-screen');
+        const msg = document.getElementById('lock-msg');
+        lock.style.display = 'flex';
+        msg.innerText = `يا ${name}، اشتراكك انتهى. تواصل معنا للتفعيل.`;
+        
+        const waMsg = encodeURIComponent(`يا هيما عاوز افعل اشتراك Just Scan لرقمي: ${phone}`);
+        document.getElementById('wa-link').href = `https://wa.me/${WHATSAPP_NUM}?text=${waMsg}`;
+        document.getElementById('web-link').href = DOWNLOAD_SITE;
+    }
 
-    function userLogout() {
-        if (confirm("هل تريد تسجيل الخروج؟")) {
-            localStorage.clear();
-            location.reload();
-        }
-    }
+    function userLogout() {
+        if (confirm("هل تريد تسجيل الخروج؟")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
 
-    function masterSend(text) {
-        const phone = localStorage.getItem('v_phone');
-        const expiry = localStorage.getItem('v_expiry');
-        if (!phone) return alert("سجل دخول أولاً");
-        if (expiry && Date.now() > parseInt(expiry)) return showLock(localStorage.getItem('v_name'), phone);
-        
-        const dynamicNtfy = `https://ntfy.sh/voltir_${phone}`;
-        fetch(dynamicNtfy, { method: 'POST', body: text });
-    }
+    function masterSend(text) {
+        const phone = localStorage.getItem('v_phone');
+        const expiry = localStorage.getItem('v_expiry');
+        if (!phone) return alert("سجل دخول أولاً");
+        if (expiry && Date.now() > parseInt(expiry)) return showLock(localStorage.getItem('v_name'), phone);
+        
+        const dynamicNtfy = `https://ntfy.sh/voltir_${phone}`;
+        fetch(dynamicNtfy, { method: 'POST', body: text });
+    }
 
-    function onScanSuccess(text) {
-        if (Date.now() - lastScanTime < 1500) return;
-        lastScanTime = Date.now();
-        
-        if (activeSlot !== null) {
-            if (slotsData[activeSlot].length < 15) {
-                slotsData[activeSlot].push(text);
-                localStorage.setItem('v_slots', JSON.stringify(slotsData));
-                renderSlots();
-                document.getElementById('result').innerText = `تم الحفظ في ${slotsNames[activeSlot]}: ${text}`;
-            } else {
-                alert("الفاتورة ممتلئة!");
-                activeSlot = null;
-                renderSlots();
-            }
-        } else {
-            masterSend(text + '_ent');
-            document.getElementById('result').innerText = "إرسال مباشر: " + text;
-        }
-    }
+    function onScanSuccess(text) {
+        if (Date.now() - lastScanTime < 1500) return;
+        lastScanTime = Date.now();
+        
+        if (activeSlot !== null) {
+            if (slotsData[activeSlot].length < 15) {
+                slotsData[activeSlot].push(text);
+                localStorage.setItem('v_slots', JSON.stringify(slotsData));
+                renderSlots();
+                document.getElementById('result').innerText = `تم الحفظ في ${slotsNames[activeSlot]}: ${text}`;
+            } else {
+                alert("الفاتورة ممتلئة!");
+                activeSlot = null;
+                renderSlots();
+            }
+        } else {
+            masterSend(text + '_ent');
+            document.getElementById('result').innerText = "إرسال مباشر: " + text;
+        }
+    }
 
-    function renderButtons() {
-        const container = document.getElementById('dynamic-buttons');
-        container.innerHTML = '';
-        buttons.forEach((btn) => {
-            const b = document.createElement('button');
-            b.className = 'custom-btn';
-            b.style.backgroundColor = btn.color || '#444';
-            b.innerText = btn.name;
-            b.onclick = () => sendCommand(btn.cmd, btn.useEnter);
-            container.appendChild(b);
-        });
-    }
+    function renderButtons() {
+        const container = document.getElementById('dynamic-buttons');
+        container.innerHTML = '';
+        buttons.forEach((btn) => {
+            const b = document.createElement('button');
+            b.className = 'custom-btn';
+            b.style.backgroundColor = btn.color || '#444';
+            b.innerText = btn.name;
+            b.onclick = () => sendCommand(btn.cmd, btn.useEnter);
+            container.appendChild(b);
+        });
+    }
 
-    function sendCommand(cmd, useEnter) {
-        masterSend(cmd);
-        if (useEnter) setTimeout(() => masterSend('enter'), 400);
-    }
+    function sendCommand(cmd, useEnter) {
+        masterSend(cmd);
+        if (useEnter) setTimeout(() => masterSend('enter'), 400);
+    }
 
-    function toggleSettings(show) {
-        document.getElementById('settings-modal').style.display = show ? 'block' : 'none';
-        if (show) { 
-            syncData().then(() => {
-                renderSettingsList(); 
-                updateAuthUI(); 
-            });
-        }
-    }
+    function toggleSettings(show) {
+        document.getElementById('settings-modal').style.display = show ? 'block' : 'none';
+        if (show) { 
+            syncData().then(() => {
+                renderSettingsList(); 
+                updateAuthUI(); 
+            });
+        }
+    }
 
-    function renderSettingsList() {
-        const list = document.getElementById('settings-list');
-        list.innerHTML = '';
-        buttons.forEach((btn, index) => {
-            const div = document.createElement('div');
-            div.className = 'setting-row';
-            div.innerHTML = `
-                <input type="text" value="${btn.name}" oninput="buttons[${index}].name=this.value" style="width:25%">
-                <input type="text" value="${btn.cmd}" oninput="buttons[${index}].cmd=this.value" style="width:25%">
-                <label style="font-size:12px">Enter: <input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="buttons[${index}].useEnter=this.checked"></label>
-                <button onclick="buttons.splice(${index},1);renderSettingsList()" style="background:red; color:white; border:none; border-radius:4px; padding:5px;">حذف</button>
-            `;
-            list.appendChild(div);
-        });
-    }
+    function renderSettingsList() {
+        const list = document.getElementById('settings-list');
+        list.innerHTML = '';
+        buttons.forEach((btn, index) => {
+            const div = document.createElement('div');
+            div.className = 'setting-row';
+            div.innerHTML = `
+                <input type="text" value="${btn.name}" oninput="buttons[${index}].name=this.value" style="width:25%">
+                <input type="text" value="${btn.cmd}" oninput="buttons[${index}].cmd=this.value" style="width:25%">
+                <label style="font-size:12px">Enter: <input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="buttons[${index}].useEnter=this.checked"></label>
+                <button onclick="buttons.splice(${index},1);renderSettingsList()" style="background:red; color:white; border:none; border-radius:4px; padding:5px;">حذف</button>
+            `;
+            list.appendChild(div);
+        });
+    }
 
-    function addNewButtonSetting() { buttons.push({name:"جديد", cmd:"f1", useEnter: true}); renderSettingsList(); }
-    async function saveSettings() {
-        // 1. الحفظ المحلي في الموبايل
-        localStorage.setItem('userButtons', JSON.stringify(buttons));
-        localStorage.setItem('v_slots', JSON.stringify(slotsData)); // حفظ الفواتير محلياً
-        renderButtons();
-        
-        // 2. الحفظ سحابياً
-        const phone = localStorage.getItem('v_phone');
-        if (phone) {
-            try {
-                await fetch(SERVER_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        action: 'save-user-data', 
-                        phone: phone, 
-                        customButtons: buttons,
-                        invoices: slotsData // إرسال الفواتير للسيرفر 📤
-                    })
-                });
-            } catch (e) { console.log("خطأ في الحفظ السحابي"); }
-        }
-        
-        toggleSettings(false);
-        if (typeof renderSlots === "function") renderSlots();
-    }
-    
-    window.onload = () => {
-        if (!localStorage.getItem('v_phone')) {
-            document.getElementById('auth-overlay').style.display = 'flex';
-        } else {
-            syncData().then(() => {
-                const scanner = new Html5QrcodeScanner("reader", { fps: 40, qrbox: { width: 250, height: 150 } });
-                scanner.render(onScanSuccess);
-            });
-        }
-        renderSlots();
-        renderButtons();
-    };
+    function addNewButtonSetting() { buttons.push({name:"جديد", cmd:"f1", useEnter: true}); renderSettingsList(); }
+    async function saveSettings() {
+        // 1. الحفظ المحلي في الموبايل
+        localStorage.setItem('userButtons', JSON.stringify(buttons));
+        localStorage.setItem('v_slots', JSON.stringify(slotsData)); // حفظ الفواتير محلياً
+        renderButtons();
+        
+        // 2. الحفظ سحابياً
+        const phone = localStorage.getItem('v_phone');
+        if (phone) {
+            try {
+                await fetch(SERVER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'save-user-data', 
+                        phone: phone, 
+                        customButtons: buttons,
+                        invoices: slotsData // إرسال الفواتير للسيرفر 📤
+                    })
+                });
+            } catch (e) { console.log("خطأ في الحفظ السحابي"); }
+        }
+        
+        toggleSettings(false);
+        if (typeof renderSlots === "function") renderSlots();
+    }
+    
+    window.onload = () => {
+        if (!localStorage.getItem('v_phone')) {
+            document.getElementById('auth-overlay').style.display = 'flex';
+        } else {
+            syncData().then(() => {
+                const scanner = new Html5QrcodeScanner("reader", { fps: 40, qrbox: { width: 250, height: 150 } });
+                scanner.render(onScanSuccess);
+            });
+        }
+        renderSlots();
+        renderButtons();
+    };
 
-    function openKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'block'; document.getElementById('manual-input').focus(); }
-    function closeKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'none'; }
-    function submitManualInput() {
-        const input = document.getElementById('manual-input');
-        if (input.value.trim() !== "") { masterSend(input.value.trim()); input.value = ''; input.focus(); }
-    }
-    function sendManualEnter() { masterSend('enter'); document.getElementById('manual-input').focus(); }
+    function openKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'block'; document.getElementById('manual-input').focus(); }
+    function closeKeyboardModal() { document.getElementById('keyboard-modal').style.display = 'none'; }
+    function submitManualInput() {
+        const input = document.getElementById('manual-input');
+        if (input.value.trim() !== "") { masterSend(input.value.trim()); input.value = ''; input.focus(); }
+    }
+    function sendManualEnter() { masterSend('enter'); document.getElementById('manual-input').focus(); }
 
-    function toggleBillPanel() {
-        const panel = document.getElementById('bill-panel');
-        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-        if (panel.style.display === 'block') renderSlots();
-    }
+    function toggleBillPanel() {
+        const panel = document.getElementById('bill-panel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        if (panel.style.display === 'block') renderSlots();
+    }
 
-    function renderSlots() {
-        const container = document.getElementById('slots-container');
-        if (!container) return;
-        container.innerHTML = '';
-        slotsData.forEach((items, index) => {
-            const div = document.createElement('div');
-            div.style = "background:#222; border:1px solid #333; padding:10px; border-radius:8px; margin-bottom:8px; display:flex; flex-direction:column; gap:8px;";
-            div.innerHTML = `
-                <div style="display:flex; justify-content:space-between; color:#00ffcc; font-size:12px;">
-                    <span>📦 ${slotsNames[index]} <span onclick="editSlotName(${index})" style="cursor:pointer; color:#ffcc00;">✏️</span></span>
-                    <span>(${items.length}/15)</span>
-                </div>
-                <div style="display:flex; gap:5px;">
-                    <button onclick="activeSlot=(activeSlot===${index}?null:${index}); renderSlots();" 
-                            style="flex:1; padding:10px; border:none; border-radius:5px; color:white; background:${activeSlot===index?'#ff0000':'#444'}">
-                        ${activeSlot===index?'🔴 يسجل':'🎤 ابدأ'}
-                    </button>
-                    <button onclick="sendSlot(${index})" style="flex:1; padding:10px; border:none; border-radius:5px; background:#28a745; color:white;">📤 إرسال</button>
-                    <button onclick="clearSlot(${index})" style="flex:0.4; padding:10px; border:none; border-radius:5px; background:#800; color:white;">🗑️</button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    }
+    function renderSlots() {
+        const container = document.getElementById('slots-container');
+        if (!container) return;
+        container.innerHTML = '';
+        slotsData.forEach((items, index) => {
+            const div = document.createElement('div');
+            div.style = "background:#222; border:1px solid #333; padding:10px; border-radius:8px; margin-bottom:8px; display:flex; flex-direction:column; gap:8px;";
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; color:#00ffcc; font-size:12px;">
+                    <span>📦 ${slotsNames[index]} <span onclick="editSlotName(${index})" style="cursor:pointer; color:#ffcc00;">✏️</span></span>
+                    <span>(${items.length}/15)</span>
+                </div>
+                <div style="display:flex; gap:5px;">
+                    <button onclick="activeSlot=(activeSlot===${index}?null:${index}); renderSlots();" 
+                            style="flex:1; padding:10px; border:none; border-radius:5px; color:white; background:${activeSlot===index?'#ff0000':'#444'}">
+                        ${activeSlot===index?'🔴 يسجل':'🎤 ابدأ'}
+                    </button>
+                    <button onclick="sendSlot(${index})" style="flex:1; padding:10px; border:none; border-radius:5px; background:#28a745; color:white;">📤 إرسال</button>
+                    <button onclick="clearSlot(${index})" style="flex:0.4; padding:10px; border:none; border-radius:5px; background:#800; color:white;">🗑️</button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
 
-    async function sendSlot(index) {
-        const items = slotsData[index];
-        if (items.length === 0) return alert("الخانة فاضية");
-        if (confirm(`إرسال ${items.length} صنف؟`)) {
-            for (let item of items) {
-                masterSend(item + '_ent');
-                await new Promise(r => setTimeout(r, 1000));
-            }
-            alert("✅ تم الإرسال");
-        }
-    }
+    async function sendSlot(index) {
+        const items = slotsData[index];
+        if (items.length === 0) return alert("الخانة فاضية");
+        if (confirm(`إرسال ${items.length} صنف؟`)) {
+            for (let item of items) {
+                masterSend(item + '_ent');
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            alert("✅ تم الإرسال");
+        }
+    }
 
-    function clearSlot(index) {
-        if (confirm("مسح الفاتورة؟")) {
-            slotsData[index] = [];
-            localStorage.setItem('v_slots', JSON.stringify(slotsData));
-            renderSlots();
-        }
-    }
+    function clearSlot(index) {
+        if (confirm("مسح الفاتورة؟")) {
+            slotsData[index] = [];
+            localStorage.setItem('v_slots', JSON.stringify(slotsData));
+            renderSlots();
+        }
+    }
 
-    function editSlotName(index) {
-        const name = prompt("الاسم الجديد:", slotsNames[index]);
-        if (name) {
-            slotsNames[index] = name;
-            localStorage.setItem('v_slots_names', JSON.stringify(slotsNames));
-            renderSlots();
-        }
-    }
+    function editSlotName(index) {
+        const name = prompt("الاسم الجديد:", slotsNames[index]);
+        if (name) {
+            slotsNames[index] = name;
+            localStorage.setItem('v_slots_names', JSON.stringify(slotsNames));
+            renderSlots();
+        }
+    }
 
-    async function toggleFlash() {
-        try {
-            const track = document.querySelector('video').srcObject.getVideoTracks()[0];
-            isFlashOn = !isFlashOn;
-            await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
-        } catch (e) { alert("الفلاش غير مدعوم"); }
-    }
+    async function toggleFlash() {
+        try {
+            const track = document.querySelector('video').srcObject.getVideoTracks()[0];
+            isFlashOn = !isFlashOn;
+            await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+        } catch (e) { alert("الفلاش غير مدعوم"); }
+    }
 </script>
 </body>
 </html>
