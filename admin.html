@@ -134,17 +134,17 @@
         modal.style.display = 'block';
     }
 
-    // --- وظائف تخصيص الأزرار الجديدة (تم تعديل المسميات للربط مع السيرفر) ---
+        // --- وظائف تخصيص الأزرار الجديدة (تم تعديل المسميات للربط مع السيرفر والموبايل) ---
     function openButtonsCustomizer(phone) {
         currentEditingPhone = phone;
         const user = users.find(u => u.phone === phone);
         const modal = document.getElementById('buttonsModal');
         document.getElementById('btnModalTitle').innerText = `🕹️ تخصيص أزرار: ${user.name}`;
         
-        // استخدام customButtons ليتوافق مع السيرفر
-        if (!user.customButtons) user.customButtons = []; 
+        // استخدام userButtons ليتوافق مع السيرفر وتطبيق المستخدم
+        if (!user.userButtons) user.userButtons = []; 
         
-        renderButtonsList(user.customButtons);
+        renderButtonsList(user.userButtons);
         document.getElementById('saveButtonsAction').onclick = () => saveButtons(phone);
         modal.style.display = 'block';
     }
@@ -156,10 +156,10 @@
         btns.forEach((btn, index) => {
             listDiv.innerHTML += `
                 <div class="button-edit-card">
-                    <input type="text" placeholder="اسم الزر" value="${btn.label || ''}" class="btn-label" style="margin:0">
-                    <input type="text" placeholder="الأمر" value="${btn.command || ''}" class="btn-cmd" style="margin:0">
+                    <input type="text" placeholder="اسم الزر" value="${btn.name || ''}" class="btn-label" style="margin:0">
+                    <input type="text" placeholder="الأمر" value="${btn.cmd || ''}" class="btn-cmd" style="margin:0">
                     <label style="font-size:10px; text-align:center;">
-                        <input type="checkbox" class="btn-enter" ${btn.sendEnter ? 'checked' : ''} style="width:auto"> <br>Enter
+                        <input type="checkbox" class="btn-enter" ${btn.useEnter ? 'checked' : ''} style="width:auto"> <br>Enter
                     </label>
                     <div class="reorder-btns">
                         <button onclick="moveBtn(${index}, -1)">▲</button>
@@ -172,42 +172,39 @@
 
     function addNewButtonField() {
         const user = users.find(u => u.phone === currentEditingPhone);
-        if (!user.customButtons) user.customButtons = [];
-        user.customButtons.push({ label: '', command: '', sendEnter: false });
-        renderButtonsList(user.customButtons);
+        if (!user.userButtons) user.userButtons = [];
+        user.userButtons.push({ name: '', cmd: '', useEnter: false, color: "#3d60cc" });
+        renderButtonsList(user.userButtons);
     }
 
     function moveBtn(index, direction) {
         const user = users.find(u => u.phone === currentEditingPhone);
         const newIndex = index + direction;
-        if (newIndex >= 0 && newIndex < user.customButtons.length) {
-            [user.customButtons[index], user.customButtons[newIndex]] = [user.customButtons[newIndex], user.customButtons[index]];
-            renderButtonsList(user.customButtons);
+        if (newIndex >= 0 && newIndex < user.userButtons.length) {
+            [user.userButtons[index], user.userButtons[newIndex]] = [user.userButtons[newIndex], user.userButtons[index]];
+            renderButtonsList(user.userButtons);
         }
     }
 
     function deleteBtn(index) {
         if(confirm("حذف الزر؟")) {
             const user = users.find(u => u.phone === currentEditingPhone);
-            user.customButtons.splice(index, 1);
-            renderButtonsList(user.customButtons);
+            user.userButtons.splice(index, 1);
+            renderButtonsList(user.userButtons);
         }
     }
 
     async function saveButtons(phone) {
         const buttonCards = document.querySelectorAll('.button-edit-card');
         const updatedButtons = Array.from(buttonCards).map(card => ({
-            label: card.querySelector('.btn-label').value,
-            command: card.querySelector('.btn-cmd').value,
-            sendEnter: card.querySelector('.btn-enter').checked
+            name: card.querySelector('.btn-label').value,
+            cmd: card.querySelector('.cmd' ? '.btn-cmd' : '.btn-cmd').value,
+            useEnter: card.querySelector('.btn-enter').checked,
+            color: "#3d60cc"
         }));
-        // إرسال البيانات للسيرفر تحت مسمى buttons ليتم حفظها في customButtons
         await adminAction(phone, 'update-buttons', { buttons: updatedButtons });
         closeButtonsModal();
     }
-
-    function closeButtonsModal() { document.getElementById('buttonsModal').style.display = 'none'; }
-    function closeCard() { document.getElementById('userModal').style.display = 'none'; }
 
     // --- بقية وظائف الأدمن (الأصلية كما هي) ---
     async function saveFullUpdate(phone) {
