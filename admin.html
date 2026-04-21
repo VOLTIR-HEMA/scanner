@@ -134,14 +134,17 @@
         modal.style.display = 'block';
     }
 
-    // --- وظائف تخصيص الأزرار الجديدة ---
+    // --- وظائف تخصيص الأزرار الجديدة (تم تعديل المسميات للربط مع السيرفر) ---
     function openButtonsCustomizer(phone) {
         currentEditingPhone = phone;
         const user = users.find(u => u.phone === phone);
         const modal = document.getElementById('buttonsModal');
         document.getElementById('btnModalTitle').innerText = `🕹️ تخصيص أزرار: ${user.name}`;
-        if (!user.buttons) user.buttons = []; 
-        renderButtonsList(user.buttons);
+        
+        // استخدام customButtons ليتوافق مع السيرفر
+        if (!user.customButtons) user.customButtons = []; 
+        
+        renderButtonsList(user.customButtons);
         document.getElementById('saveButtonsAction').onclick = () => saveButtons(phone);
         modal.style.display = 'block';
     }
@@ -169,25 +172,25 @@
 
     function addNewButtonField() {
         const user = users.find(u => u.phone === currentEditingPhone);
-        if (!user.buttons) user.buttons = [];
-        user.buttons.push({ label: '', command: '', sendEnter: false });
-        renderButtonsList(user.buttons);
+        if (!user.customButtons) user.customButtons = [];
+        user.customButtons.push({ label: '', command: '', sendEnter: false });
+        renderButtonsList(user.customButtons);
     }
 
     function moveBtn(index, direction) {
         const user = users.find(u => u.phone === currentEditingPhone);
         const newIndex = index + direction;
-        if (newIndex >= 0 && newIndex < user.buttons.length) {
-            [user.buttons[index], user.buttons[newIndex]] = [user.buttons[newIndex], user.buttons[index]];
-            renderButtonsList(user.buttons);
+        if (newIndex >= 0 && newIndex < user.customButtons.length) {
+            [user.customButtons[index], user.customButtons[newIndex]] = [user.customButtons[newIndex], user.customButtons[index]];
+            renderButtonsList(user.customButtons);
         }
     }
 
     function deleteBtn(index) {
         if(confirm("حذف الزر؟")) {
             const user = users.find(u => u.phone === currentEditingPhone);
-            user.buttons.splice(index, 1);
-            renderButtonsList(user.buttons);
+            user.customButtons.splice(index, 1);
+            renderButtonsList(user.customButtons);
         }
     }
 
@@ -198,6 +201,7 @@
             command: card.querySelector('.btn-cmd').value,
             sendEnter: card.querySelector('.btn-enter').checked
         }));
+        // إرسال البيانات للسيرفر تحت مسمى buttons ليتم حفظها في customButtons
         await adminAction(phone, 'update-buttons', { buttons: updatedButtons });
         closeButtonsModal();
     }
