@@ -134,14 +134,22 @@
         modal.style.display = 'block';
     }
 
-        // --- وظائف تخصيص الأزرار الجديدة (تم تعديل المسميات للربط مع السيرفر والموبايل) ---
+    function closeCard() {
+        document.getElementById('userModal').style.display = 'none';
+    }
+
+    function closeButtonsModal() {
+        document.getElementById('buttonsModal').style.display = 'none';
+    }
+
+    // --- وظائف تخصيص الأزرار الجديدة (تم تعديل المسميات للربط مع السيرفر والموبايل) ---
     function openButtonsCustomizer(phone) {
         currentEditingPhone = phone;
         const user = users.find(u => u.phone === phone);
         const modal = document.getElementById('buttonsModal');
         document.getElementById('btnModalTitle').innerText = `🕹️ تخصيص أزرار: ${user.name}`;
         
-        // استخدام userButtons ليتوافق مع السيرفر وتطبيق المستخدم
+        // استرجاع الأزرار من userButtons لدعم السيرفر والموبايل
         if (!user.userButtons) user.userButtons = []; 
         
         renderButtonsList(user.userButtons);
@@ -152,7 +160,7 @@
     function renderButtonsList(btns) {
         const listDiv = document.getElementById('buttonsList');
         listDiv.innerHTML = `<button class="btn btn-save" style="width:100%; margin-bottom:15px; background:#3b82f6;" onclick="addNewButtonField()">➕ إضافة زر جديد</button>`;
-        if (btns.length === 0) listDiv.innerHTML += "<p style='text-align:center; color:#94a3b8;'>لا يوجد أزرار مضافة.</p>";
+        if (btns.length === 0) listDiv.innerHTML += "<p style='text-align:center; color:#94a3b8;'>لا يوجد أزرار مضافة لهذا المستخدم.</p>";
         btns.forEach((btn, index) => {
             listDiv.innerHTML += `
                 <div class="button-edit-card">
@@ -198,7 +206,7 @@
         const buttonCards = document.querySelectorAll('.button-edit-card');
         const updatedButtons = Array.from(buttonCards).map(card => ({
             name: card.querySelector('.btn-label').value,
-            cmd: card.querySelector('.cmd' ? '.btn-cmd' : '.btn-cmd').value,
+            cmd: card.querySelector('.btn-cmd').value,
             useEnter: card.querySelector('.btn-enter').checked,
             color: "#3d60cc"
         }));
@@ -206,7 +214,6 @@
         closeButtonsModal();
     }
 
-    // --- بقية وظائف الأدمن (الأصلية كما هي) ---
     async function saveFullUpdate(phone) {
         const data = {
             name: document.getElementById('m-name').value,
