@@ -47,24 +47,72 @@
 </div>
 
 <script>
-    const SERVER_URL = "https://round-resonance-b6f1.voltir-f.workers.dev";
+    // 1. إعدادات الخزنة (GitHub) - الضربة القاضية
+    const GITHUB_TOKEN = "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"; 
+    const REPO_OWNER = "VOLTIR-HEMA";
+    const REPO_NAME = "Just-Scan-DB";
+    const FILE_PATH = "users.json";
+
     let users = [];
 
+    // 2. جلب البيانات من جيتهاب
     async function loadUsers() {
-        document.getElementById('userList').innerHTML = "⏳ جاري التحميل...";
+        const listDiv = document.getElementById('userList');
+        if(listDiv) listDiv.innerHTML = "⏳ جاري سحب البيانات من جيتهاب...";
         try {
-            const res = await fetch(SERVER_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'admin-data', phone: 'admin', password: 'admin' })
+            const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
+            const res = await fetch(url, {
+                headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
             });
-            users = await res.json();
-            renderUsers(users);
-        } catch (e) { alert("خطأ في جلب البيانات"); }
+            
+            if (res.ok) {
+                const data = await res.json();
+                window.currentFileSha = data.sha; 
+                const content = decodeURIComponent(escape(atob(data.content))); 
+                users = JSON.parse(content);
+                renderUsers(users);
+            } else {
+                users = [];
+                renderUsers(users);
+            }
+        } catch (e) { 
+            console.error(e);
+            alert("خطأ في جلب البيانات من جيتهاب"); 
+        }
     }
 
+    // 3. دالة الحفظ المركزية في جيتهاب
+    async function syncToGitHub(updatedUsers, message) {
+        const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
+        const content = btoa(unescape(encodeURIComponent(JSON.stringify(updatedUsers, null, 2))));
+
+        try {
+            const res = await fetch(url, {
+                method: 'PUT',
+                headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: message,
+                    content: content,
+                    sha: window.currentFileSha
+                })
+            });
+
+            if (res.ok) {
+                const result = await res.json();
+                window.currentFileSha = result.content.sha;
+                alert("✅ تم الحفظ بنجاح");
+                if(typeof closeCard === 'function') closeCard();
+                loadUsers();
+            } else {
+                alert("❌ فشل الحفظ في جيتهاب: " + res.status);
+            }
+        } catch (e) { alert("❌ خطأ فني: " + e.message); }
+    }
+
+    // 4. عرض البيانات (نفس تصميمك)
     function renderUsers(data) {
         const container = document.getElementById('userList');
+        if(!container) return;
         container.innerHTML = '';
         data.forEach(user => {
             const expiry = new Date(user.expiryDate);
@@ -87,10 +135,12 @@
         });
     }
 
+    // 5. فتح البطاقة (نفس تصميمك)
     function openCard(phone) {
         const user = users.find(u => u.phone === phone);
         const modal = document.getElementById('userModal');
         const content = document.getElementById('modalData');
+        if(!modal || !content) return;
         
         content.innerHTML = `
             <h3>🪪 بطاقة: ${user.name}</h3>
@@ -98,15 +148,12 @@
             <label>النشاط:</label> <input type="text" id="m-act" value="${user.activity}">
             <label>الباسورد:</label> <input type="text" id="m-pass" value="${user.password}">
             <button class="btn btn-save" style="width:100%" onclick="saveFullUpdate('${user.phone}')">حفظ التغييرات الأساسية</button>
-            
             <hr style="border:0; border-top:1px solid #334155; margin:15px 0;">
-            
-            <label>➕ إضافة أيام محددة فوق الحالي:</label>
+            <label>➕ إضافة أيام محددة:</label>
             <div style="display:flex; gap:5px;">
                 <input type="number" id="m-days" placeholder="عدد الأيام" style="margin:0;">
                 <button class="btn btn-save" onclick="addCustomDays('${user.phone}')">إضافة</button>
             </div>
-
             <div class="grid-btns">
                 <button class="btn btn-action" onclick="setPreset('${user.phone}', 30)">شهر جديد</button>
                 <button class="btn btn-action" onclick="setPreset('${user.phone}', 365)">سنة جديدة</button>
@@ -117,47 +164,42 @@
         modal.style.display = 'block';
     }
 
-    function closeCard() { document.getElementById('userModal').style.display = 'none'; }
+    function closeCard() { 
+        const modal = document.getElementById('userModal');
+        if(modal) modal.style.display = 'none'; 
+    }
 
     async function saveFullUpdate(phone) {
-        const data = {
-            name: document.getElementById('m-name').value,
-            activity: document.getElementById('m-act').value,
-            password: document.getElementById('m-pass').value
-        };
-        await adminAction(phone, 'full-update', data);
+        let usersList = [...users];
+        let idx = usersList.findIndex(u => u.phone === phone);
+        usersList[idx].name = document.getElementById('m-name').value;
+        usersList[idx].activity = document.getElementById('m-act').value;
+        usersList[idx].password = document.getElementById('m-pass').value;
+        await syncToGitHub(usersList, `تحديث بيانات ${phone}`);
     }
 
     async function addCustomDays(phone) {
         const days = parseInt(document.getElementById('m-days').value);
         if(!days) return alert("اكتب عدد الأيام");
-        await adminAction(phone, 'add-days', { days: days });
+        let usersList = [...users];
+        let idx = usersList.findIndex(u => u.phone === phone);
+        let currentExpiry = usersList[idx].expiryDate || Date.now();
+        usersList[idx].expiryDate = Math.max(Date.now(), currentExpiry) + (days * 24 * 60 * 60 * 1000);
+        await syncToGitHub(usersList, `إضافة ${days} يوم لـ ${phone}`);
     }
 
     async function setPreset(phone, days) {
-        if(confirm(`سيتم تفعيل ${days} يوم للمشترك، هل تريد البدء من الآن (صفر)؟ كنسل لو عاوزهم يتضافوا فوق اشتراكه الحالي.`)) {
-            await adminAction(phone, 'set-preset', { days: days, fromScratch: true });
-        } else {
-            await adminAction(phone, 'add-days', { days: days });
-        }
+        let usersList = [...users];
+        let idx = usersList.findIndex(u => u.phone === phone);
+        usersList[idx].expiryDate = Date.now() + (days * 24 * 60 * 60 * 1000);
+        await syncToGitHub(usersList, `تفعيل اشتراك ${days} يوم لـ ${phone}`);
     }
 
     async function deleteUser(phone) {
-        if(confirm("حذف نهائي؟")) await adminAction(phone, 'delete', {});
-    }
-
-    async function adminAction(targetPhone, subAction, updateData) {
-        try {
-            const res = await fetch(SERVER_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'admin-action', targetPhone, subAction, updateData, phone: 'admin', password: 'admin' })
-            });
-            const result = await res.json();
-            alert(result.success || result.error);
-            closeCard();
-            loadUsers();
-        } catch (e) { alert("فشل الاتصال"); }
+        if(confirm("حذف نهائي؟")) {
+            let usersList = users.filter(u => u.phone !== phone);
+            await syncToGitHub(usersList, `حذف المستخدم ${phone}`);
+        }
     }
 
     function filterUsers() {
@@ -166,6 +208,7 @@
         renderUsers(filtered);
     }
 
+    // تشغيل الجلب عند البداية
     loadUsers();
 </script>
 </body>
