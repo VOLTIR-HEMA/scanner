@@ -21,13 +21,14 @@
         
         input, select { width: 100%; padding: 10px; margin: 8px 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px; box-sizing: border-box; }
         .grid-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .btn { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .btn-save { background: #22c55e; color: white; }
         .btn-close { background: #64748b; color: white; }
         .btn-action { background: #3b82f6; color: white; font-size: 0.8em; }
         .btn-danger { background: #ef4444; color: white; }
+        .btn:hover { opacity: 0.8; }
 
-        /* ستايل بطاقة الزرار الجديد */
+        /* ستايل بطاقة الزرار */
         .button-edit-card { background: #161e2e; border: 1px dotted var(--primary); padding: 12px; border-radius: 8px; margin-bottom: 10px; display: grid; grid-template-columns: 1fr 1fr auto auto auto; gap: 8px; align-items: center; }
         .reorder-btns { display: flex; flex-direction: column; gap: 2px; }
         .reorder-btns button { padding: 2px 5px; font-size: 10px; cursor: pointer; background: #334155; color: white; border: none; border-radius: 3px; }
@@ -36,11 +37,12 @@
 <body>
 
 <div class="container">
-   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <h2 style="margin: 0;">🛡️ إدارة المشتركين</h2>
-    <button onclick="loadUsers()" class="btn btn-action" style="background: #28a745; padding: 8px 15px;">🔄 تحديث البيانات</button>
-</div>
-    <input type="text" id="searchInput" onkeyup="filterUsers()" placeholder="🔍 ابحث بالاسم أو الرقم..." style="margin-bottom: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0;">🛡️ إدارة المشتركين - Voltir Pro</h2>
+        <button onclick="loadUsers()" class="btn btn-action" style="background: #28a745; padding: 8px 15px;">🔄 تحديث البيانات</button>
+    </div>
+    
+    <input type="text" id="searchInput" onkeyup="filterUsers()" placeholder="🔍 ابحث بالاسم أو الرقم أو النشاط..." style="margin-bottom: 20px;">
     
     <div id="userList"></div>
 </div>
@@ -66,8 +68,10 @@
     let users = [];
     let currentEditingPhone = "";
 
+    // 1. جلب البيانات
     async function loadUsers() {
-        document.getElementById('userList').innerHTML = "⏳ جاري التحميل...";
+        const listDiv = document.getElementById('userList');
+        listDiv.innerHTML = "<div style='text-align:center; padding:20px;'>⏳ جاري تحميل البيانات من السيرفر...</div>";
         try {
             const res = await fetch(SERVER_URL, {
                 method: 'POST',
@@ -76,12 +80,17 @@
             });
             users = await res.json();
             renderUsers(users);
-        } catch (e) { alert("خطأ في جلب البيانات"); }
+        } catch (e) { 
+            listDiv.innerHTML = "<div style='color:red; text-align:center;'>❌ فشل الاتصال بالسيرفر</div>";
+        }
     }
 
+    // 2. عرض المستخدمين
     function renderUsers(data) {
         const container = document.getElementById('userList');
         container.innerHTML = '';
+        if(data.length === 0) { container.innerHTML = "لا يوجد مشتركين حالياً."; return; }
+        
         data.forEach(user => {
             const expiry = new Date(user.expiryDate);
             const daysLeft = Math.ceil((expiry - Date.now()) / (1000 * 60 * 60 * 24));
@@ -97,13 +106,14 @@
                         <span class="status-pill" style="border: 1px solid ${statusColor}; color: ${statusColor}">
                             ${daysLeft > 0 ? 'باقي ' + daysLeft + ' يوم' : 'منتهي'}
                         </span>
-                        <button class="btn btn-action" onclick="openCard('${user.phone}')">تعديل البطاقة ⚙️</button>
-                        <button class="btn btn-action" style="background:#8b5cf6" onclick="openButtonsCustomizer('${user.phone}')">تخصيص الزراير 🕹️</button>
+                        <button class="btn btn-action" onclick="openCard('${user.phone}')">⚙️ تعديل</button>
+                        <button class="btn btn-action" style="background:#8b5cf6" onclick="openButtonsCustomizer('${user.phone}')">🕹️ زراير</button>
                     </div>
                 </div>`;
         });
     }
 
+    // 3. فتح بطاقة المستخدم
     function openCard(phone) {
         const user = users.find(u => u.phone === phone);
         const modal = document.getElementById('userModal');
@@ -111,9 +121,9 @@
         
         content.innerHTML = `
             <h3>🪪 بطاقة: ${user.name}</h3>
-            <label>الاسم:</label> <input type="text" id="m-name" value="${user.name}">
-            <label>النشاط:</label> <input type="text" id="m-act" value="${user.activity}">
-            <label>الباسورد:</label> <input type="text" id="m-pass" value="${user.password}">
+            <label>الاسم بالكامل:</label> <input type="text" id="m-name" value="${user.name}">
+            <label>اسم النشاط التجارى:</label> <input type="text" id="m-act" value="${user.activity}">
+            <label>كلمة المرور:</label> <input type="text" id="m-pass" value="${user.password}">
             <button class="btn btn-save" style="width:100%" onclick="saveFullUpdate('${user.phone}')">حفظ التغييرات الأساسية</button>
             
             <hr style="border:0; border-top:1px solid #334155; margin:15px 0;">
@@ -125,8 +135,8 @@
             </div>
 
             <div class="grid-btns">
-                <button class="btn btn-action" onclick="setPreset('${user.phone}', 30)">شهر جديد</button>
-                <button class="btn btn-action" onclick="setPreset('${user.phone}', 365)">سنة جديدة</button>
+                <button class="btn btn-action" onclick="setPreset('${user.phone}', 30)">+30 يوم</button>
+                <button class="btn btn-action" onclick="setPreset('${user.phone}', 365)">+سنة</button>
                 <button class="btn btn-danger" onclick="deleteUser('${user.phone}')">حذف الحساب</button>
                 <button class="btn btn-close" onclick="closeCard()">إغلاق</button>
             </div>
@@ -134,25 +144,16 @@
         modal.style.display = 'block';
     }
 
-    function closeCard() {
-        document.getElementById('userModal').style.display = 'none';
-    }
-
-    function closeButtonsModal() {
-        document.getElementById('buttonsModal').style.display = 'none';
-    }
-
-    // --- وظائف تخصيص الأزرار الجديدة (تم تعديل المسميات للربط مع السيرفر والموبايل) ---
+    // 4. تخصيص الأزرار
     function openButtonsCustomizer(phone) {
         currentEditingPhone = phone;
         const user = users.find(u => u.phone === phone);
         const modal = document.getElementById('buttonsModal');
         document.getElementById('btnModalTitle').innerText = `🕹️ تخصيص أزرار: ${user.name}`;
         
-        // استرجاع الأزرار من userButtons لدعم السيرفر والموبايل
-        if (!user.userButtons) user.userButtons = []; 
+        let btns = user.userButtons || []; 
+        renderButtonsList(btns);
         
-        renderButtonsList(user.userButtons);
         document.getElementById('saveButtonsAction').onclick = () => saveButtons(phone);
         modal.style.display = 'block';
     }
@@ -160,7 +161,11 @@
     function renderButtonsList(btns) {
         const listDiv = document.getElementById('buttonsList');
         listDiv.innerHTML = `<button class="btn btn-save" style="width:100%; margin-bottom:15px; background:#3b82f6;" onclick="addNewButtonField()">➕ إضافة زر جديد</button>`;
-        if (btns.length === 0) listDiv.innerHTML += "<p style='text-align:center; color:#94a3b8;'>لا يوجد أزرار مضافة لهذا المستخدم.</p>";
+        
+        if (btns.length === 0) {
+            listDiv.innerHTML += "<p id='empty-msg' style='text-align:center; color:#94a3b8;'>لا يوجد أزرار مضافة.</p>";
+        }
+
         btns.forEach((btn, index) => {
             listDiv.innerHTML += `
                 <div class="button-edit-card">
@@ -181,7 +186,7 @@
     function addNewButtonField() {
         const user = users.find(u => u.phone === currentEditingPhone);
         if (!user.userButtons) user.userButtons = [];
-        user.userButtons.push({ name: '', cmd: '', useEnter: false, color: "#3d60cc" });
+        user.userButtons.push({ name: 'جديد', cmd: 'f5', useEnter: true, color: "#3d60cc" });
         renderButtonsList(user.userButtons);
     }
 
@@ -195,7 +200,7 @@
     }
 
     function deleteBtn(index) {
-        if(confirm("حذف الزر؟")) {
+        if(confirm("هل أنت متأكد من حذف هذا الزر؟")) {
             const user = users.find(u => u.phone === currentEditingPhone);
             user.userButtons.splice(index, 1);
             renderButtonsList(user.userButtons);
@@ -214,6 +219,10 @@
         closeButtonsModal();
     }
 
+    // 5. وظائف أساسية
+    function closeCard() { document.getElementById('userModal').style.display = 'none'; }
+    function closeButtonsModal() { document.getElementById('buttonsModal').style.display = 'none'; }
+
     async function saveFullUpdate(phone) {
         const data = {
             name: document.getElementById('m-name').value,
@@ -221,43 +230,61 @@
             password: document.getElementById('m-pass').value
         };
         await adminAction(phone, 'full-update', data);
+        closeCard();
     }
 
     async function addCustomDays(phone) {
         const days = parseInt(document.getElementById('m-days').value);
-        if(!days) return alert("اكتب عدد الأيام");
+        if(!days) return alert("برجاء إدخال عدد الأيام");
         await adminAction(phone, 'add-days', { days: days });
     }
 
     async function setPreset(phone, days) {
-        if(confirm(`تفعيل ${days} يوم للمشترك؟`)) {
-            await adminAction(phone, 'set-preset', { days: days, fromScratch: true });
+        if(confirm(`سيتم إضافة ${days} يوم لهذا المستخدم، هل أنت متأكد؟`)) {
+            await adminAction(phone, 'set-preset', { days: days, fromScratch: false });
         }
     }
 
     async function deleteUser(phone) {
-        if(confirm("حذف نهائي؟")) await adminAction(phone, 'delete', {});
+        if(confirm("⚠️ تنبيه: سيتم حذف المستخدم نهائياً! هل أنت متأكد؟")) {
+            await adminAction(phone, 'delete', {});
+            closeCard();
+        }
     }
 
+    // 6. الربط مع السيرفر
     async function adminAction(targetPhone, subAction, updateData) {
         try {
             const res = await fetch(SERVER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'admin-action', targetPhone, subAction, updateData, phone: 'admin', password: 'admin' })
+                body: JSON.stringify({ 
+                    action: 'admin-action', 
+                    targetPhone, 
+                    subAction, 
+                    updateData, 
+                    phone: 'admin', 
+                    password: 'admin' 
+                })
             });
             const result = await res.json();
-            alert(result.success || result.error);
+            if(result.success) alert("✅ " + result.success);
+            else alert("❌ " + result.error);
             loadUsers();
-        } catch (e) { alert("فشل الاتصال"); }
+        } catch (e) { alert("❌ فشل الاتصال بالسيرفر"); }
     }
 
     function filterUsers() {
         const term = document.getElementById('searchInput').value.toLowerCase();
-        const filtered = users.filter(u => u.name.toLowerCase().includes(term) || u.phone.includes(term));
+        const filtered = users.filter(u => 
+            u.name.toLowerCase().includes(term) || 
+            u.phone.includes(term) || 
+            u.activity.toLowerCase().includes(term)
+        );
         renderUsers(filtered);
     }
 
+    // تشغيل الجلب التلقائي عند فتح الصفحة
     loadUsers();
 </script>
 </body>
