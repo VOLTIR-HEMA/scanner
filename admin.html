@@ -16,7 +16,8 @@
         .modal-content h3 { color: var(--primary); border-bottom: 1px solid #334155; padding-bottom: 10px; }
         input, select { width: 100%; padding: 10px; margin: 8px 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px; box-sizing: border-box; }
         .grid-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .btn { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-save { background: #22c55e; color: white; }
         .btn-close { background: #64748b; color: white; }
         .btn-action { background: #3b82f6; color: white; font-size: 0.8em; }
@@ -28,7 +29,7 @@
    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <h2 style="margin: 0;">🛡️ إدارة المشتركين</h2>
     <div style="display: flex; gap: 10px;">
-        <button onclick="loadUsers()" class="btn btn-action" style="background: #28a745; padding: 8px 15px;">🔄 تحديث البيانات</button>
+        <button id="refreshBtn" onclick="loadUsers()" class="btn btn-action" style="background: #28a745; padding: 8px 15px;">🔄 تحديث البيانات</button>
     </div>
 </div>
     <input type="text" id="searchInput" onkeyup="filterUsers()" placeholder="🔍 ابحث بالاسم أو الرقم..." style="margin-bottom: 20px;">
@@ -40,52 +41,45 @@
 </div>
 
 <script>
-    // الرابط بتاعك اللي بعتهولي
     const DB_URL = "https://just-scan-19ce1-default-rtdb.firebaseio.com/users";
-
     let users = [];
 
-    // دالة سحب البيانات من السيرفر الجديد مباشرة
     async function loadUsers() {
         const listDiv = document.getElementById('userList');
-        if(listDiv) listDiv.innerHTML = "⏳ جاري سحب البيانات من Firebase...";
+        const refreshBtn = document.getElementById('refreshBtn');
+        if(listDiv) listDiv.innerHTML = "⏳ جاري سحب البيانات...";
+        refreshBtn.disabled = true;
         
         try {
             const res = await fetch(`${DB_URL}.json?t=${Date.now()}`);
             if (res.ok) {
                 const data = await res.json();
-                // تحويل البيانات من Format فايربيز (Object) لـ Array عشان الـ render يشتغل
                 users = data ? Object.keys(data).map(key => ({ ...data[key], phone: key })) : [];
                 renderUsers(users);
-            } else {
-                alert("خطأ في جلب البيانات: " + res.status);
-            }
+            } else { alert("خطأ في جلب البيانات"); }
         } catch (e) { alert("خطأ في الشبكة: " + e.message); }
+        refreshBtn.disabled = false;
     }
 
-    // دالة الحفظ للسيرفر الجديد
-    async function syncToDatabase(updatedUsers) {
-        try {
-            // تحويل الـ Array لـ Object متوافق مع Firebase (المفتاح هو الرقم)
-            const firebaseData = {};
-            updatedUsers.forEach(u => {
-                const { phone, ...rest } = u;
-                firebaseData[phone] = rest;
-            });
+    // دالة التحديث الذكية (تعديل جزء فقط)
+    async function updateSingleUser(phone, updatedData, btnElement) {
+        const originalText = btnElement ? btnElement.innerText : "";
+        if(btnElement) { btnElement.innerText = "⏳ جاري الحفظ..."; btnElement.disabled = true; }
 
-            const res = await fetch(`${DB_URL}.json`, {
-                method: 'PUT',
-                body: JSON.stringify(firebaseData)
+        try {
+            const res = await fetch(`${DB_URL}/${phone}.json`, {
+                method: 'PATCH',
+                body: JSON.stringify(updatedData)
             });
 
             if (res.ok) {
-                alert("✅ تم الحفظ بنجاح");
+                alert("✅ تم التحديث بنجاح");
                 closeCard();
                 loadUsers();
-            } else {
-                alert("❌ فشل الحفظ: " + res.status);
-            }
+            } else { alert("❌ فشل الحفظ: " + res.status); }
         } catch (e) { alert("❌ خطأ فني: " + e.message); }
+        
+        if(btnElement) { btnElement.innerText = originalText; btnElement.disabled = false; }
     }
 
     function renderUsers(data) {
@@ -124,57 +118,63 @@
             <label>الاسم:</label> <input type="text" id="m-name" value="${user.name}">
             <label>النشاط:</label> <input type="text" id="m-act" value="${user.activity || ''}">
             <label>الباسورد:</label> <input type="text" id="m-pass" value="${user.password}">
-            <button class="btn btn-save" style="width:100%" onclick="saveFullUpdate('${user.phone}')">حفظ التغييرات الأساسية</button>
+            <button class="btn btn-save" style="width:100%" onclick="saveFullUpdate(this, '${user.phone}')">حفظ التغييرات الأساسية</button>
             <hr style="border:0; border-top:1px solid #334155; margin:15px 0;">
             <label>➕ إضافة أيام محددة:</label>
             <div style="display:flex; gap:5px;">
                 <input type="number" id="m-days" placeholder="عدد الأيام" style="margin:0;">
-                <button class="btn btn-save" onclick="addCustomDays('${user.phone}')">إضافة</button>
+                <button class="btn btn-save" onclick="addCustomDays(this, '${user.phone}')">إضافة</button>
             </div>
             <div class="grid-btns">
-                <button class="btn btn-action" onclick="setPreset('${user.phone}', 30)">شهر جديد</button>
-                <button class="btn btn-action" onclick="setPreset('${user.phone}', 365)">سنة جديدة</button>
-                <button class="btn btn-action" style="background:#ef4444" onclick="deleteUser('${user.phone}')">حذف الحساب</button>
+                <button class="btn btn-action" onclick="setPreset(this, '${user.phone}', 30)">شهر جديد</button>
+                <button class="btn btn-action" onclick="setPreset(this, '${user.phone}', 365)">سنة جديدة</button>
+                <button class="btn btn-action" style="background:#ef4444" onclick="deleteUser(this, '${user.phone}')">حذف الحساب</button>
                 <button class="btn btn-close" onclick="closeCard()">إغلاق</button>
             </div>
         `;
         modal.style.display = 'block';
     }
 
-    function closeCard() { 
-        document.getElementById('userModal').style.display = 'none'; 
+    function closeCard() { document.getElementById('userModal').style.display = 'none'; }
+
+    async function saveFullUpdate(btn, phone) {
+        const data = {
+            name: document.getElementById('m-name').value,
+            activity: document.getElementById('m-act').value,
+            password: document.getElementById('m-pass').value
+        };
+        await updateSingleUser(phone, data, btn);
     }
 
-    async function saveFullUpdate(phone) {
-        let usersList = [...users];
-        let idx = usersList.findIndex(u => u.phone === phone);
-        usersList[idx].name = document.getElementById('m-name').value;
-        usersList[idx].activity = document.getElementById('m-act').value;
-        usersList[idx].password = document.getElementById('m-pass').value;
-        await syncToDatabase(usersList);
-    }
-
-    async function addCustomDays(phone) {
-        const days = parseInt(document.getElementById('m-days').value);
+    async function addCustomDays(btn, phone) {
+        const daysInput = document.getElementById('m-days');
+        const days = parseInt(daysInput.value);
         if(!days) return alert("اكتب عدد الأيام");
-        let usersList = [...users];
-        let idx = usersList.findIndex(u => u.phone === phone);
-        let currentExpiry = parseInt(usersList[idx].expiryDate) || Date.now();
-        usersList[idx].expiryDate = (Math.max(Date.now(), currentExpiry) + (days * 24 * 60 * 60 * 1000)).toString();
-        await syncToDatabase(usersList);
+        
+        const user = users.find(u => u.phone === phone);
+        let currentExpiry = parseInt(user.expiryDate) || Date.now();
+        const newExpiry = (Math.max(Date.now(), currentExpiry) + (days * 24 * 60 * 60 * 1000)).toString();
+        
+        await updateSingleUser(phone, { expiryDate: newExpiry }, btn);
     }
 
-    async function setPreset(phone, days) {
-        let usersList = [...users];
-        let idx = usersList.findIndex(u => u.phone === phone);
-        usersList[idx].expiryDate = (Date.now() + (days * 24 * 60 * 60 * 1000)).toString();
-        await syncToDatabase(usersList);
+    async function setPreset(btn, phone, days) {
+        const newExpiry = (Date.now() + (days * 24 * 60 * 60 * 1000)).toString();
+        await updateSingleUser(phone, { expiryDate: newExpiry }, btn);
     }
 
-    async function deleteUser(phone) {
+    async function deleteUser(btn, phone) {
         if(confirm("حذف نهائي؟")) {
-            let usersList = users.filter(u => u.phone !== phone);
-            await syncToDatabase(usersList);
+            btn.innerText = "⏳ جاري الحذف...";
+            btn.disabled = true;
+            try {
+                const res = await fetch(`${DB_URL}/${phone}.json`, { method: 'DELETE' });
+                if (res.ok) {
+                    alert("✅ تم الحذف");
+                    closeCard();
+                    loadUsers();
+                }
+            } catch (e) { alert("خطأ: " + e.message); }
         }
     }
 
