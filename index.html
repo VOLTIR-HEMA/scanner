@@ -1,557 +1,599 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Just Scan Pro - Ibrahim Edition</title>
+    <title>Just Scan Pro - Total Edition</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root {
-            --primary-color: #3d60cc;
+            --primary: #3d60cc;
+            --primary-hover: #2e49a3;
             --bg-dark: #0f172a;
             --card-bg: #1e293b;
             --text-main: #f1f5f9;
+            --text-dim: #94a3b8;
             --success: #22c55e;
             --danger: #ef4444;
+            --warning: #f59e0b;
+            --border: #334155;
         }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            text-align: center;
-            background: #000;
-            color: white;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #000;
+            color: var(--text-main);
             margin: 0;
             padding: 0;
+            line-height: 1.5;
             overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
         }
 
-        /* Top Navigation Bar */
+        /* التصميم العلوي - بار التنقل */
         .top-bar {
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
             align-items: center;
-            padding: 12px 8px;
-            background: #111;
-            border-bottom: 1px solid #333;
+            padding: 12px 15px;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
             z-index: 1000;
+        }
+
+        .brand-logo {
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: var(--primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
             gap: 8px;
         }
 
-        .top-bar button {
-            background: #222;
-            color: white;
-            border: 1px solid #444;
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-size: 0.85em;
-            cursor: pointer;
-            transition: 0.3s;
+        .action-btns {
             display: flex;
-            align-items: center;
-            gap: 5px;
+            gap: 8px;
         }
 
-        .top-bar button:active { transform: scale(0.95); background: #333; }
+        .icon-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
 
-        /* Scanner Styling */
-        #reader {
-            width: 100% !important;
+        .icon-btn:active { transform: scale(0.9); background: var(--border); }
+        .icon-btn.active { background: var(--primary); border-color: var(--primary); }
+
+        /* منطقة الماسح الضوئي */
+        .scanner-section {
+            width: 100%;
             max-width: 600px;
             margin: 10px auto;
-            border: none !important;
-            border-radius: 15px;
+            position: relative;
+            padding: 0 10px;
+        }
+
+        #reader {
+            width: 100% !important;
+            border: 2px solid var(--border) !important;
+            border-radius: 20px !important;
             overflow: hidden;
-            background: #000;
+            background: #000 !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
 
         #reader__scan_region video {
-            border-radius: 15px !important;
             object-fit: cover !important;
         }
 
-        /* Result Display */
-        .result-box {
-            margin: 10px;
-            padding: 12px;
-            background: #111;
-            border-radius: 12px;
-            color: #00ff00;
-            font-family: monospace;
-            font-size: 0.9em;
-            border: 1px solid #222;
-            min-height: 24px;
-            box-shadow: inset 0 0 10px rgba(0,255,0,0.05);
+        /* عرض النتائج */
+        .result-container {
+            margin: 15px;
+            padding: 15px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            border: 1px solid var(--border);
+            text-align: center;
         }
 
-        /* Dynamic Buttons Grid */
-        #dynamic-buttons {
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .status-online { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+        .status-offline { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+
+        #result-text {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            color: var(--success);
+            word-break: break-all;
+            min-height: 1.5em;
+        }
+
+        /* شبكة الأزرار التفاعلية */
+        .buttons-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            padding: 12px;
-            max-width: 800px;
-            margin: auto;
+            gap: 10px;
+            padding: 10px 15px;
+            max-width: 600px;
+            margin: 0 auto 80px;
         }
 
         .custom-btn {
-            padding: 15px 5px;
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.1);
-            color: white;
-            font-weight: bold;
-            font-size: 0.8em;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        /* Bill/Slots Panel */
-        #bill-panel {
-            display: none;
-            background: #111;
-            padding: 15px;
-            border: 1px solid #333;
-            margin: 10px;
-            border-radius: 15px;
-            animation: slideDown 0.3s ease-out;
-        }
-
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .slot-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 10px;
+            aspect-ratio: 1/1;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
 
-        .slot-header {
-            display: flex;
-            justify-content: space-between;
-            color: #38bdf8;
-            font-size: 0.85em;
-            font-weight: bold;
-        }
+        .custom-btn:active { transform: translateY(2px); box-shadow: none; }
 
-        /* Modals & Overlays */
-        .modal {
+        /* لوحة الفواتير */
+        #bill-panel {
             display: none;
             position: fixed;
-            top: 0;
+            bottom: 0;
             left: 0;
             width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.95);
-            z-index: 2000;
-            overflow-y: auto;
-            backdrop-filter: blur(5px);
-        }
-
-        .modal-content {
-            background: #1a1a1a;
-            width: 90%;
-            max-width: 500px;
-            margin: 30px auto;
+            height: 70vh;
+            background: var(--bg-dark);
+            border-top: 2px solid var(--primary);
+            z-index: 1500;
+            border-radius: 30px 30px 0 0;
             padding: 20px;
-            border-radius: 20px;
-            border: 1px solid #333;
-            text-align: right;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.8);
+            overflow-y: auto;
         }
 
-        input {
+        .bill-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .slot-item {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* النوافذ المنبثقة (Modals) */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal-body {
+            background: var(--card-bg);
+            border-radius: 25px;
+            padding: 25px;
+            max-width: 500px;
+            margin: 40px auto;
+            border: 1px solid var(--border);
+        }
+
+        input[type="text"], input[type="tel"], input[type="password"], input[type="number"] {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             margin: 10px 0;
             background: #000;
-            color: #fff;
-            border: 1px solid #444;
-            border-radius: 8px;
-            box-sizing: border-box;
+            border: 1px solid var(--border);
+            color: white;
+            border-radius: 12px;
+            font-size: 1rem;
         }
 
-        /* Lock Screen */
+        .save-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        /* شاشة القفل */
         #lock-screen {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #0f172a;
-            z-index: 5000;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-dark);
+            z-index: 9999;
             display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            text-align: center;
+            padding: 20px;
         }
 
-        .btn-link {
-            display: block;
-            width: 80%;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 10px;
-            text-decoration: none;
-            color: white;
-            font-weight: bold;
+        .lock-icon { font-size: 80px; color: var(--danger); margin-bottom: 20px; }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
+
+        .pulse { animation: pulse 2s infinite; }
 
     </style>
 </head>
 <body>
 
-<div id="lock-screen">
-    <div style="font-size: 50px;">⚠️</div>
-    <h1 style="color: #ef4444;">انتهى الاشتراك</h1>
-    <p id="lock-msg" style="padding: 0 30px; line-height: 1.6;"></p>
-    <a id="wa-link-lock" href="#" class="btn-link" style="background: #22c55e;">تفعيل الحساب (واتساب) 💬</a>
-    <a href="https://voltir-hema.github.io/Scan-Search/" class="btn-link" style="background: #3b82f6;">تحميل نسخة الكمبيوتر 💻</a>
-</div>
+    <div id="lock-screen">
+        <div class="lock-icon pulse">⚠️</div>
+        <h1 style="color: var(--danger);">عذراً، انتهى الاشتراك</h1>
+        <p id="lock-message" style="color: var(--text-dim); max-width: 300px; margin-bottom: 30px;"></p>
+        <a id="whatsapp-renewal" href="#" style="background: var(--success); color: white; padding: 15px 40px; border-radius: 15px; text-decoration: none; font-weight: bold; width: 80%;">تجديد الاشتراك الآن 💬</a>
+        <button onclick="location.reload()" style="background: none; border: 1px solid var(--border); color: var(--text-dim); margin-top: 20px; padding: 10px; border-radius: 10px;">إعادة محاولة الاتصال</button>
+    </div>
 
-<div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 4000; display: none; flex-direction: column; align-items: center; justify-content: center;">
-    <h1 style="color: #3d60cc; font-size: 2.5em;">Just Scan</h1>
-    <p style="color: #666;">نسخة المحترفين - إبراهيم</p>
-    <br>
-    <button onclick="document.getElementById('auth-overlay').style.display='none'; openSettings();" style="padding: 15px 40px; background: #3d60cc; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer;">تسجيل الدخول 🔑</button>
-</div>
+    <div id="welcome-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9000; display: none; flex-direction: column; align-items: center; justify-content: center;">
+        <h1 style="color: var(--primary); font-size: 3rem; margin-bottom: 0;">Just Scan</h1>
+        <p style="color: var(--text-dim); margin-bottom: 40px;">Pro Dashboard v4.0</p>
+        <button onclick="document.getElementById('welcome-screen').style.display='none'; openSettings();" style="background: var(--primary); color: white; border: none; padding: 18px 50px; border-radius: 15px; font-weight: bold; font-size: 1.1rem; cursor: pointer;">بدء تسجيل الدخول 🚀</button>
+    </div>
 
-<div class="top-bar">
-    <button onclick="openSettings()">⚙️</button>
-    <button onclick="syncData(true)" style="background: #166534 !important; border-color: #22c55e !important;">🔄 تحديث</button>
-    <button id="flash-btn" onclick="toggleFlash()">🔦</button>
-    <button onclick="openKeyboard()">⌨️ كيبورد</button>
-    <button id="bill-btn" onclick="toggleBillPanel()" style="background: #1e40af !important; border-color: #3b82f6 !important;">📑 الفواتير</button>
-</div>
+    <div class="top-bar">
+        <a href="#" class="brand-logo">
+            <span style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 6px;">JS</span>
+            Just Scan
+        </a>
+        <div class="action-btns">
+            <button class="icon-btn" onclick="toggleFlash()" id="flash-toggle">🔦</button>
+            <button class="icon-btn" onclick="openKeyboard()">⌨️</button>
+            <button class="icon-btn" onclick="syncData(true)" style="color: var(--success);">🔄</button>
+            <button class="icon-btn" onclick="openSettings()">⚙️</button>
+        </div>
+    </div>
 
-<div id="bill-panel">
-    <h3 style="color: #38bdf8; margin-top: 0;">📋 نظام الفواتير (أوفلاين)</h3>
-    <div id="slots-container"></div>
-</div>
+    <div class="scanner-section">
+        <div id="reader"></div>
+    </div>
 
-<div id="reader"></div>
-<div id="result" class="result-box">جاهز للمسح...</div>
-<div id="dynamic-buttons"></div>
+    <div class="result-container">
+        <div id="connection-status" class="status-badge status-online">متصل بالسحابة ●</div>
+        <div id="result-text">في انتظار المسح...</div>
+    </div>
 
-<div id="settings-modal" class="modal">
-    <div class="modal-content">
-        <h2 style="color: var(--primary-color); margin-top: 0;">⚙️ الإعدادات والبروفايل</h2>
-        <div id="auth-status-box" style="background: #000; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333;">
-            <div id="logged-out-form">
-                <input type="tel" id="u-phone" placeholder="رقم الموبايل">
-                <input type="password" id="u-pass" placeholder="كلمة المرور">
-                <button onclick="handleLogin()" style="width:100%; padding:12px; background:var(--primary-color); color:white; border:none; border-radius:8px; font-weight:bold;">دخول</button>
-            </div>
-            <div id="logged-in-info" style="display:none;">
+    <div style="padding: 0 15px; margin-bottom: 10px;">
+        <button id="bill-mode-btn" onclick="toggleBillPanel()" style="width: 100%; padding: 15px; background: var(--primary); border: none; border-radius: 15px; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            📑 نظام الفواتير (أوفلاين)
+        </button>
+    </div>
+
+    <div id="dynamic-buttons" class="buttons-grid">
+        </div>
+
+    <div id="bill-panel">
+        <div class="bill-header">
+            <h2 style="margin: 0;">📋 قائمة الفواتير</h2>
+            <button onclick="toggleBillPanel()" style="background: var(--danger); border: none; color: white; padding: 5px 15px; border-radius: 8px;">إغلاق</button>
+        </div>
+        <div id="slots-list"></div>
+    </div>
+
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-body">
+            <h2 style="color: var(--primary); margin-top: 0;">⚙️ الإعدادات</h2>
+            
+            <div id="auth-info" style="background: #000; padding: 15px; border-radius: 15px; margin-bottom: 20px; border: 1px solid var(--border);">
                 </div>
+
+            <h4 style="margin-bottom: 10px;">🎮 تخصيص الأزرار</h4>
+            <div id="buttons-config-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px;"></div>
+            <button onclick="addNewButtonRow()" style="width: 100%; padding: 8px; background: none; border: 1px dashed var(--text-dim); color: var(--text-dim); border-radius: 8px; margin-bottom: 20px;">+ إضافة زر جديد</button>
+
+            <button onclick="saveAllAndClose()" class="save-btn">حفظ جميع التغييرات</button>
+            <button onclick="closeSettings()" style="width: 100%; background: none; border: none; color: var(--text-dim); margin-top: 10px;">إلغاء</button>
         </div>
-
-        <h3 style="border-bottom: 1px solid #333; padding-bottom: 5px;">🎨 تخصيص الأزرار</h3>
-        <div id="buttons-edit-list"></div>
-        <button onclick="addBtnRow()" style="width:100%; padding:10px; background:#333; color:white; border:1px dashed #555; border-radius:8px; margin-top:10px;">➕ إضافة زر جديد</button>
-        
-        <br><br>
-        <button onclick="saveAllSettings()" style="width:100%; padding:15px; background:var(--success); color:white; border:none; border-radius:10px; font-weight:bold; font-size: 1.1em;">حفظ وإغلاق ✅</button>
-        <button onclick="closeSettings()" style="width:100%; padding:10px; background:none; color:#777; border:none; margin-top:10px;">إلغاء</button>
     </div>
-</div>
 
-<div id="keyboard-modal" class="modal">
-    <div class="modal-content" style="text-align: center;">
-        <h3 style="color: var(--danger);">⌨️ إدخال يدوي مستمر</h3>
-        <input type="text" id="manual-input" placeholder="اكتب هنا..." style="font-size: 1.5em; text-align: center; border-color: var(--primary-color);" onkeypress="if(event.key==='Enter') sendManual()">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-            <button onclick="sendManual()" style="padding:15px; background:var(--success); color:white; border:none; border-radius:10px; font-weight:bold;">إرسال 📤</button>
-            <button onclick="masterSend('enter')" style="padding:15px; background:var(--primary-color); color:white; border:none; border-radius:10px; font-weight:bold;">Enter ⏎</button>
+    <div id="keyboard-modal" class="modal-overlay">
+        <div class="modal-body" style="text-align: center;">
+            <h2 style="color: var(--warning);">⌨️ إدخال يدوي</h2>
+            <input type="text" id="manual-data" placeholder="اكتب الكود أو النص هنا..." style="font-size: 1.2rem; text-align: center; border-color: var(--primary);">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button onclick="sendManualData()" style="padding: 15px; background: var(--success); border: none; border-radius: 12px; color: white; font-weight: bold;">إرسال للكمبيوتر</button>
+                <button onclick="closeKeyboard()" style="padding: 15px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; color: white;">إلغاء</button>
+            </div>
         </div>
-        <button onclick="closeKeyboard()" style="width:100%; padding:12px; background:#444; color:white; border:none; border-radius:10px; margin-top:15px;">إغلاق</button>
     </div>
-</div>
 
-<script>
-    // الإعدادات الأساسية
-    const WHATSAPP_NUM = "201147534998";
-    let lastScanTime = 0;
-    let isFlashOn = false;
-    let activeSlot = null;
-    let scanner = null;
+    <script>
+        // --- الثوابت والبيانات ---
+        const WHATSAPP_RENEW = "201147534998";
+        let lastScanTime = 0;
+        let isFlashOn = false;
+        let activeSlotIndex = null;
+        let html5Scanner = null;
 
-    // البيانات المخزنة
-    let slotsData = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().map(() => []);
-    let slotsNames = JSON.parse(localStorage.getItem('v_slots_names')) || Array(10).fill().map((_, i) => `فاتورة ${i + 1}`);
-    let userButtons = JSON.parse(localStorage.getItem('userButtons')) || [
-        { name: "جديد", cmd: "f8", useEnter: true, color: "#3d60cc" },
-        { name: "حفظ", cmd: "f9", useEnter: true, color: "#3d60cc" },
-        { name: "بحث", cmd: "f10", useEnter: false, color: "#166534" },
-        { name: "إلغاء", cmd: "esc", useEnter: false, color: "#991b1b" }
-    ];
+        // استعادة البيانات من التخزين
+        let slots = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().map(() => []);
+        let slotNames = JSON.parse(localStorage.getItem('v_slot_names')) || Array(10).fill().map((_, i) => `فاتورة ${i + 1}`);
+        let configButtons = JSON.parse(localStorage.getItem('userButtons')) || [
+            { name: "جديد", cmd: "f8", useEnter: true, color: "#3d60cc" },
+            { name: "حفظ", cmd: "f9", useEnter: true, color: "#3d60cc" },
+            { name: "بحث", cmd: "f10", useEnter: false, color: "#166534" },
+            { name: "خروج", cmd: "esc", useEnter: false, color: "#991b1b" }
+        ];
 
-    // --- وظيفة التحقق من التاريخ الذكية ---
-    function checkExpiry(val) {
-        if (!val) return false;
-        // المحاولة الأولى: التعامل معها كرقم (Timestamp)
-        // المحاولة الثانية: التعامل معها كنص (ISO String)
-        const d = new Date(isNaN(val) ? val : parseInt(val));
-        return d.getTime() > Date.now();
-    }
+        // --- نظام التحقق من الاشتراك (The Core Fix) ---
+        function isSubscribed(expiry) {
+            if (!expiry) return false;
+            const expiryDate = new Date(isNaN(expiry) ? expiry : parseInt(expiry));
+            return expiryDate.getTime() > Date.now();
+        }
 
-    // --- نظام المزامنة والاشتراك ---
-    async function syncData(manual = false) {
-        const phone = localStorage.getItem('v_phone');
-        if (!phone) return;
+        async function syncData(manual = false) {
+            const phone = localStorage.getItem('v_phone');
+            if (!phone) return;
 
-        try {
-            const response = await fetch(`users.json?t=${Date.now()}`);
-            const users = await response.json();
-            const user = users.find(u => u.phone === phone);
+            try {
+                const res = await fetch(`users.json?t=${Date.now()}`);
+                const data = await res.json();
+                const user = data.find(u => u.phone === phone);
+
+                if (user) {
+                    localStorage.setItem('v_expiry', user.expiryDate);
+                    localStorage.setItem('v_name', user.name);
+                    localStorage.setItem('v_activity', user.activity);
+
+                    if (!isSubscribed(user.expiryDate)) {
+                        showLockScreen(user.name, phone);
+                    } else {
+                        document.getElementById('lock-screen').style.display = 'none';
+                        if (manual) alert("✅ تم تحديث بيانات الاشتراك بنجاح");
+                    }
+                    renderAuthStatus();
+                }
+            } catch (err) {
+                console.error("Sync failed", err);
+                if (manual) alert("❌ فشل الاتصال بالسيرفر");
+            }
+        }
+
+        function showLockScreen(name, phone) {
+            const lock = document.getElementById('lock-screen');
+            lock.style.display = 'flex';
+            document.getElementById('lock-message').innerText = `يا ${name}، انتهت صلاحية اشتراكك لهذا الرقم (${phone}). يرجى التواصل مع الإدارة للتجديد.`;
+            document.getElementById('whatsapp-renewal').href = `https://wa.me/${WHATSAPP_RENEW}?text=${encodeURIComponent('تجديد اشتراك رقم: ' + phone)}`;
+        }
+
+        // --- نظام الإرسال NTFY ---
+        function masterSend(message) {
+            const phone = localStorage.getItem('v_phone');
+            const expiry = localStorage.getItem('v_expiry');
+
+            if (!phone) { openSettings(); return; }
+            if (!isSubscribed(expiry)) { showLockScreen(localStorage.getItem('v_name'), phone); return; }
+
+            fetch(`https://ntfy.sh/voltir_${phone}`, {
+                method: 'POST',
+                body: message
+            }).catch(e => console.log("Network error"));
+        }
+
+        // --- نظام الماسح ---
+        function onScanSuccess(text) {
+            if (Date.now() - lastScanTime < 2000) return;
+            lastScanTime = Date.now();
+
+            if (activeSlotIndex !== null) {
+                // وضع الفواتير (أوفلاين)
+                if (slots[activeSlotIndex].length >= 30) return alert("الفاتورة ممتلئة!");
+                slots[activeSlotIndex].push(text);
+                localStorage.setItem('v_slots', JSON.stringify(slots));
+                renderSlots();
+                document.getElementById('result-text').innerText = `✅ تم الحفظ في ${slotNames[activeSlotIndex]}`;
+            } else {
+                // وضع الإرسال المباشر
+                masterSend(text + '_ent');
+                document.getElementById('result-text').innerText = `📤 أرسلت: ${text}`;
+            }
+            if (navigator.vibrate) navigator.vibrate(100);
+        }
+
+        // --- إدارة الواجهة (UI) ---
+        function renderMainButtons() {
+            const grid = document.getElementById('dynamic-buttons');
+            grid.innerHTML = '';
+            configButtons.forEach(btn => {
+                const b = document.createElement('button');
+                b.className = 'custom-btn';
+                b.style.borderTop = `4px solid ${btn.color || '#3d60cc'}`;
+                b.innerHTML = `<span>${btn.name}</span><small style="opacity:0.5">${btn.cmd}</small>`;
+                b.onclick = () => {
+                    masterSend(btn.cmd);
+                    if (btn.useEnter) setTimeout(() => masterSend('enter'), 350);
+                };
+                grid.appendChild(b);
+            });
+        }
+
+        function renderAuthStatus() {
+            const phone = localStorage.getItem('v_phone');
+            const name = localStorage.getItem('v_name');
+            const expiry = localStorage.getItem('v_expiry');
+            const box = document.getElementById('auth-info');
+
+            if (phone) {
+                const d = new Date(isNaN(expiry) ? expiry : parseInt(expiry));
+                box.innerHTML = `
+                    <div style="color: var(--success); font-weight: bold; margin-bottom:5px;">👤 ${name}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-dim);">رقم: ${phone}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-dim);">ينتهي: ${d.toLocaleDateString('ar-EG')}</div>
+                    <button onclick="logout()" style="background:none; border:none; color:var(--danger); padding:0; margin-top:10px; cursor:pointer; font-size:0.8rem;">تسجيل خروج</button>
+                `;
+            } else {
+                box.innerHTML = `
+                    <input type="tel" id="login-phone" placeholder="رقم الموبايل المسجل">
+                    <input type="password" id="login-pass" placeholder="كلمة المرور">
+                    <button onclick="handleLogin()" class="save-btn" style="margin:0;">تسجيل دخول</button>
+                `;
+            }
+        }
+
+        async function handleLogin() {
+            const phone = document.getElementById('login-phone').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+            if (!phone || !pass) return alert("اكمل البيانات");
+
+            const res = await fetch(`users.json?t=${Date.now()}`);
+            const users = await res.json();
+            const user = users.find(u => u.phone === phone && u.password === pass);
 
             if (user) {
+                localStorage.setItem('v_phone', phone);
                 localStorage.setItem('v_expiry', user.expiryDate);
                 localStorage.setItem('v_name', user.name);
                 localStorage.setItem('v_activity', user.activity);
-
-                if (!checkExpiry(user.expiryDate)) {
-                    showLock(user.name, phone);
-                } else {
-                    document.getElementById('lock-screen').style.display = 'none';
-                    if (manual) alert("✅ تم تحديث بياناتك بنجاح");
-                }
-                updateAuthUI();
-            }
-        } catch (e) {
-            console.error("Sync Error:", e);
+                location.reload();
+            } else alert("بيانات غلط!");
         }
-    }
 
-    function showLock(name, phone) {
-        document.getElementById('lock-screen').style.display = 'flex';
-        document.getElementById('lock-msg').innerText = `يا ${name}، اشتراكك انتهى. برجاء التواصل مع الإدارة للتجديد.`;
-        document.getElementById('wa-link-lock').href = `https://wa.me/${WHATSAPP_NUM}?text=${encodeURIComponent('أريد تجديد اشتراك Just Scan للرقم: ' + phone)}`;
-    }
+        function logout() { if(confirm("خروج؟")) { localStorage.clear(); location.reload(); } }
 
-    // --- نظام الإرسال ---
-    function masterSend(text) {
-        const phone = localStorage.getItem('v_phone');
-        const expiry = localStorage.getItem('v_expiry');
-
-        if (!phone) return openSettings();
-        if (!checkExpiry(expiry)) return showLock(localStorage.getItem('v_name'), phone);
-
-        fetch(`https://ntfy.sh/voltir_${phone}`, {
-            method: 'POST',
-            body: text
-        }).catch(err => console.log("Ntfy error"));
-    }
-
-    // --- نظام الاسكانر ---
-    function onScanSuccess(decodedText) {
-        if (Date.now() - lastScanTime < 1800) return;
-        lastScanTime = Date.now();
-
-        // لو فيه فاتورة مفتوحة بيخزن فيها أوفلاين
-        if (activeSlot !== null) {
-            if (slotsData[activeSlot].length >= 20) {
-                alert("الفاتورة ممتلئة (20 كود)");
-                return;
-            }
-            slotsData[activeSlot].push(decodedText);
-            localStorage.setItem('v_slots', JSON.stringify(slotsData));
-            renderSlots();
-            document.getElementById('result').innerText = `✅ حُفظ في ${slotsNames[activeSlot]}`;
-            vibrate();
-        } else {
-            // إرسال مباشر للكمبيوتر
-            masterSend(decodedText + '_ent');
-            document.getElementById('result').innerText = "تم الإرسال: " + decodedText;
-            vibrate();
+        function toggleBillPanel() {
+            const p = document.getElementById('bill-panel');
+            const isHidden = p.style.display === 'none' || p.style.display === '';
+            p.style.display = isHidden ? 'block' : 'none';
+            if(isHidden) renderSlots();
         }
-    }
 
-    function vibrate() { if (navigator.vibrate) navigator.vibrate(100); }
-
-    // --- إدارة الواجهة (UI) ---
-    function openSettings() { document.getElementById('settings-modal').style.display = 'block'; renderSettingsUI(); }
-    function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
-    
-    function updateAuthUI() {
-        const phone = localStorage.getItem('v_phone');
-        const name = localStorage.getItem('v_name');
-        const activity = localStorage.getItem('v_activity');
-        const expiry = localStorage.getItem('v_expiry');
-
-        const loggedInBox = document.getElementById('logged-in-info');
-        const loggedOutForm = document.getElementById('logged-out-form');
-
-        if (phone) {
-            loggedInBox.style.display = 'block';
-            loggedOutForm.style.display = 'none';
-            
-            const expiryDate = new Date(isNaN(expiry) ? expiry : parseInt(expiry));
-            
-            loggedInBox.innerHTML = `
-                <div style="text-align:right; font-size:0.9em;">
-                    <p>👤 <b>المستخدم:</b> ${name}</p>
-                    <p>🏢 <b>النشاط:</b> ${activity}</p>
-                    <p>⏳ <b>ينتهي في:</b> ${expiryDate.toLocaleDateString('ar-EG')}</p>
-                </div>
-                <button onclick="logout()" style="width:100%; padding:8px; background:#991b1b; color:white; border:none; border-radius:6px; cursor:pointer;">تسجيل خروج</button>
-            `;
-        } else {
-            loggedInBox.style.display = 'none';
-            loggedOutForm.style.display = 'block';
-        }
-    }
-
-    async function handleLogin() {
-        const phone = document.getElementById('u-phone').value.trim();
-        const pass = document.getElementById('u-pass').value.trim();
-
-        const res = await fetch(`users.json?t=${Date.now()}`);
-        const users = await res.json();
-        const user = users.find(u => u.phone === phone && u.password === pass);
-
-        if (user) {
-            localStorage.setItem('v_phone', phone);
-            localStorage.setItem('v_pass', pass);
-            localStorage.setItem('v_name', user.name);
-            localStorage.setItem('v_expiry', user.expiryDate);
-            localStorage.setItem('v_activity', user.activity);
-            location.reload();
-        } else {
-            alert("❌ بيانات الدخول غير صحيحة");
-        }
-    }
-
-    function logout() { if(confirm("هل تريد تسجيل الخروج؟")) { localStorage.clear(); location.reload(); } }
-
-    function renderSettingsUI() {
-        updateAuthUI();
-        const list = document.getElementById('buttons-edit-list');
-        list.innerHTML = '';
-        userButtons.forEach((btn, i) => {
-            const div = document.createElement('div');
-            div.className = 'setting-row';
-            div.style = "background:#222; padding:10px; border-radius:10px; margin-bottom:8px; display:flex; gap:5px;";
-            div.innerHTML = `
-                <input type="text" value="${btn.name}" oninput="userButtons[${i}].name=this.value" style="width:25%; margin:0;">
-                <input type="text" value="${btn.cmd}" oninput="userButtons[${i}].cmd=this.value" style="width:25%; margin:0;">
-                <input type="color" value="${btn.color || '#3d60cc'}" oninput="userButtons[${i}].color=this.value" style="width:15%; height:40px; padding:2px;">
-                <button onclick="userButtons.splice(${i},1);renderSettingsUI()" style="background:red; color:white; border:none; border-radius:5px; width:15%;">X</button>
-            `;
-            list.appendChild(div);
-        });
-    }
-
-    function addBtnRow() { userButtons.push({name:"جديد", cmd:"f1", color:"#444"}); renderSettingsUI(); }
-    
-    function saveAllSettings() {
-        localStorage.setItem('userButtons', JSON.stringify(userButtons));
-        renderMainButtons();
-        closeSettings();
-    }
-
-    function renderMainButtons() {
-        const container = document.getElementById('dynamic-buttons');
-        container.innerHTML = '';
-        userButtons.forEach(btn => {
-            const b = document.createElement('button');
-            b.className = 'custom-btn';
-            b.style.backgroundColor = btn.color;
-            b.innerText = btn.name;
-            b.onclick = () => {
-                masterSend(btn.cmd);
-                if(btn.useEnter) setTimeout(() => masterSend('enter'), 300);
-            };
-            container.appendChild(b);
-        });
-    }
-
-    // --- وظائف الفواتير ---
-    function toggleBillPanel() {
-        const p = document.getElementById('bill-panel');
-        p.style.display = p.style.display === 'none' ? 'block' : 'none';
-        if(p.style.display === 'block') renderSlots();
-    }
-
-    function renderSlots() {
-        const container = document.getElementById('slots-container');
-        container.innerHTML = '';
-        slotsData.forEach((items, i) => {
-            const div = document.createElement('div');
-            div.className = 'slot-card';
-            div.innerHTML = `
-                <div class="slot-header">
-                    <span onclick="renameSlot(${i})">✏️ ${slotsNames[i]}</span>
-                    <span>${items.length} / 20</span>
-                </div>
-                <div style="display:flex; gap:5px;">
-                    <button onclick="setActiveSlot(${i})" style="flex:1; padding:10px; border-radius:8px; border:none; background:${activeSlot===i?'#ef4444':'#444'}; color:white; font-weight:bold;">
-                        ${activeSlot===i?'🔴 سجل الآن':'🎤 اختيار'}
-                    </button>
-                    <button onclick="sendSlot(${i})" style="flex:1; padding:10px; border-radius:8px; border:none; background:#166534; color:white;">📤 إرسال</button>
-                    <button onclick="clearSlot(${i})" style="padding:10px; border-radius:8px; border:none; background:#7f1d1d; color:white;">🗑️</button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    function setActiveSlot(i) { activeSlot = (activeSlot === i) ? null : i; renderSlots(); }
-    function clearSlot(i) { if(confirm("مسح محتوى الفاتورة؟")) { slotsData[i] = []; localStorage.setItem('v_slots', JSON.stringify(slotsData)); renderSlots(); } }
-    function renameSlot(i) { const n = prompt("اسم الفاتورة الجديد:", slotsNames[i]); if(n) { slotsNames[i] = n; localStorage.setItem('v_slots_names', JSON.stringify(slotsNames)); renderSlots(); } }
-    
-    async function sendSlot(i) {
-        if(slotsData[i].length === 0) return alert("الفاتورة فارغة");
-        if(confirm(`إرسال ${slotsData[i].length} كود للكمبيوتر؟`)) {
-            for(let code of slotsData[i]) {
-                masterSend(code + '_ent');
-                await new Promise(r => setTimeout(r, 1000));
-            }
-            alert("✅ تم إرسال الفاتورة بالكامل");
-        }
-    }
-
-    // --- كيبورد وإضافات ---
-    function openKeyboard() { document.getElementById('keyboard-modal').style.display='block'; setTimeout(()=>document.getElementById('manual-input').focus(), 300); }
-    function closeKeyboard() { document.getElementById('keyboard-modal').style.display='none'; }
-    function sendManual() {
-        const input = document.getElementById('manual-input');
-        if(input.value.trim()){
-            masterSend(input.value.trim() + '_ent');
-            input.value = '';
-            input.focus();
-        }
-    }
-
-    async function toggleFlash() {
-        try {
-            const track = document.querySelector('video').srcObject.getVideoTracks()[0];
-            isFlashOn = !isFlashOn;
-            await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
-        } catch (e) { alert("الفلاش غير مدعوم في هذا المتصفح"); }
-    }
-
-    // --- التشغيل عند البداية ---
-    window.onload = () => {
-        if (!localStorage.getItem('v_phone')) {
-            document.getElementById('auth-overlay').style.display = 'flex';
-        } else {
-            syncData();
-            scanner = new Html5QrcodeScanner("reader", { 
-                fps: 20, 
-                qrbox: { width: 250, height: 150 },
-                aspectRatio: 1.77
+        function renderSlots() {
+            const list = document.getElementById('slots-list');
+            list.innerHTML = '';
+            slots.forEach((items, i) => {
+                const div = document.createElement('div');
+                div.className = 'slot-item';
+                div.innerHTML = `
+                    <div>
+                        <b onclick="renameSlot(${i})">✏️ ${slotNames[i]}</b><br>
+                        <small style="color:var(--text-dim)">${items.length} كود مخزن</small>
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <button onclick="setActiveSlot(${i})" style="background:${activeSlotIndex===i?'var(--danger)':'var(--card-bg)'}; border:1px solid var(--border); color:white; padding:10px; border-radius:10px;">${activeSlotIndex===i?'🔴':'🎤'}</button>
+                        <button onclick="sendFullSlot(${i})" style="background:var(--success); border:none; color:white; padding:10px; border-radius:10px;">📤</button>
+                        <button onclick="clearSlot(${i})" style="background:none; border:1px solid var(--danger); color:var(--danger); padding:10px; border-radius:10px;">🗑️</button>
+                    </div>
+                `;
+                list.appendChild(div);
             });
-            scanner.render(onScanSuccess);
         }
-        renderMainButtons();
-    };
 
-</script>
+        function setActiveSlot(i) { activeSlotIndex = (activeSlotIndex === i) ? null : i; renderSlots(); }
+        function clearSlot(i) { if(confirm("تفريغ الفاتورة؟")) { slots[i]=[]; localStorage.setItem('v_slots', JSON.stringify(slots)); renderSlots(); } }
+        function renameSlot(i) { const n = prompt("الاسم الجديد:", slotNames[i]); if(n){ slotNames[i]=n; localStorage.setItem('v_slot_names', JSON.stringify(slotNames)); renderSlots(); } }
+
+        async function sendFullSlot(i) {
+            if(slots[i].length === 0) return alert("فاضية!");
+            if(confirm(`إرسال ${slots[i].length} كود؟`)) {
+                for(let code of slots[i]) {
+                    masterSend(code + '_ent');
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+                alert("✅ اكتمل الإرسال");
+            }
+        }
+
+        // --- وظائف عامة ---
+        function openSettings() { document.getElementById('settings-modal').style.display='block'; renderButtonsConfig(); renderAuthStatus(); }
+        function closeSettings() { document.getElementById('settings-modal').style.display='none'; }
+        
+        function renderButtonsConfig() {
+            const list = document.getElementById('buttons-config-list');
+            list.innerHTML = '';
+            configButtons.forEach((btn, i) => {
+                const d = document.createElement('div');
+                d.style = "display:flex; gap:5px; margin-bottom:5px;";
+                d.innerHTML = `
+                    <input type="text" value="${btn.name}" oninput="configButtons[${i}].name=this.value" style="margin:0; flex:1">
+                    <input type="text" value="${btn.cmd}" oninput="configButtons[${i}].cmd=this.value" style="margin:0; flex:1">
+                    <input type="color" value="${btn.color}" oninput="configButtons[${i}].color=this.value" style="width:40px; height:48px; padding:2px; border:none; background:none;">
+                    <button onclick="configButtons.splice(${i},1);renderButtonsConfig()" style="background:var(--danger); border:none; color:white; border-radius:8px; padding:0 10px;">X</button>
+                `;
+                list.appendChild(d);
+            });
+        }
+
+        function addNewButtonRow() { configButtons.push({name:"جديد", cmd:"f1", color:"#3d60cc"}); renderButtonsConfig(); }
+        function saveAllAndClose() { localStorage.setItem('userButtons', JSON.stringify(configButtons)); renderMainButtons(); closeSettings(); }
+
+        function openKeyboard() { document.getElementById('keyboard-modal').style.display='block'; setTimeout(()=>document.getElementById('manual-data').focus(), 300); }
+        function closeKeyboard() { document.getElementById('keyboard-modal').style.display='none'; }
+        function sendManualData() { const v = document.getElementById('manual-data').value; if(v){ masterSend(v+'_ent'); document.getElementById('manual-data').value=''; } }
+
+        async function toggleFlash() {
+            try {
+                const track = document.querySelector('video').srcObject.getVideoTracks()[0];
+                isFlashOn = !isFlashOn;
+                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+                document.getElementById('flash-toggle').classList.toggle('active');
+            } catch(e) { alert("الفلاش غير متاح"); }
+        }
+
+        // --- بداية التشغيل ---
+        window.onload = () => {
+            if (!localStorage.getItem('v_phone')) {
+                document.getElementById('welcome-screen').style.display = 'flex';
+            } else {
+                syncData();
+                html5Scanner = new Html5QrcodeScanner("reader", { 
+                    fps: 20, 
+                    qrbox: { width: 250, height: 180 },
+                    aspectRatio: 1.777778
+                });
+                html5Scanner.render(onScanSuccess);
+            }
+            renderMainButtons();
+        };
+
+    </script>
 </body>
 </html>
