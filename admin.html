@@ -28,7 +28,6 @@
    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <h2 style="margin: 0;">🛡️ إدارة المشتركين</h2>
     <div style="display: flex; gap: 10px;">
-        <button onclick="localStorage.removeItem('v_admin_token'); location.reload();" class="btn" style="background: #800; font-size: 0.7em;">تغيير التوكن 🔑</button>
         <button onclick="loadUsers()" class="btn btn-action" style="background: #28a745; padding: 8px 15px;">🔄 تحديث البيانات</button>
     </div>
 </div>
@@ -41,72 +40,45 @@
 </div>
 
 <script>
-    const REPO_OWNER = "VOLTIR-HEMA";
-    const REPO_NAME = "scanner"; 
-    const FILE_PATH = "users.json";
+    // الرابط بتاعك اللي بعتهولي
+    const DB_URL = "https://just-scan-19ce1-default-rtdb.firebaseio.com/users";
 
     let users = [];
 
-    // دالة لجلب التوكن من الذاكرة أو طلبه من المستخدم
-    function getStoredToken() {
-        let t = localStorage.getItem('v_admin_token');
-        if (!t || t.length < 10) {
-            t = prompt("من فضلك أدخل توكن جيتهاب الجديد (عشان نمنع الحظر):");
-            if (t) localStorage.setItem('v_admin_token', t);
-        }
-        return t;
-    }
-
+    // دالة سحب البيانات من السيرفر الجديد مباشرة
     async function loadUsers() {
-        const token = getStoredToken();
-        if (!token) return;
-
         const listDiv = document.getElementById('userList');
-        if(listDiv) listDiv.innerHTML = "⏳ جاري سحب البيانات...";
+        if(listDiv) listDiv.innerHTML = "⏳ جاري سحب البيانات من Firebase...";
         
         try {
-            const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?t=${Date.now()}`;
-            const res = await fetch(url, {
-                headers: { 'Authorization': `token ${token}` }
-            });
-            
+            const res = await fetch(`${DB_URL}.json?t=${Date.now()}`);
             if (res.ok) {
                 const data = await res.json();
-                window.currentFileSha = data.sha;
-                const content = decodeURIComponent(escape(atob(data.content))); 
-                users = JSON.parse(content);
+                // تحويل البيانات من Format فايربيز (Object) لـ Array عشان الـ render يشتغل
+                users = data ? Object.keys(data).map(key => ({ ...data[key], phone: key })) : [];
                 renderUsers(users);
-            } else if (res.status === 401) {
-                alert("التوكن انتهى أو غير صحيح. سيتم حذفه، حدث الصفحة.");
-                localStorage.removeItem('v_admin_token');
             } else {
-                alert("خطأ: " + res.status);
+                alert("خطأ في جلب البيانات: " + res.status);
             }
         } catch (e) { alert("خطأ في الشبكة: " + e.message); }
     }
 
-    async function syncToGitHub(updatedUsers, message) {
-        const token = getStoredToken();
-        const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
-        const content = btoa(unescape(encodeURIComponent(JSON.stringify(updatedUsers, null, 2))));
-
+    // دالة الحفظ للسيرفر الجديد
+    async function syncToDatabase(updatedUsers) {
         try {
-            const res = await fetch(url, {
+            // تحويل الـ Array لـ Object متوافق مع Firebase (المفتاح هو الرقم)
+            const firebaseData = {};
+            updatedUsers.forEach(u => {
+                const { phone, ...rest } = u;
+                firebaseData[phone] = rest;
+            });
+
+            const res = await fetch(`${DB_URL}.json`, {
                 method: 'PUT',
-                headers: { 
-                    'Authorization': `token ${token}`, 
-                    'Content-Type': 'application/json' 
-                },
-                body: JSON.stringify({
-                    message: message,
-                    content: content,
-                    sha: window.currentFileSha
-                })
+                body: JSON.stringify(firebaseData)
             });
 
             if (res.ok) {
-                const result = await res.json();
-                window.currentFileSha = result.content.sha;
                 alert("✅ تم الحفظ بنجاح");
                 closeCard();
                 loadUsers();
@@ -129,7 +101,7 @@
                 <div class="user-row">
                     <div class="user-info-brief">
                         <b>${user.name}</b>
-                        <span>📱 ${user.phone} | 🏢 ${user.activity}</span>
+                        <span>📱 ${user.phone} | 🏢 ${user.activity || 'بدون نشاط'}</span>
                     </div>
                     <div style="text-align: left;">
                         <span class="status-pill" style="border: 1px solid ${statusColor}; color: ${statusColor}">
@@ -150,7 +122,7 @@
         content.innerHTML = `
             <h3>🪪 بطاقة: ${user.name}</h3>
             <label>الاسم:</label> <input type="text" id="m-name" value="${user.name}">
-            <label>النشاط:</label> <input type="text" id="m-act" value="${user.activity}">
+            <label>النشاط:</label> <input type="text" id="m-act" value="${user.activity || ''}">
             <label>الباسورد:</label> <input type="text" id="m-pass" value="${user.password}">
             <button class="btn btn-save" style="width:100%" onclick="saveFullUpdate('${user.phone}')">حفظ التغييرات الأساسية</button>
             <hr style="border:0; border-top:1px solid #334155; margin:15px 0;">
@@ -179,7 +151,7 @@
         usersList[idx].name = document.getElementById('m-name').value;
         usersList[idx].activity = document.getElementById('m-act').value;
         usersList[idx].password = document.getElementById('m-pass').value;
-        await syncToGitHub(usersList, `تحديث بيانات ${phone}`);
+        await syncToDatabase(usersList);
     }
 
     async function addCustomDays(phone) {
@@ -189,20 +161,20 @@
         let idx = usersList.findIndex(u => u.phone === phone);
         let currentExpiry = parseInt(usersList[idx].expiryDate) || Date.now();
         usersList[idx].expiryDate = (Math.max(Date.now(), currentExpiry) + (days * 24 * 60 * 60 * 1000)).toString();
-        await syncToGitHub(usersList, `إضافة ${days} يوم لـ ${phone}`);
+        await syncToDatabase(usersList);
     }
 
     async function setPreset(phone, days) {
         let usersList = [...users];
         let idx = usersList.findIndex(u => u.phone === phone);
         usersList[idx].expiryDate = (Date.now() + (days * 24 * 60 * 60 * 1000)).toString();
-        await syncToGitHub(usersList, `تفعيل اشتراك ${days} يوم لـ ${phone}`);
+        await syncToDatabase(usersList);
     }
 
     async function deleteUser(phone) {
         if(confirm("حذف نهائي؟")) {
             let usersList = users.filter(u => u.phone !== phone);
-            await syncToGitHub(usersList, `حذف المستخدم ${phone}`);
+            await syncToDatabase(usersList);
         }
     }
 
