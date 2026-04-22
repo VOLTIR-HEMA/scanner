@@ -7,18 +7,13 @@
         :root { --primary: #38bdf8; --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; }
         body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 15px; }
         .container { max-width: 1000px; margin: auto; }
-        
-        /* البطاقة التعريفية المصغرة في الجدول */
         .user-row { background: var(--card); border: 1px solid #334155; margin-bottom: 10px; padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
         .user-info-brief { text-align: right; }
         .user-info-brief b { font-size: 1.1em; color: var(--primary); display: block; }
         .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.8em; font-weight: bold; }
-        
-        /* النافذة المنبثقة (بطاقة البيانات) */
         #userModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; }
         .modal-content { background: var(--card); width: 90%; max-width: 500px; margin: 40px auto; padding: 20px; border-radius: 15px; border: 1px solid var(--primary); }
         .modal-content h3 { color: var(--primary); border-bottom: 1px solid #334155; padding-bottom: 10px; }
-        
         input, select { width: 100%; padding: 10px; margin: 8px 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px; box-sizing: border-box; }
         .grid-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
         .btn { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
@@ -32,59 +27,76 @@
 <div class="container">
    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <h2 style="margin: 0;">🛡️ إدارة المشتركين</h2>
-    <button onclick="loadUsers()" class="btn btn-action" style="background: #28a745; padding: 8px 15px;">🔄 تحديث البيانات</button>
+    <div style="display: flex; gap: 10px;">
+        <button onclick="localStorage.removeItem('v_admin_token'); location.reload();" class="btn" style="background: #800; font-size: 0.7em;">تغيير التوكن 🔑</button>
+        <button onclick="loadUsers()" class="btn btn-action" style="background: #28a745; padding: 8px 15px;">🔄 تحديث البيانات</button>
+    </div>
 </div>
-    <button onclick="loadUsers()" class="btn btn-action" style="background: #28a745; padding: 8px 15px;">🔄 تحديث البيانات</button>
     <input type="text" id="searchInput" onkeyup="filterUsers()" placeholder="🔍 ابحث بالاسم أو الرقم..." style="margin-bottom: 20px;">
-    
-    <div id="userList">
-        </div>
+    <div id="userList"></div>
 </div>
 
 <div id="userModal">
-    <div class="modal-content" id="modalData">
-        </div>
+    <div class="modal-content" id="modalData"></div>
 </div>
 
 <script>
-    // 1. إعدادات الخزنة (GitHub) - الضربة القاضية
-   const REPO_OWNER = "VOLTIR-HEMA";
-const REPO_NAME = "scanner"; // غيرنا الاسم هنا للمستودع الحالي
-const FILE_PATH = "users.json";
+    const REPO_OWNER = "VOLTIR-HEMA";
+    const REPO_NAME = "scanner"; 
+    const FILE_PATH = "users.json";
 
     let users = [];
 
-    async function loadUsers() {
-    const listDiv = document.getElementById('userList');
-    if(listDiv) listDiv.innerHTML = "⏳ جاري سحب البيانات...";
-    try {
-        // لازم نسحب من الـ API عشان ناخد الـ SHA المطلوب للحفظ
-        const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?t=${Date.now()}`;
-        const res = await fetch(url, {
-            headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
-        });
-        
-        if (res.ok) {
-            const data = await res.json();
-            window.currentFileSha = data.sha; // ده اللي بيخلي الحفظ يشتغل
-            // فك التشفير مع دعم العربي
-            const content = decodeURIComponent(escape(atob(data.content))); 
-            users = JSON.parse(content);
-            renderUsers(users);
-        } else {
-            alert("خطأ: " + res.status + " - غالباً التوكن اتوقف من جيتهاب");
+    // دالة لجلب التوكن من الذاكرة أو طلبه من المستخدم
+    function getStoredToken() {
+        let t = localStorage.getItem('v_admin_token');
+        if (!t || t.length < 10) {
+            t = prompt("من فضلك أدخل توكن جيتهاب الجديد (عشان نمنع الحظر):");
+            if (t) localStorage.setItem('v_admin_token', t);
         }
-    } catch (e) { alert("خطأ في الشبكة: " + e.message); }
-}
-    // 3. دالة الحفظ المركزية في جيتهاب
+        return t;
+    }
+
+    async function loadUsers() {
+        const token = getStoredToken();
+        if (!token) return;
+
+        const listDiv = document.getElementById('userList');
+        if(listDiv) listDiv.innerHTML = "⏳ جاري سحب البيانات...";
+        
+        try {
+            const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?t=${Date.now()}`;
+            const res = await fetch(url, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                window.currentFileSha = data.sha;
+                const content = decodeURIComponent(escape(atob(data.content))); 
+                users = JSON.parse(content);
+                renderUsers(users);
+            } else if (res.status === 401) {
+                alert("التوكن انتهى أو غير صحيح. سيتم حذفه، حدث الصفحة.");
+                localStorage.removeItem('v_admin_token');
+            } else {
+                alert("خطأ: " + res.status);
+            }
+        } catch (e) { alert("خطأ في الشبكة: " + e.message); }
+    }
+
     async function syncToGitHub(updatedUsers, message) {
+        const token = getStoredToken();
         const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
         const content = btoa(unescape(encodeURIComponent(JSON.stringify(updatedUsers, null, 2))));
 
         try {
             const res = await fetch(url, {
                 method: 'PUT',
-                headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+                headers: { 
+                    'Authorization': `token ${token}`, 
+                    'Content-Type': 'application/json' 
+                },
                 body: JSON.stringify({
                     message: message,
                     content: content,
@@ -96,21 +108,20 @@ const FILE_PATH = "users.json";
                 const result = await res.json();
                 window.currentFileSha = result.content.sha;
                 alert("✅ تم الحفظ بنجاح");
-                if(typeof closeCard === 'function') closeCard();
+                closeCard();
                 loadUsers();
             } else {
-                alert("❌ فشل الحفظ في جيتهاب: " + res.status);
+                alert("❌ فشل الحفظ: " + res.status);
             }
         } catch (e) { alert("❌ خطأ فني: " + e.message); }
     }
 
-    // 4. عرض البيانات (نفس تصميمك)
     function renderUsers(data) {
         const container = document.getElementById('userList');
         if(!container) return;
         container.innerHTML = '';
         data.forEach(user => {
-            const expiry = new Date(user.expiryDate);
+            const expiry = new Date(parseInt(user.expiryDate));
             const daysLeft = Math.ceil((expiry - Date.now()) / (1000 * 60 * 60 * 24));
             const statusColor = daysLeft > 0 ? '#22c55e' : '#ef4444';
 
@@ -130,7 +141,6 @@ const FILE_PATH = "users.json";
         });
     }
 
-    // 5. فتح البطاقة (نفس تصميمك)
     function openCard(phone) {
         const user = users.find(u => u.phone === phone);
         const modal = document.getElementById('userModal');
@@ -160,8 +170,7 @@ const FILE_PATH = "users.json";
     }
 
     function closeCard() { 
-        const modal = document.getElementById('userModal');
-        if(modal) modal.style.display = 'none'; 
+        document.getElementById('userModal').style.display = 'none'; 
     }
 
     async function saveFullUpdate(phone) {
@@ -178,15 +187,15 @@ const FILE_PATH = "users.json";
         if(!days) return alert("اكتب عدد الأيام");
         let usersList = [...users];
         let idx = usersList.findIndex(u => u.phone === phone);
-        let currentExpiry = usersList[idx].expiryDate || Date.now();
-        usersList[idx].expiryDate = Math.max(Date.now(), currentExpiry) + (days * 24 * 60 * 60 * 1000);
+        let currentExpiry = parseInt(usersList[idx].expiryDate) || Date.now();
+        usersList[idx].expiryDate = (Math.max(Date.now(), currentExpiry) + (days * 24 * 60 * 60 * 1000)).toString();
         await syncToGitHub(usersList, `إضافة ${days} يوم لـ ${phone}`);
     }
 
     async function setPreset(phone, days) {
         let usersList = [...users];
         let idx = usersList.findIndex(u => u.phone === phone);
-        usersList[idx].expiryDate = Date.now() + (days * 24 * 60 * 60 * 1000);
+        usersList[idx].expiryDate = (Date.now() + (days * 24 * 60 * 60 * 1000)).toString();
         await syncToGitHub(usersList, `تفعيل اشتراك ${days} يوم لـ ${phone}`);
     }
 
@@ -203,8 +212,7 @@ const FILE_PATH = "users.json";
         renderUsers(filtered);
     }
 
-    // تشغيل الجلب عند البداية
-    loadUsers();
+    window.onload = loadUsers;
 </script>
 </body>
 </html>
