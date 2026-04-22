@@ -350,43 +350,24 @@
         let activeSlotIndex = null;
         let html5Scanner = null;
 
-        // --- إعدادات سحابة Just Scan (GitHub) ---
-        const GITHUB_CONFIG = {
-            token: "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", // ضع التوكن الخاص بك هنا
-            owner: "VOLTIR-HEMA",     
-            repo: "scanner",   
-            path: "users.json"
-        };
+        const DB_BASE_URL = "https://just-scan-19ce1-default-rtdb.firebaseio.com/users";
 
-        // دالة تحديث السحابة (بترفع الأزرار والفواتير مع بعض)
+        // دالة تحديث السحابة (Firebase)
         async function pushToCloud() {
             const phone = localStorage.getItem('v_phone');
             if (!phone) return;
-
             try {
-                const res = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`, {
-                    headers: { "Authorization": `token ${GITHUB_CONFIG.token}` }
+                const dataToSave = {
+                    customButtons: configButtons,
+                    savedBills: slots,
+                    slotNames: slotNames,
+                    lastUpdate: new Date().getTime()
+                };
+                const res = await fetch(`${DB_BASE_URL}/${phone}.json`, {
+                    method: 'PATCH',
+                    body: JSON.stringify(dataToSave)
                 });
-                const file = await res.json();
-                const users = JSON.parse(atob(file.content));
-                
-                const idx = users.findIndex(u => u.phone === phone);
-                if (idx !== -1) {
-                    users[idx].customButtons = configButtons;
-                    users[idx].savedBills = slots;
-                    users[idx].slotNames = slotNames;
-
-                    await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`, {
-                        method: "PUT",
-                        headers: { "Authorization": `token ${GITHUB_CONFIG.token}`, "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            message: `Sync Cloud: ${phone}`,
-                            content: btoa(unescape(encodeURIComponent(JSON.stringify(users, null, 2)))),
-                            sha: file.sha
-                        })
-                    });
-                    console.log("Cloud synced successfully");
-                }
+                if (res.ok) console.log("Cloud synced successfully via Firebase");
             } catch (e) { console.error("Cloud Sync Error", e); }
         }
 
@@ -406,20 +387,16 @@
             return expiryDate.getTime() > Date.now();
         }
 
+        // دالة السحب من Firebase
         async function syncData(manual = false) {
             const phone = localStorage.getItem('v_phone');
             if (!phone) return;
-
             try {
-                const res = await fetch(`users.json?t=${Date.now()}`);
-                const data = await res.json();
-                const user = data.find(u => u.phone === phone);
-
+                const res = await fetch(`${DB_BASE_URL}/${phone}.json?t=${Date.now()}`);
+                const user = await res.json();
                 if (user) {
                     localStorage.setItem('v_expiry', user.expiryDate);
                     localStorage.setItem('v_name', user.name);
-                    
-                    // تحديث الأزرار والفواتير من السحابة لو موجودة
                     if (user.customButtons) {
                         configButtons = user.customButtons;
                         localStorage.setItem('userButtons', JSON.stringify(configButtons));
@@ -433,19 +410,12 @@
                         slotNames = user.slotNames;
                         localStorage.setItem('v_slot_names', JSON.stringify(slotNames));
                     }
-
-                    if (!isSubscribed(user.expiryDate)) {
-                        showLockScreen(user.name, phone);
-                    } else {
-                        document.getElementById('lock-screen').style.display = 'none';
-                        if (manual) alert("✅ تم تحديث جميع البيانات من السحابة");
-                    }
+                    if (!isSubscribed(user.expiryDate)) showLockScreen(user.name, phone);
+                    else document.getElementById('lock-screen').style.display = 'none';
                     renderAuthStatus();
+                    if (manual) alert("✅ تم تحديث البيانات من السحابة");
                 }
-            } catch (err) {
-                console.error("Sync failed", err);
-                if (manual) alert("❌ فشل الاتصال بالسيرفر");
-            }
+            } catch (err) { console.error("Sync failed", err); }
         }
 
         function showLockScreen(name, phone) {
@@ -458,26 +428,20 @@
         function masterSend(message) {
             const phone = localStorage.getItem('v_phone');
             const expiry = localStorage.getItem('v_expiry');
-
             if (!phone) { openSettings(); return; }
             if (!isSubscribed(expiry)) { showLockScreen(localStorage.getItem('v_name'), phone); return; }
-
-            fetch(`https://ntfy.sh/voltir_${phone}`, {
-                method: 'POST',
-                body: message
-            }).catch(e => console.log("Network error"));
+            fetch(`https://ntfy.sh/voltir_${phone}`, { method: 'POST', body: message }).catch(e => console.log("Network error"));
         }
 
         function onScanSuccess(text) {
             if (Date.now() - lastScanTime < 2000) return;
             lastScanTime = Date.now();
-
             if (activeSlotIndex !== null) {
                 if (slots[activeSlotIndex].length >= 30) return alert("الفاتورة ممتلئة!");
                 slots[activeSlotIndex].push(text);
                 localStorage.setItem('v_slots', JSON.stringify(slots));
                 renderSlots();
-                pushToCloud(); // مزامنة فورية عند الإضافة
+                pushToCloud();
                 document.getElementById('result-text').innerText = `✅ تم الحفظ في ${slotNames[activeSlotIndex]}`;
             } else {
                 masterSend(text + '_ent');
@@ -507,29 +471,11 @@
             const name = localStorage.getItem('v_name');
             const expiry = localStorage.getItem('v_expiry');
             const box = document.getElementById('auth-info');
-
             if (phone) {
                 const d = new Date(isNaN(expiry) ? expiry : parseInt(expiry));
-                box.innerHTML = `
-                    <div style="background: rgba(34, 197, 94, 0.1); padding: 15px; border-radius: 12px; border: 1px solid var(--success);">
-                        <div style="color: var(--success); font-weight: bold; font-size: 1.1rem;">👤 ${name}</div>
-                        <div style="font-size: 0.9rem; color: var(--text-dim); margin: 5px 0;">📱 رقم: ${phone}</div>
-                        <div style="font-size: 0.8rem; color: var(--warning);">⏳ ينتهي في: ${d.toLocaleDateString('ar-EG')}</div>
-                        <button onclick="logout()" style="width:100%; background:var(--danger); border:none; color:white; padding:10px; border-radius:8px; margin-top:15px; cursor:pointer; font-weight:bold;">تسجيل خروج</button>
-                    </div>
-                `;
+                box.innerHTML = `<div style="background: rgba(34, 197, 94, 0.1); padding: 15px; border-radius: 12px; border: 1px solid var(--success);"><div style="color: var(--success); font-weight: bold; font-size: 1.1rem;">👤 ${name}</div><div style="font-size: 0.9rem; color: var(--text-dim); margin: 5px 0;">📱 رقم: ${phone}</div><div style="font-size: 0.8rem; color: var(--warning);">⏳ ينتهي في: ${d.toLocaleDateString('ar-EG')}</div><button onclick="logout()" style="width:100%; background:var(--danger); border:none; color:white; padding:10px; border-radius:8px; margin-top:15px; cursor:pointer; font-weight:bold;">تسجيل خروج</button></div>`;
             } else {
-                box.innerHTML = `
-                    <div id="auth-tabs" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
-                        <button onclick="showAuthTab('login')" id="tab-login" style="padding:10px; border-radius:8px; border:none; background:var(--primary); color:white;">دخول</button>
-                        <button onclick="showAuthTab('register')" id="tab-register" style="padding:10px; border-radius:8px; border:none; background:var(--card-bg); color:white;">حساب جديد</button>
-                    </div>
-                    <div id="login-form">
-                        <input type="tel" id="login-phone" placeholder="رقم الموبايل">
-                        <input type="password" id="login-pass" placeholder="كلمة المرور">
-                        <button onclick="handleLogin()" class="save-btn" style="margin:0;">دخول 🔑</button>
-                    </div>
-                `;
+                box.innerHTML = `<div id="auth-tabs" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;"><button onclick="showAuthTab('login')" id="tab-login" style="padding:10px; border-radius:8px; border:none; background:var(--primary); color:white;">دخول</button><button onclick="showAuthTab('register')" id="tab-register" style="padding:10px; border-radius:8px; border:none; background:var(--card-bg); color:white;">حساب جديد</button></div><div id="login-form"><input type="tel" id="login-phone" placeholder="رقم الموبايل"><input type="password" id="login-pass" placeholder="كلمة المرور"><button onclick="handleLogin()" class="save-btn" style="margin:0;">دخول 🔑</button></div>`;
             }
         }
 
@@ -538,21 +484,21 @@
             document.getElementById('tab-login').style.background = type === 'login' ? 'var(--primary)' : 'var(--card-bg)';
         }
 
+        // دالة تسجيل الدخول عبر Firebase
         async function handleLogin() {
             const phone = document.getElementById('login-phone').value.trim();
             const pass = document.getElementById('login-pass').value.trim();
             if (!phone || !pass) return alert("اكمل البيانات");
-
-            const res = await fetch(`users.json?t=${Date.now()}`);
-            const users = await res.json();
-            const user = users.find(u => u.phone === phone && u.password === pass);
-
-            if (user) {
-                localStorage.setItem('v_phone', phone);
-                localStorage.setItem('v_expiry', user.expiryDate);
-                localStorage.setItem('v_name', user.name);
-                location.reload();
-            } else alert("بيانات غلط!");
+            try {
+                const res = await fetch(`${DB_BASE_URL}/${phone}.json`);
+                const user = await res.json();
+                if (user && user.password === pass) {
+                    localStorage.setItem('v_phone', phone);
+                    localStorage.setItem('v_expiry', user.expiryDate);
+                    localStorage.setItem('v_name', user.name);
+                    location.reload();
+                } else alert("بيانات غلط!");
+            } catch (e) { alert("خطأ في الاتصال بالسيرفر"); }
         }
 
         function logout() { if(confirm("خروج؟")) { localStorage.clear(); location.reload(); } }
@@ -570,41 +516,14 @@
             slots.forEach((items, i) => {
                 const div = document.createElement('div');
                 div.className = 'slot-item';
-                div.innerHTML = `
-                    <div>
-                        <b onclick="renameSlot(${i})">✏️ ${slotNames[i]}</b><br>
-                        <small style="color:var(--text-dim)">${items.length} كود مخزن</small>
-                    </div>
-                    <div style="display:flex; gap:5px;">
-                        <button onclick="setActiveSlot(${i})" style="background:${activeSlotIndex===i?'var(--danger)':'var(--card-bg)'}; border:1px solid var(--border); color:white; padding:10px; border-radius:10px;">${activeSlotIndex===i?'🔴':'🎤'}</button>
-                        <button onclick="sendFullSlot(${i})" style="background:var(--success); border:none; color:white; padding:10px; border-radius:10px;">📤</button>
-                        <button onclick="clearSlot(${i})" style="background:none; border:1px solid var(--danger); color:var(--danger); padding:10px; border-radius:10px;">🗑️</button>
-                    </div>
-                `;
+                div.innerHTML = `<div><b onclick="renameSlot(${i})">✏️ ${slotNames[i]}</b><br><small style="color:var(--text-dim)">${items.length} كود مخزن</small></div><div style="display:flex; gap:5px;"><button onclick="setActiveSlot(${i})" style="background:${activeSlotIndex===i?'var(--danger)':'var(--card-bg)'}; border:1px solid var(--border); color:white; padding:10px; border-radius:10px;">${activeSlotIndex===i?'🔴':'🎤'}</button><button onclick="sendFullSlot(${i})" style="background:var(--success); border:none; color:white; padding:10px; border-radius:10px;">📤</button><button onclick="clearSlot(${i})" style="background:none; border:1px solid var(--danger); color:var(--danger); padding:10px; border-radius:10px;">🗑️</button></div>`;
                 list.appendChild(div);
             });
         }
 
         function setActiveSlot(i) { activeSlotIndex = (activeSlotIndex === i) ? null : i; renderSlots(); }
-        
-        function clearSlot(i) { 
-            if(confirm("تفريغ الفاتورة؟")) { 
-                slots[i]=[]; 
-                localStorage.setItem('v_slots', JSON.stringify(slots)); 
-                renderSlots(); 
-                pushToCloud();
-            } 
-        }
-
-        function renameSlot(i) { 
-            const n = prompt("الاسم الجديد:", slotNames[i]); 
-            if(n){ 
-                slotNames[i]=n; 
-                localStorage.setItem('v_slot_names', JSON.stringify(slotNames)); 
-                renderSlots(); 
-                pushToCloud();
-            } 
-        }
+        function clearSlot(i) { if(confirm("تفريغ الفاتورة؟")) { slots[i]=[]; localStorage.setItem('v_slots', JSON.stringify(slots)); renderSlots(); pushToCloud(); } }
+        function renameSlot(i) { const n = prompt("الاسم الجديد:", slotNames[i]); if(n){ slotNames[i]=n; localStorage.setItem('v_slot_names', JSON.stringify(slotNames)); renderSlots(); pushToCloud(); } }
 
         async function sendFullSlot(i) {
             if(slots[i].length === 0) return alert("فاضية!");
@@ -626,28 +545,13 @@
             configButtons.forEach((btn, i) => {
                 const d = document.createElement('div');
                 d.style = "display:flex; align-items:center; gap:5px; margin-bottom:8px; background:#222; padding:10px; border-radius:10px;";
-                d.innerHTML = `
-                    <input type="text" value="${btn.name}" oninput="configButtons[${i}].name=this.value" style="margin:0; flex:1" placeholder="الاسم">
-                    <input type="text" value="${btn.cmd}" oninput="configButtons[${i}].cmd=this.value" style="margin:0; flex:1" placeholder="الأمر">
-                    <input type="color" value="${btn.color}" oninput="configButtons[${i}].color=this.value" style="width:35px; height:40px; padding:2px; border:none; background:none;">
-                    <label style="font-size:0.7rem; display:flex; flex-direction:column; align-items:center; color:var(--text-dim);">
-                        <input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="configButtons[${i}].useEnter=this.checked">
-                        Enter
-                    </label>
-                    <button onclick="configButtons.splice(${i},1);renderButtonsConfig()" style="background:var(--danger); border:none; color:white; border-radius:8px; padding:10px;">X</button>
-                `;
+                d.innerHTML = `<input type="text" value="${btn.name}" oninput="configButtons[${i}].name=this.value" style="margin:0; flex:1"><input type="text" value="${btn.cmd}" oninput="configButtons[${i}].cmd=this.value" style="margin:0; flex:1"><input type="color" value="${btn.color}" oninput="configButtons[${i}].color=this.value" style="width:35px; height:40px; border:none; background:none;"><label style="font-size:0.7rem; display:flex; flex-direction:column; align-items:center; color:var(--text-dim);"><input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="configButtons[${i}].useEnter=this.checked">Ent</label><button onclick="configButtons.splice(${i},1);renderButtonsConfig()" style="background:var(--danger); border:none; color:white; border-radius:8px; padding:10px;">X</button>`;
                 list.appendChild(d);
             });
         }
         
         function addNewButtonRow() { configButtons.push({name:"جديد", cmd:"f1", color:"#3d60cc"}); renderButtonsConfig(); }
-        
-        function saveAllAndClose() { 
-            localStorage.setItem('userButtons', JSON.stringify(configButtons)); 
-            renderMainButtons(); 
-            pushToCloud(); // مزامنة الأزرار مع السحابة
-            closeSettings(); 
-        }
+        function saveAllAndClose() { localStorage.setItem('userButtons', JSON.stringify(configButtons)); renderMainButtons(); pushToCloud(); closeSettings(); }
 
         function openKeyboard() { document.getElementById('keyboard-modal').style.display='block'; setTimeout(()=>document.getElementById('manual-data').focus(), 300); }
         function closeKeyboard() { document.getElementById('keyboard-modal').style.display='none'; }
@@ -677,15 +581,7 @@
             try {
                 if (html5Scanner) { await html5Scanner.stop(); }
                 html5Scanner = new Html5Qrcode("reader");
-                await html5Scanner.start(
-                    { facingMode: mode }, 
-                    {
-                        fps: 25,
-                        qrbox: { width: 200, height: 150 }, 
-                        aspectRatio: 1.0 
-                    },
-                    onScanSuccess
-                );
+                await html5Scanner.start({ facingMode: mode }, { fps: 25, qrbox: { width: 200, height: 150 }, aspectRatio: 1.0 }, onScanSuccess);
             } catch (err) { console.error("Camera error", err); }
         }
 
@@ -694,7 +590,6 @@
             currentCameraMode = (currentCameraMode === "environment") ? "user" : "environment";
             startSmartScanner(currentCameraMode);
         }
-
     </script>
 </body>
 </html>
