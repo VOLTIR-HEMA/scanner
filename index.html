@@ -86,20 +86,22 @@
             padding: 0 10px;
         }
 
-        #reader {
+       #reader {
     width: 100% !important;
-    max-width: 400px; /* تصغير العرض الكلي */
-    height: 200px !important; /* تقليل الارتفاع */
+    max-width: 380px !important; 
+    height: 250px !important; /* زودنا الارتفاع شوية عشان مربع السكان يظهر */
     border: 2px solid var(--border) !important;
     border-radius: 20px !important;
-    margin: 5px auto !important; /* تقليل الهوامش */
+    margin: 5px auto !important; 
     overflow: hidden;
     background: #000 !important;
 }
 
-        #reader__scan_region video {
-            object-fit: cover !important;
-        }
+/* السطر ده مهم جداً عشان يخلي الفيديو يملا المربع اللي حددناه */
+#reader video {
+    object-fit: cover !important;
+    height: 250px !important;
+}
 
         /* عرض النتائج */
         .result-container {
@@ -604,24 +606,26 @@
 
         // دالة ذكية لتشغيل الكاميرا والتبديل بينها
         async function startSmartScanner(mode) {
-            try {
-                if (html5Scanner) {
-                    await html5Scanner.stop();
-                }
-                html5Scanner = new Html5Qrcode("reader");
-                await html5Scanner.start(
-                    { facingMode: mode }, 
-                    {
-                        fps: 25,
-                        qrbox: { width: 220, height: 130 },
-                        aspectRatio: 1.777778
-                    },
-                    onScanSuccess
-                );
-            } catch (err) {
-                console.error("Camera error", err);
-            }
+    try {
+        if (html5Scanner) {
+            await html5Scanner.stop();
         }
+        html5Scanner = new Html5Qrcode("reader");
+        await html5Scanner.start(
+            { facingMode: mode }, 
+            {
+                fps: 25,
+                // تعديل: صغرنا الـ qrbox عشان يناسب مساحة الكاميرا الجديدة ويظهر في النص
+                qrbox: { width: 200, height: 150 }, 
+                // تعديل: غيرنا الـ aspectRatio لـ 1.0 عشان الصورة متبقاش مضغوطة بالعرض
+                aspectRatio: 1.0 
+            },
+            onScanSuccess
+        );
+    } catch (err) {
+        console.error("Camera error", err);
+    }
+}
 
         // دالة تبديل الكاميرا (خلفية / أمامية)
         let currentCameraMode = "environment";
