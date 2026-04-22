@@ -120,21 +120,16 @@
     ];
 
     // دالة جلب البيانات من جيتهاب (البديل للسيرفر القديم)
-    async function fetchUsersFromGitHub() {
-        try {
-            const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
-            const res = await fetch(url, {
-                headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                const content = decodeURIComponent(escape(atob(data.content)));
-                return JSON.parse(content);
-            }
-        } catch (e) { console.error("خطأ في جلب بيانات الخزنة", e); }
-        return null;
-    }
-
+   async function fetchUsersFromGitHub() {
+    try {
+        const url = `https://raw.githubusercontent.com/VOLTIR-HEMA/Just-Scan-DB/main/users.json?t=${Date.now()}`;
+        const res = await fetch(url);
+        if (res.ok) {
+            return await res.json();
+        }
+    } catch (e) { console.error("خطأ في سحب البيانات", e); }
+    return null;
+}
     function updateAuthUI() {
         const phone = localStorage.getItem('v_phone');
         const name = localStorage.getItem('v_name') || 'مستخدم جديد';
