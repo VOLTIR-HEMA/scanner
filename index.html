@@ -288,6 +288,7 @@
         </a>
         <div class="action-btns">
             <button class="icon-btn" onclick="toggleFlash()" id="flash-toggle">🔦</button>
+            <button class="icon-btn" onclick="switchCamera()" title="تبديل الكاميرا">🔄📷</button>
             <button class="icon-btn" onclick="openKeyboard()">⌨️</button>
             <button class="icon-btn" onclick="syncData(true)" style="color: var(--success);">🔄</button>
             <button class="icon-btn" onclick="openSettings()">⚙️</button>
@@ -585,25 +586,55 @@
             } catch(e) { alert("الفلاش غير متاح"); }
         }
 
+       
         // --- بداية التشغيل ---
-        window.onload = () => {
-            if (!localStorage.getItem('v_phone')) {
+            window.onload = () => {
+            const phone = localStorage.getItem('v_phone');
+            if (!phone) {
+                // إظهار شاشة الترحيب لو مفيش رقم مسجل
                 document.getElementById('welcome-screen').style.display = 'flex';
             } else {
-               syncData();
-        // تشغيل الكاميرا فوراً بدون زر Start وتصغير حجم المربع
-        const html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start(
-            { facingMode: "environment" }, // الكاميرا الخلفية
-            {
-                   fps: 60,
-                qrbox: { width: 200, height: 120 }, // تصغير المربع ليناسب الشاشة
-                aspectRatio: 1.777778
-                });
-                html5Scanner.render(onScanSuccess);
+                syncData();
+                // تشغيل الكاميرا الخلفية مباشرة عند الفتح
+                startSmartScanner("environment"); 
             }
+            // استدعاء الدالة بالاسم الصحيح الموجود في كودك فوق
             renderMainButtons();
         };
+
+        // دالة ذكية لتشغيل الكاميرا والتبديل بينها
+        async function startSmartScanner(mode) {
+            try {
+                if (html5Scanner) {
+                    await html5Scanner.stop();
+                }
+                html5Scanner = new Html5Qrcode("reader");
+                await html5Scanner.start(
+                    { facingMode: mode }, 
+                    {
+                        fps: 25,
+                        qrbox: { width: 220, height: 130 },
+                        aspectRatio: 1.777778
+                    },
+                    onScanSuccess
+                );
+            } catch (err) {
+                console.error("Camera error", err);
+            }
+        }
+
+        // دالة تبديل الكاميرا (خلفية / أمامية)
+        let currentCameraMode = "environment";
+        function switchCamera() {
+            currentCameraMode = (currentCameraMode === "environment") ? "user" : "environment";
+            startSmartScanner(currentCameraMode);
+        }
+
+        // دالة إضافية للتأكد من حفظ الفواتير في ذاكرة الموبايل
+        function saveBillsToDevice() {
+            localStorage.setItem('v_slots', JSON.stringify(slots));
+            localStorage.setItem('v_slot_names', JSON.stringify(slotNames));
+        }
 
     </script>
 </body>
