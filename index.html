@@ -99,11 +99,16 @@
 </div>
 
 <script>
-    // --- بيانات الإدارة الأساسية ---
+     // --- بيانات الإدارة الأساسية (الربط بالخزنة الجديدة) ---
     const WHATSAPP_NUM = "201147534998"; 
     const DOWNLOAD_SITE = "https://voltir-hema.github.io/Scan-Search/"; 
-    const SERVER_URL = 'https://round-resonance-b6f1.voltir-f.workers.dev';
     
+    // إعدادات جيتهاب (الضربة القاضية)
+    const GITHUB_TOKEN = "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"; 
+    const REPO_OWNER = "VOLTIR-HEMA";
+    const REPO_NAME = "Just-Scan-DB";
+    const FILE_PATH = "users.json";
+
     let NTFY_URL = '';
     let lastScanTime = 0, isFlashOn = false;
     let activeSlot = null;
@@ -114,8 +119,21 @@
         { name: "حفظ", cmd: "f9", useEnter: true, color: "#3d60cc" }
     ];
 
-    // بصمة الجهاز
-    const fingerprint = navigator.userAgent + screen.width + screen.height;
+    // دالة جلب البيانات من جيتهاب (البديل للسيرفر القديم)
+    async function fetchUsersFromGitHub() {
+        try {
+            const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
+            const res = await fetch(url, {
+                headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const content = decodeURIComponent(escape(atob(data.content)));
+                return JSON.parse(content);
+            }
+        } catch (e) { console.error("خطأ في جلب بيانات الخزنة", e); }
+        return null;
+    }
 
     function updateAuthUI() {
         const phone = localStorage.getItem('v_phone');
@@ -128,8 +146,6 @@
 
         if (phone) {
             NTFY_URL = `https://ntfy.sh/voltir_${phone}`;
-            
-            // حساب الأيام المتبقية
             let daysLeft = 0;
             if(expiry) daysLeft = Math.ceil((parseInt(expiry) - Date.now()) / (1000 * 60 * 60 * 24));
             const statusText = daysLeft > 0 ? `باقي ${daysLeft} يوم` : "منتهي";
@@ -147,7 +163,6 @@
                 <button onclick="userLogout()" style="width:100%; padding:10px; background:#800; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">تسجيل خروج 🚪</button>
             `;
             
-            // تحديث روابط التواصل
             const waMsg = encodeURIComponent(`يا هيما محتاج دعم فني لحسابي: ${phone}`);
             document.getElementById('wa-btn-settings').href = `https://wa.me/${WHATSAPP_NUM}?text=${waMsg}`;
             document.getElementById('web-btn-settings').href = DOWNLOAD_SITE;
@@ -160,83 +175,48 @@
     async function handleAuth(action) {
         const phone = document.getElementById('u-phone').value.trim();
         const pass = document.getElementById('u-pass').value.trim();
-        const name = document.getElementById('u-name').value.trim();
-        const activity = document.getElementById('u-activity').value.trim();
-
+        
         if (phone.length !== 11 || isNaN(phone)) return alert("رقم الموبايل غير صحيح");
         if (!pass) return alert("اكتب كلمة المرور");
-        if (action === 'register' && (!name || !activity)) return alert("اكمل بيانات الاسم والنشاط للتسجيل");
 
-        try {
-            const res = await fetch(SERVER_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action, phone, password: pass, name, activity, fingerprint })
-            });
-            const result = await res.json();
-            if (res.ok) {
-                localStorage.setItem('v_phone', phone);
-                localStorage.setItem('v_pass', pass);
-                localStorage.setItem('v_name', result.name || name);
-                localStorage.setItem('v_activity', result.activity || activity);
-                localStorage.setItem('v_expiry', result.expiryDate);
-                
-                // تحديث الزراير من السيرفر
-                if (result.customButtons) {
-                    localStorage.setItem('userButtons', JSON.stringify(result.customButtons));
-                }
-                
-                // تحديث الفواتير من السيرفر 📥
-                if (result.invoices) {
-                    localStorage.setItem('v_slots', JSON.stringify(result.invoices));
-                }
+        const allUsers = await fetchUsersFromGitHub();
+        if (!allUsers) return alert("تعذر الوصول للخزنة حالياً");
 
-                alert(action === 'login' ? "أهلاً بك" : "تم التسجيل بنجاح");
-                location.reload();
-            }
-            else {
-                alert(result.error || "خطأ في البيانات");
-            }
-        } catch (e) { alert("تعذر الاتصال بالسيرفر"); }
+        const user = allUsers.find(u => u.phone === phone && u.password === pass);
+
+        if (user) {
+            localStorage.setItem('v_phone', phone);
+            localStorage.setItem('v_pass', pass);
+            localStorage.setItem('v_name', user.name);
+            localStorage.setItem('v_activity', user.activity);
+            localStorage.setItem('v_expiry', user.expiryDate);
+            alert("أهلاً بك يا " + user.name);
+            location.reload();
+        } else {
+            alert("رقم الهاتف أو كلمة المرور غير صحيحة، أو الحساب غير موجود.");
+        }
     }
 
-  async function syncData(manual = false) {
+    async function syncData(manual = false) {
         const phone = localStorage.getItem('v_phone');
         const pass = localStorage.getItem('v_pass');
         if(!phone || !pass) return;
 
-        try {
-            const res = await fetch(SERVER_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'login', phone, password: pass })
-            });
-            const result = await res.json();
-            if(result.success) {
-                // 1. تحديث البيانات الأساسية
-                localStorage.setItem('v_name', result.name);
-                localStorage.setItem('v_activity', result.activity);
-                localStorage.setItem('v_expiry', result.expiryDate);
-                
-                // 2. تحديث الزراير (Buttons)
-                if(result.customButtons) {
-                    localStorage.setItem('userButtons', JSON.stringify(result.customButtons));
-                    buttons = result.customButtons; 
-                    renderButtons(); 
-                }
-                
-                // 3. تحديث الفواتير (Slots)
-                if(result.invoices) {
-                    localStorage.setItem('v_slots', JSON.stringify(result.invoices));
-                    slotsData = result.invoices; 
-                    if (typeof renderSlots === "function") renderSlots();
-                }
-                updateAuthUI();
-                if(manual) alert("✅ تم تحديث البيانات من السيرفر");
-                if(result.isExpired) showLock(result.name, phone);
-            }
-        } catch(e) { 
-            if(manual) alert("❌ فشل الاتصال بالسيرفر"); 
+        const allUsers = await fetchUsersFromGitHub();
+        if(!allUsers) return;
+
+        const user = allUsers.find(u => u.phone === phone && u.password === pass);
+        
+        if(user) {
+            localStorage.setItem('v_name', user.name);
+            localStorage.setItem('v_activity', user.activity);
+            localStorage.setItem('v_expiry', user.expiryDate);
+            
+            updateAuthUI();
+            if(manual) alert("✅ تم تحديث البيانات من الخزنة");
+            if(Date.now() > parseInt(user.expiryDate)) showLock(user.name, phone);
+        } else {
+            if(manual) alert("❌ لم يتم العثور على حسابك في الخزنة");
         }
     }
 
@@ -245,7 +225,6 @@
         const msg = document.getElementById('lock-msg');
         lock.style.display = 'flex';
         msg.innerText = `يا ${name}، اشتراكك انتهى. تواصل معنا للتفعيل.`;
-        
         const waMsg = encodeURIComponent(`يا هيما عاوز افعل اشتراك Just Scan لرقمي: ${phone}`);
         document.getElementById('wa-link').href = `https://wa.me/${WHATSAPP_NUM}?text=${waMsg}`;
         document.getElementById('web-link').href = DOWNLOAD_SITE;
@@ -271,7 +250,6 @@
     function onScanSuccess(text) {
         if (Date.now() - lastScanTime < 1500) return;
         lastScanTime = Date.now();
-        
         if (activeSlot !== null) {
             if (slotsData[activeSlot].length < 15) {
                 slotsData[activeSlot].push(text);
@@ -335,28 +313,9 @@
 
     function addNewButtonSetting() { buttons.push({name:"جديد", cmd:"f1", useEnter: true}); renderSettingsList(); }
     async function saveSettings() {
-        // 1. الحفظ المحلي في الموبايل
         localStorage.setItem('userButtons', JSON.stringify(buttons));
-        localStorage.setItem('v_slots', JSON.stringify(slotsData)); // حفظ الفواتير محلياً
+        localStorage.setItem('v_slots', JSON.stringify(slotsData));
         renderButtons();
-        
-        // 2. الحفظ سحابياً
-        const phone = localStorage.getItem('v_phone');
-        if (phone) {
-            try {
-                await fetch(SERVER_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        action: 'save-user-data', 
-                        phone: phone, 
-                        customButtons: buttons,
-                        invoices: slotsData // إرسال الفواتير للسيرفر 📤
-                    })
-                });
-            } catch (e) { console.log("خطأ في الحفظ السحابي"); }
-        }
-        
         toggleSettings(false);
         if (typeof renderSlots === "function") renderSlots();
     }
@@ -449,6 +408,9 @@
             await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
         } catch (e) { alert("الفلاش غير مدعوم"); }
     }
+    
+   
+    
 </script>
 </body>
 </html>
