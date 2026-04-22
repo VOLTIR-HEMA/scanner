@@ -87,13 +87,15 @@
         }
 
         #reader {
-            width: 100% !important;
-            border: 2px solid var(--border) !important;
-            border-radius: 20px !important;
-            overflow: hidden;
-            background: #000 !important;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        }
+    width: 100% !important;
+    max-width: 400px; /* تصغير العرض الكلي */
+    height: 200px !important; /* تقليل الارتفاع */
+    border: 2px solid var(--border) !important;
+    border-radius: 20px !important;
+    margin: 5px auto !important; /* تقليل الهوامش */
+    overflow: hidden;
+    background: #000 !important;
+}
 
         #reader__scan_region video {
             object-fit: cover !important;
@@ -547,21 +549,26 @@
         function closeSettings() { document.getElementById('settings-modal').style.display='none'; }
         
         function renderButtonsConfig() {
-            const list = document.getElementById('buttons-config-list');
-            list.innerHTML = '';
-            configButtons.forEach((btn, i) => {
-                const d = document.createElement('div');
-                d.style = "display:flex; gap:5px; margin-bottom:5px;";
-                d.innerHTML = `
-                    <input type="text" value="${btn.name}" oninput="configButtons[${i}].name=this.value" style="margin:0; flex:1">
-                    <input type="text" value="${btn.cmd}" oninput="configButtons[${i}].cmd=this.value" style="margin:0; flex:1">
-                    <input type="color" value="${btn.color}" oninput="configButtons[${i}].color=this.value" style="width:40px; height:48px; padding:2px; border:none; background:none;">
-                    <button onclick="configButtons.splice(${i},1);renderButtonsConfig()" style="background:var(--danger); border:none; color:white; border-radius:8px; padding:0 10px;">X</button>
-                `;
-                list.appendChild(d);
-            });
-        }
+    const list = document.getElementById('buttons-config-list');
+    list.innerHTML = '';
+    configButtons.forEach((btn, i) => {
+        const d = document.createElement('div');
+        d.style = "display:flex; align-items:center; gap:5px; margin-bottom:8px; background:#222; padding:10px; border-radius:10px;";
+        d.innerHTML = `
+            <input type="text" value="${btn.name}" oninput="configButtons[${i}].name=this.value" style="margin:0; flex:1" placeholder="الاسم">
+            <input type="text" value="${btn.cmd}" oninput="configButtons[${i}].cmd=this.value" style="margin:0; flex:1" placeholder="الأمر">
+            <input type="color" value="${btn.color}" oninput="configButtons[${i}].color=this.value" style="width:35px; height:40px; padding:2px; border:none; background:none;">
+            
+            <label style="font-size:0.7rem; display:flex; flex-direction:column; align-items:center; color:var(--text-dim);">
+                <input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="configButtons[${i}].useEnter=this.checked">
+                Enter
+            </label>
 
+            <button onclick="configButtons.splice(${i},1);renderButtonsConfig()" style="background:var(--danger); border:none; color:white; border-radius:8px; padding:10px;">X</button>
+        `;
+        list.appendChild(d);
+    });
+}
         function addNewButtonRow() { configButtons.push({name:"جديد", cmd:"f1", color:"#3d60cc"}); renderButtonsConfig(); }
         function saveAllAndClose() { localStorage.setItem('userButtons', JSON.stringify(configButtons)); renderMainButtons(); closeSettings(); }
 
@@ -583,11 +590,15 @@
             if (!localStorage.getItem('v_phone')) {
                 document.getElementById('welcome-screen').style.display = 'flex';
             } else {
-                syncData();
-                html5Scanner = new Html5QrcodeScanner("reader", { 
-                    fps: 20, 
-                    qrbox: { width: 250, height: 180 },
-                    aspectRatio: 1.777778
+               syncData();
+        // تشغيل الكاميرا فوراً بدون زر Start وتصغير حجم المربع
+        const html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+            { facingMode: "environment" }, // الكاميرا الخلفية
+            {
+                   fps: 60,
+                qrbox: { width: 200, height: 120 }, // تصغير المربع ليناسب الشاشة
+                aspectRatio: 1.777778
                 });
                 html5Scanner.render(onScanSuccess);
             }
