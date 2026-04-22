@@ -125,16 +125,12 @@
     // دالة جلب البيانات من جيتهاب (البديل للسيرفر القديم)
   async function fetchUsersFromGitHub() {
     try {
-        // إضافة رقم عشوائي في آخر الرابط عشان يضمن سحب أحدث بيانات من الخزنة
-        const url = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${FILE_PATH}?nocache=${new Date().getTime()}`;
-        const res = await fetch(url);
+        // بما إن الملف في نفس المستودع، هنسحبه مباشرة باسمه
+        const res = await fetch(`users.json?t=${Date.now()}`);
         if (res.ok) {
-            const data = await res.json();
-            return Array.isArray(data) ? data : null;
+            return await res.json();
         }
-    } catch (e) { 
-        console.error("خطأ في سحب البيانات من الخزنة:", e); 
-    }
+    } catch (e) { console.error("خطأ في السحب:", e); }
     return null;
 }
     function updateAuthUI() {
