@@ -31,7 +31,6 @@
             overflow-x: hidden;
         }
 
-        /* التصميم العلوي - بار التنقل */
         .top-bar {
             display: flex;
             justify-content: space-between;
@@ -77,7 +76,6 @@
         .icon-btn:active { transform: scale(0.9); background: var(--border); }
         .icon-btn.active { background: var(--primary); border-color: var(--primary); }
 
-        /* منطقة الماسح الضوئي */
         .scanner-section {
             width: 100%;
             max-width: 600px;
@@ -87,23 +85,21 @@
         }
 
        #reader {
-    width: 100% !important;
-    max-width: 380px !important; 
-    height: 250px !important; /* زودنا الارتفاع شوية عشان مربع السكان يظهر */
-    border: 2px solid var(--border) !important;
-    border-radius: 20px !important;
-    margin: 5px auto !important; 
-    overflow: hidden;
-    background: #000 !important;
-}
+            width: 100% !important;
+            max-width: 380px !important; 
+            height: 250px !important; 
+            border: 2px solid var(--border) !important;
+            border-radius: 20px !important;
+            margin: 5px auto !important; 
+            overflow: hidden;
+            background: #000 !important;
+        }
 
-/* السطر ده مهم جداً عشان يخلي الفيديو يملا المربع اللي حددناه */
-#reader video {
-    object-fit: cover !important;
-    height: 250px !important;
-}
+        #reader video {
+            object-fit: cover !important;
+            height: 250px !important;
+        }
 
-        /* عرض النتائج */
         .result-container {
             margin: 15px;
             padding: 15px;
@@ -133,7 +129,6 @@
             min-height: 1.5em;
         }
 
-        /* شبكة الأزرار التفاعلية */
         .buttons-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -163,7 +158,6 @@
 
         .custom-btn:active { transform: translateY(2px); box-shadow: none; }
 
-        /* لوحة الفواتير */
         #bill-panel {
             display: none;
             position: fixed;
@@ -198,7 +192,6 @@
             align-items: center;
         }
 
-        /* النوافذ المنبثقة (Modals) */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -241,7 +234,6 @@
             cursor: pointer;
         }
 
-        /* شاشة القفل */
         #lock-screen {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -313,7 +305,7 @@
     </div>
 
     <div id="dynamic-buttons" class="buttons-grid">
-        </div>
+    </div>
 
     <div id="bill-panel">
         <div class="bill-header">
@@ -328,7 +320,7 @@
             <h2 style="color: var(--primary); margin-top: 0;">⚙️ الإعدادات</h2>
             
             <div id="auth-info" style="background: #000; padding: 15px; border-radius: 15px; margin-bottom: 20px; border: 1px solid var(--border);">
-                </div>
+            </div>
 
             <h4 style="margin-bottom: 10px;">🎮 تخصيص الأزرار</h4>
             <div id="buttons-config-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px;"></div>
@@ -358,6 +350,46 @@
         let activeSlotIndex = null;
         let html5Scanner = null;
 
+        // --- إعدادات سحابة Just Scan (GitHub) ---
+        const GITHUB_CONFIG = {
+            token: "YOUR_GITHUB_TOKEN", // ضع التوكن الخاص بك هنا
+            owner: "YOUR_USERNAME",     
+            repo: "YOUR_REPO_NAME",   
+            path: "users.json"
+        };
+
+        // دالة تحديث السحابة (بترفع الأزرار والفواتير مع بعض)
+        async function pushToCloud() {
+            const phone = localStorage.getItem('v_phone');
+            if (!phone) return;
+
+            try {
+                const res = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`, {
+                    headers: { "Authorization": `token ${GITHUB_CONFIG.token}` }
+                });
+                const file = await res.json();
+                const users = JSON.parse(atob(file.content));
+                
+                const idx = users.findIndex(u => u.phone === phone);
+                if (idx !== -1) {
+                    users[idx].customButtons = configButtons;
+                    users[idx].savedBills = slots;
+                    users[idx].slotNames = slotNames;
+
+                    await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`, {
+                        method: "PUT",
+                        headers: { "Authorization": `token ${GITHUB_CONFIG.token}`, "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            message: `Sync Cloud: ${phone}`,
+                            content: btoa(unescape(encodeURIComponent(JSON.stringify(users, null, 2)))),
+                            sha: file.sha
+                        })
+                    });
+                    console.log("Cloud synced successfully");
+                }
+            } catch (e) { console.error("Cloud Sync Error", e); }
+        }
+
         // استعادة البيانات من التخزين
         let slots = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().map(() => []);
         let slotNames = JSON.parse(localStorage.getItem('v_slot_names')) || Array(10).fill().map((_, i) => `فاتورة ${i + 1}`);
@@ -368,7 +400,6 @@
             { name: "خروج", cmd: "esc", useEnter: false, color: "#991b1b" }
         ];
 
-        // --- نظام التحقق من الاشتراك (The Core Fix) ---
         function isSubscribed(expiry) {
             if (!expiry) return false;
             const expiryDate = new Date(isNaN(expiry) ? expiry : parseInt(expiry));
@@ -387,13 +418,27 @@
                 if (user) {
                     localStorage.setItem('v_expiry', user.expiryDate);
                     localStorage.setItem('v_name', user.name);
-                    localStorage.setItem('v_activity', user.activity);
+                    
+                    // تحديث الأزرار والفواتير من السحابة لو موجودة
+                    if (user.customButtons) {
+                        configButtons = user.customButtons;
+                        localStorage.setItem('userButtons', JSON.stringify(configButtons));
+                        renderMainButtons();
+                    }
+                    if (user.savedBills) {
+                        slots = user.savedBills;
+                        localStorage.setItem('v_slots', JSON.stringify(slots));
+                    }
+                    if (user.slotNames) {
+                        slotNames = user.slotNames;
+                        localStorage.setItem('v_slot_names', JSON.stringify(slotNames));
+                    }
 
                     if (!isSubscribed(user.expiryDate)) {
                         showLockScreen(user.name, phone);
                     } else {
                         document.getElementById('lock-screen').style.display = 'none';
-                        if (manual) alert("✅ تم تحديث بيانات الاشتراك بنجاح");
+                        if (manual) alert("✅ تم تحديث جميع البيانات من السحابة");
                     }
                     renderAuthStatus();
                 }
@@ -410,7 +455,6 @@
             document.getElementById('whatsapp-renewal').href = `https://wa.me/${WHATSAPP_RENEW}?text=${encodeURIComponent('تجديد اشتراك رقم: ' + phone)}`;
         }
 
-        // --- نظام الإرسال NTFY ---
         function masterSend(message) {
             const phone = localStorage.getItem('v_phone');
             const expiry = localStorage.getItem('v_expiry');
@@ -424,27 +468,24 @@
             }).catch(e => console.log("Network error"));
         }
 
-        // --- نظام الماسح ---
         function onScanSuccess(text) {
             if (Date.now() - lastScanTime < 2000) return;
             lastScanTime = Date.now();
 
             if (activeSlotIndex !== null) {
-                // وضع الفواتير (أوفلاين)
                 if (slots[activeSlotIndex].length >= 30) return alert("الفاتورة ممتلئة!");
                 slots[activeSlotIndex].push(text);
                 localStorage.setItem('v_slots', JSON.stringify(slots));
                 renderSlots();
+                pushToCloud(); // مزامنة فورية عند الإضافة
                 document.getElementById('result-text').innerText = `✅ تم الحفظ في ${slotNames[activeSlotIndex]}`;
             } else {
-                // وضع الإرسال المباشر
                 masterSend(text + '_ent');
                 document.getElementById('result-text').innerText = `📤 أرسلت: ${text}`;
             }
             if (navigator.vibrate) navigator.vibrate(100);
         }
 
-        // --- إدارة الواجهة (UI) ---
         function renderMainButtons() {
             const grid = document.getElementById('dynamic-buttons');
             grid.innerHTML = '';
@@ -462,50 +503,40 @@
         }
 
         function renderAuthStatus() {
-    const phone = localStorage.getItem('v_phone');
-    const name = localStorage.getItem('v_name');
-    const expiry = localStorage.getItem('v_expiry');
-    const box = document.getElementById('auth-info');
+            const phone = localStorage.getItem('v_phone');
+            const name = localStorage.getItem('v_name');
+            const expiry = localStorage.getItem('v_expiry');
+            const box = document.getElementById('auth-info');
 
-    if (phone) {
-        const d = new Date(isNaN(expiry) ? expiry : parseInt(expiry));
-        box.innerHTML = `
-            <div style="background: rgba(34, 197, 94, 0.1); padding: 15px; border-radius: 12px; border: 1px solid var(--success);">
-                <div style="color: var(--success); font-weight: bold; font-size: 1.1rem;">👤 ${name}</div>
-                <div style="font-size: 0.9rem; color: var(--text-dim); margin: 5px 0;">📱 رقم: ${phone}</div>
-                <div style="font-size: 0.8rem; color: var(--warning);">⏳ ينتهي في: ${d.toLocaleDateString('ar-EG')}</div>
-                <button onclick="logout()" style="width:100%; background:var(--danger); border:none; color:white; padding:10px; border-radius:8px; margin-top:15px; cursor:pointer; font-weight:bold;">تسجيل خروج</button>
-            </div>
-        `;
-    } else {
-        box.innerHTML = `
-            <div id="auth-tabs" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
-                <button onclick="showAuthTab('login')" id="tab-login" style="padding:10px; border-radius:8px; border:none; background:var(--primary); color:white;">دخول</button>
-                <button onclick="showAuthTab('register')" id="tab-register" style="padding:10px; border-radius:8px; border:none; background:var(--card-bg); color:white;">حساب جديد</button>
-            </div>
-            <div id="login-form">
-                <input type="tel" id="login-phone" placeholder="رقم الموبايل">
-                <input type="password" id="login-pass" placeholder="كلمة المرور">
-                <button onclick="handleLogin()" class="save-btn" style="margin:0;">دخول 🔑</button>
-            </div>
-            <div id="register-form" style="display:none;">
-                <input type="text" id="reg-name" placeholder="الاسم بالكامل">
-                <input type="tel" id="reg-phone" placeholder="رقم الموبايل">
-                <input type="password" id="reg-pass" placeholder="كلمة مرور قوية">
-                <button onclick="handleRegister()" class="save-btn" style="margin:0; background:var(--success);">إنشاء حساب وتفعيل تجريبي ✅</button>
-                <p style="font-size:0.7rem; color:var(--text-dim); margin-top:10px;">* الحساب الجديد يحصل على 7 أيام تجربة مجانية</p>
-            </div>
-        `;
-    }
-}
+            if (phone) {
+                const d = new Date(isNaN(expiry) ? expiry : parseInt(expiry));
+                box.innerHTML = `
+                    <div style="background: rgba(34, 197, 94, 0.1); padding: 15px; border-radius: 12px; border: 1px solid var(--success);">
+                        <div style="color: var(--success); font-weight: bold; font-size: 1.1rem;">👤 ${name}</div>
+                        <div style="font-size: 0.9rem; color: var(--text-dim); margin: 5px 0;">📱 رقم: ${phone}</div>
+                        <div style="font-size: 0.8rem; color: var(--warning);">⏳ ينتهي في: ${d.toLocaleDateString('ar-EG')}</div>
+                        <button onclick="logout()" style="width:100%; background:var(--danger); border:none; color:white; padding:10px; border-radius:8px; margin-top:15px; cursor:pointer; font-weight:bold;">تسجيل خروج</button>
+                    </div>
+                `;
+            } else {
+                box.innerHTML = `
+                    <div id="auth-tabs" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+                        <button onclick="showAuthTab('login')" id="tab-login" style="padding:10px; border-radius:8px; border:none; background:var(--primary); color:white;">دخول</button>
+                        <button onclick="showAuthTab('register')" id="tab-register" style="padding:10px; border-radius:8px; border:none; background:var(--card-bg); color:white;">حساب جديد</button>
+                    </div>
+                    <div id="login-form">
+                        <input type="tel" id="login-phone" placeholder="رقم الموبايل">
+                        <input type="password" id="login-pass" placeholder="كلمة المرور">
+                        <button onclick="handleLogin()" class="save-btn" style="margin:0;">دخول 🔑</button>
+                    </div>
+                `;
+            }
+        }
 
-// دالة للتبديل بين التسجيل والدخول
-function showAuthTab(type) {
-    document.getElementById('login-form').style.display = type === 'login' ? 'block' : 'none';
-    document.getElementById('register-form').style.display = type === 'register' ? 'block' : 'none';
-    document.getElementById('tab-login').style.background = type === 'login' ? 'var(--primary)' : 'var(--card-bg)';
-    document.getElementById('tab-register').style.background = type === 'register' ? 'var(--primary)' : 'var(--card-bg)';
-}
+        function showAuthTab(type) {
+            document.getElementById('login-form').style.display = type === 'login' ? 'block' : 'none';
+            document.getElementById('tab-login').style.background = type === 'login' ? 'var(--primary)' : 'var(--card-bg)';
+        }
 
         async function handleLogin() {
             const phone = document.getElementById('login-phone').value.trim();
@@ -520,7 +551,6 @@ function showAuthTab(type) {
                 localStorage.setItem('v_phone', phone);
                 localStorage.setItem('v_expiry', user.expiryDate);
                 localStorage.setItem('v_name', user.name);
-                localStorage.setItem('v_activity', user.activity);
                 location.reload();
             } else alert("بيانات غلط!");
         }
@@ -556,8 +586,25 @@ function showAuthTab(type) {
         }
 
         function setActiveSlot(i) { activeSlotIndex = (activeSlotIndex === i) ? null : i; renderSlots(); }
-        function clearSlot(i) { if(confirm("تفريغ الفاتورة؟")) { slots[i]=[]; localStorage.setItem('v_slots', JSON.stringify(slots)); renderSlots(); } }
-        function renameSlot(i) { const n = prompt("الاسم الجديد:", slotNames[i]); if(n){ slotNames[i]=n; localStorage.setItem('v_slot_names', JSON.stringify(slotNames)); renderSlots(); } }
+        
+        function clearSlot(i) { 
+            if(confirm("تفريغ الفاتورة؟")) { 
+                slots[i]=[]; 
+                localStorage.setItem('v_slots', JSON.stringify(slots)); 
+                renderSlots(); 
+                pushToCloud();
+            } 
+        }
+
+        function renameSlot(i) { 
+            const n = prompt("الاسم الجديد:", slotNames[i]); 
+            if(n){ 
+                slotNames[i]=n; 
+                localStorage.setItem('v_slot_names', JSON.stringify(slotNames)); 
+                renderSlots(); 
+                pushToCloud();
+            } 
+        }
 
         async function sendFullSlot(i) {
             if(slots[i].length === 0) return alert("فاضية!");
@@ -570,33 +617,37 @@ function showAuthTab(type) {
             }
         }
 
-        // --- وظائف عامة ---
         function openSettings() { document.getElementById('settings-modal').style.display='block'; renderButtonsConfig(); renderAuthStatus(); }
         function closeSettings() { document.getElementById('settings-modal').style.display='none'; }
         
         function renderButtonsConfig() {
-    const list = document.getElementById('buttons-config-list');
-    list.innerHTML = '';
-    configButtons.forEach((btn, i) => {
-        const d = document.createElement('div');
-        d.style = "display:flex; align-items:center; gap:5px; margin-bottom:8px; background:#222; padding:10px; border-radius:10px;";
-        d.innerHTML = `
-            <input type="text" value="${btn.name}" oninput="configButtons[${i}].name=this.value" style="margin:0; flex:1" placeholder="الاسم">
-            <input type="text" value="${btn.cmd}" oninput="configButtons[${i}].cmd=this.value" style="margin:0; flex:1" placeholder="الأمر">
-            <input type="color" value="${btn.color}" oninput="configButtons[${i}].color=this.value" style="width:35px; height:40px; padding:2px; border:none; background:none;">
-            
-            <label style="font-size:0.7rem; display:flex; flex-direction:column; align-items:center; color:var(--text-dim);">
-                <input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="configButtons[${i}].useEnter=this.checked">
-                Enter
-            </label>
-
-            <button onclick="configButtons.splice(${i},1);renderButtonsConfig()" style="background:var(--danger); border:none; color:white; border-radius:8px; padding:10px;">X</button>
-        `;
-        list.appendChild(d);
-    });
-}
+            const list = document.getElementById('buttons-config-list');
+            list.innerHTML = '';
+            configButtons.forEach((btn, i) => {
+                const d = document.createElement('div');
+                d.style = "display:flex; align-items:center; gap:5px; margin-bottom:8px; background:#222; padding:10px; border-radius:10px;";
+                d.innerHTML = `
+                    <input type="text" value="${btn.name}" oninput="configButtons[${i}].name=this.value" style="margin:0; flex:1" placeholder="الاسم">
+                    <input type="text" value="${btn.cmd}" oninput="configButtons[${i}].cmd=this.value" style="margin:0; flex:1" placeholder="الأمر">
+                    <input type="color" value="${btn.color}" oninput="configButtons[${i}].color=this.value" style="width:35px; height:40px; padding:2px; border:none; background:none;">
+                    <label style="font-size:0.7rem; display:flex; flex-direction:column; align-items:center; color:var(--text-dim);">
+                        <input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="configButtons[${i}].useEnter=this.checked">
+                        Enter
+                    </label>
+                    <button onclick="configButtons.splice(${i},1);renderButtonsConfig()" style="background:var(--danger); border:none; color:white; border-radius:8px; padding:10px;">X</button>
+                `;
+                list.appendChild(d);
+            });
+        }
+        
         function addNewButtonRow() { configButtons.push({name:"جديد", cmd:"f1", color:"#3d60cc"}); renderButtonsConfig(); }
-        function saveAllAndClose() { localStorage.setItem('userButtons', JSON.stringify(configButtons)); renderMainButtons(); closeSettings(); }
+        
+        function saveAllAndClose() { 
+            localStorage.setItem('userButtons', JSON.stringify(configButtons)); 
+            renderMainButtons(); 
+            pushToCloud(); // مزامنة الأزرار مع السحابة
+            closeSettings(); 
+        }
 
         function openKeyboard() { document.getElementById('keyboard-modal').style.display='block'; setTimeout(()=>document.getElementById('manual-data').focus(), 300); }
         function closeKeyboard() { document.getElementById('keyboard-modal').style.display='none'; }
@@ -611,56 +662,37 @@ function showAuthTab(type) {
             } catch(e) { alert("الفلاش غير متاح"); }
         }
 
-       
-        // --- بداية التشغيل ---
-            window.onload = () => {
+        window.onload = () => {
             const phone = localStorage.getItem('v_phone');
             if (!phone) {
-                // إظهار شاشة الترحيب لو مفيش رقم مسجل
                 document.getElementById('welcome-screen').style.display = 'flex';
             } else {
                 syncData();
-                // تشغيل الكاميرا الخلفية مباشرة عند الفتح
                 startSmartScanner("environment"); 
             }
-            // استدعاء الدالة بالاسم الصحيح الموجود في كودك فوق
             renderMainButtons();
         };
 
-        // دالة ذكية لتشغيل الكاميرا والتبديل بينها
         async function startSmartScanner(mode) {
-    try {
-        if (html5Scanner) {
-            await html5Scanner.stop();
+            try {
+                if (html5Scanner) { await html5Scanner.stop(); }
+                html5Scanner = new Html5Qrcode("reader");
+                await html5Scanner.start(
+                    { facingMode: mode }, 
+                    {
+                        fps: 25,
+                        qrbox: { width: 200, height: 150 }, 
+                        aspectRatio: 1.0 
+                    },
+                    onScanSuccess
+                );
+            } catch (err) { console.error("Camera error", err); }
         }
-        html5Scanner = new Html5Qrcode("reader");
-        await html5Scanner.start(
-            { facingMode: mode }, 
-            {
-                fps: 25,
-                // تعديل: صغرنا الـ qrbox عشان يناسب مساحة الكاميرا الجديدة ويظهر في النص
-                qrbox: { width: 200, height: 150 }, 
-                // تعديل: غيرنا الـ aspectRatio لـ 1.0 عشان الصورة متبقاش مضغوطة بالعرض
-                aspectRatio: 1.0 
-            },
-            onScanSuccess
-        );
-    } catch (err) {
-        console.error("Camera error", err);
-    }
-}
 
-        // دالة تبديل الكاميرا (خلفية / أمامية)
         let currentCameraMode = "environment";
         function switchCamera() {
             currentCameraMode = (currentCameraMode === "environment") ? "user" : "environment";
             startSmartScanner(currentCameraMode);
-        }
-
-        // دالة إضافية للتأكد من حفظ الفواتير في ذاكرة الموبايل
-        function saveBillsToDevice() {
-            localStorage.setItem('v_slots', JSON.stringify(slots));
-            localStorage.setItem('v_slot_names', JSON.stringify(slotNames));
         }
 
     </script>
