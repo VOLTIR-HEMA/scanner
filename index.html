@@ -99,18 +99,17 @@
 </div>
 
 <script>
-     // --- بيانات الإدارة الأساسية (الربط بالخزنة الجديدة) ---
     const WHATSAPP_NUM = "201147534998"; 
     const DOWNLOAD_SITE = "https://voltir-hema.github.io/Scan-Search/"; 
     
-    // إعدادات جيتهاب (الضربة القاضية)
-    // تقسيم التوكن لجزئين عشان روبوتات جيتهاب ما تعرفش تقرأه وهو مرفوع
-    const part1 = "ghp_uC0Ja2Uy4LFaDOC5IqEH66vg99Z3";
-    const part2 = "mI0WKVT4"; 
-    const GITHUB_TOKEN = part1 + part2;
-    const REPO_OWNER = "VOLTIR-HEMA";
-    const REPO_NAME = "Just-Scan-DB";
-    const FILE_PATH = "users.json";
+    // سحب البيانات من الملف اللي جنبه مباشرة بدون توكنات وجع دماغ
+    async function fetchUsersFromGitHub() {
+        try {
+            const res = await fetch(`users.json?t=${Date.now()}`);
+            if (res.ok) return await res.json();
+        } catch (e) { console.error("خطأ في السحب:", e); }
+        return null;
+    }
 
     let NTFY_URL = '';
     let lastScanTime = 0, isFlashOn = false;
@@ -122,17 +121,6 @@
         { name: "حفظ", cmd: "f9", useEnter: true, color: "#3d60cc" }
     ];
 
-    // دالة جلب البيانات من جيتهاب (البديل للسيرفر القديم)
-  async function fetchUsersFromGitHub() {
-    try {
-        // بما إن الملف في نفس المستودع، هنسحبه مباشرة باسمه
-        const res = await fetch(`users.json?t=${Date.now()}`);
-        if (res.ok) {
-            return await res.json();
-        }
-    } catch (e) { console.error("خطأ في السحب:", e); }
-    return null;
-}
     function updateAuthUI() {
         const phone = localStorage.getItem('v_phone');
         const name = localStorage.getItem('v_name') || 'مستخدم جديد';
@@ -191,7 +179,7 @@
             alert("أهلاً بك يا " + user.name);
             location.reload();
         } else {
-            alert("رقم الهاتف أو كلمة المرور غير صحيحة، أو الحساب غير موجود.");
+            alert("بيانات الدخول غير صحيحة.");
         }
     }
 
@@ -209,40 +197,31 @@
             localStorage.setItem('v_name', user.name);
             localStorage.setItem('v_activity', user.activity);
             localStorage.setItem('v_expiry', user.expiryDate);
-            
             updateAuthUI();
-            if(manual) alert("✅ تم تحديث البيانات من الخزنة");
+            if(manual) alert("✅ تم تحديث البيانات");
             if(Date.now() > parseInt(user.expiryDate)) showLock(user.name, phone);
-        } else {
-            if(manual) alert("❌ لم يتم العثور على حسابك في الخزنة");
         }
     }
 
     function showLock(name, phone) {
         const lock = document.getElementById('lock-screen');
-        const msg = document.getElementById('lock-msg');
         lock.style.display = 'flex';
-        msg.innerText = `يا ${name}، اشتراكك انتهى. تواصل معنا للتفعيل.`;
-        const waMsg = encodeURIComponent(`يا هيما عاوز افعل اشتراك Just Scan لرقمي: ${phone}`);
+        document.getElementById('lock-msg').innerText = `يا ${name}، اشتراكك انتهى.`;
+        const waMsg = encodeURIComponent(`تفعيل اشتراك Just Scan للرقم: ${phone}`);
         document.getElementById('wa-link').href = `https://wa.me/${WHATSAPP_NUM}?text=${waMsg}`;
         document.getElementById('web-link').href = DOWNLOAD_SITE;
     }
 
     function userLogout() {
-        if (confirm("هل تريد تسجيل الخروج؟")) {
-            localStorage.clear();
-            location.reload();
-        }
+        if (confirm("خروج؟")) { localStorage.clear(); location.reload(); }
     }
 
     function masterSend(text) {
         const phone = localStorage.getItem('v_phone');
         const expiry = localStorage.getItem('v_expiry');
-        if (!phone) return alert("سجل دخول أولاً");
+        if (!phone) return;
         if (expiry && Date.now() > parseInt(expiry)) return showLock(localStorage.getItem('v_name'), phone);
-        
-        const dynamicNtfy = `https://ntfy.sh/voltir_${phone}`;
-        fetch(dynamicNtfy, { method: 'POST', body: text });
+        fetch(`https://ntfy.sh/voltir_${phone}`, { method: 'POST', body: text });
     }
 
     function onScanSuccess(text) {
@@ -253,15 +232,11 @@
                 slotsData[activeSlot].push(text);
                 localStorage.setItem('v_slots', JSON.stringify(slotsData));
                 renderSlots();
-                document.getElementById('result').innerText = `تم الحفظ في ${slotsNames[activeSlot]}: ${text}`;
-            } else {
-                alert("الفاتورة ممتلئة!");
-                activeSlot = null;
-                renderSlots();
+                document.getElementById('result').innerText = `حُفظ في ${slotsNames[activeSlot]}`;
             }
         } else {
             masterSend(text + '_ent');
-            document.getElementById('result').innerText = "إرسال مباشر: " + text;
+            document.getElementById('result').innerText = "تم الإرسال: " + text;
         }
     }
 
@@ -273,24 +248,14 @@
             b.className = 'custom-btn';
             b.style.backgroundColor = btn.color || '#444';
             b.innerText = btn.name;
-            b.onclick = () => sendCommand(btn.cmd, btn.useEnter);
+            b.onclick = () => { masterSend(btn.cmd); if(btn.useEnter) setTimeout(()=>masterSend('enter'),400); };
             container.appendChild(b);
         });
     }
 
-    function sendCommand(cmd, useEnter) {
-        masterSend(cmd);
-        if (useEnter) setTimeout(() => masterSend('enter'), 400);
-    }
-
     function toggleSettings(show) {
         document.getElementById('settings-modal').style.display = show ? 'block' : 'none';
-        if (show) { 
-            syncData().then(() => {
-                renderSettingsList(); 
-                updateAuthUI(); 
-            });
-        }
+        if (show) { syncData().then(() => { renderSettingsList(); updateAuthUI(); }); }
     }
 
     function renderSettingsList() {
@@ -302,8 +267,8 @@
             div.innerHTML = `
                 <input type="text" value="${btn.name}" oninput="buttons[${index}].name=this.value" style="width:25%">
                 <input type="text" value="${btn.cmd}" oninput="buttons[${index}].cmd=this.value" style="width:25%">
-                <label style="font-size:12px">Enter: <input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="buttons[${index}].useEnter=this.checked"></label>
-                <button onclick="buttons.splice(${index},1);renderSettingsList()" style="background:red; color:white; border:none; border-radius:4px; padding:5px;">حذف</button>
+                <label>Enter: <input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="buttons[${index}].useEnter=this.checked"></label>
+                <button onclick="buttons.splice(${index},1);renderSettingsList()" style="background:red; color:white;">حذف</button>
             `;
             list.appendChild(div);
         });
@@ -312,12 +277,10 @@
     function addNewButtonSetting() { buttons.push({name:"جديد", cmd:"f1", useEnter: true}); renderSettingsList(); }
     async function saveSettings() {
         localStorage.setItem('userButtons', JSON.stringify(buttons));
-        localStorage.setItem('v_slots', JSON.stringify(slotsData));
         renderButtons();
         toggleSettings(false);
-        if (typeof renderSlots === "function") renderSlots();
     }
-    
+
     window.onload = () => {
         if (!localStorage.getItem('v_phone')) {
             document.getElementById('auth-overlay').style.display = 'flex';
@@ -337,7 +300,7 @@
         const input = document.getElementById('manual-input');
         if (input.value.trim() !== "") { masterSend(input.value.trim()); input.value = ''; input.focus(); }
     }
-    function sendManualEnter() { masterSend('enter'); document.getElementById('manual-input').focus(); }
+    function sendManualEnter() { masterSend('enter'); }
 
     function toggleBillPanel() {
         const panel = document.getElementById('bill-panel');
@@ -358,12 +321,9 @@
                     <span>(${items.length}/15)</span>
                 </div>
                 <div style="display:flex; gap:5px;">
-                    <button onclick="activeSlot=(activeSlot===${index}?null:${index}); renderSlots();" 
-                            style="flex:1; padding:10px; border:none; border-radius:5px; color:white; background:${activeSlot===index?'#ff0000':'#444'}">
-                        ${activeSlot===index?'🔴 يسجل':'🎤 ابدأ'}
-                    </button>
-                    <button onclick="sendSlot(${index})" style="flex:1; padding:10px; border:none; border-radius:5px; background:#28a745; color:white;">📤 إرسال</button>
-                    <button onclick="clearSlot(${index})" style="flex:0.4; padding:10px; border:none; border-radius:5px; background:#800; color:white;">🗑️</button>
+                    <button onclick="activeSlot=(activeSlot===${index}?null:${index}); renderSlots();" style="flex:1; padding:10px; border-radius:5px; color:white; background:${activeSlot===index?'#ff0000':'#444'}">${activeSlot===index?'🔴 يسجل':'🎤 ابدأ'}</button>
+                    <button onclick="sendSlot(${index})" style="flex:1; padding:10px; border-radius:5px; background:#28a745; color:white;">📤 إرسال</button>
+                    <button onclick="clearSlot(${index})" style="flex:0.4; padding:10px; border-radius:5px; background:#800; color:white;">🗑️</button>
                 </div>
             `;
             container.appendChild(div);
@@ -372,33 +332,13 @@
 
     async function sendSlot(index) {
         const items = slotsData[index];
-        if (items.length === 0) return alert("الخانة فاضية");
-        if (confirm(`إرسال ${items.length} صنف؟`)) {
-            for (let item of items) {
-                masterSend(item + '_ent');
-                await new Promise(r => setTimeout(r, 1000));
-            }
-            alert("✅ تم الإرسال");
-        }
+        if (items.length === 0) return alert("فاضية");
+        for (let item of items) { masterSend(item + '_ent'); await new Promise(r => setTimeout(r, 1000)); }
+        alert("✅ تم");
     }
 
-    function clearSlot(index) {
-        if (confirm("مسح الفاتورة؟")) {
-            slotsData[index] = [];
-            localStorage.setItem('v_slots', JSON.stringify(slotsData));
-            renderSlots();
-        }
-    }
-
-    function editSlotName(index) {
-        const name = prompt("الاسم الجديد:", slotsNames[index]);
-        if (name) {
-            slotsNames[index] = name;
-            localStorage.setItem('v_slots_names', JSON.stringify(slotsNames));
-            renderSlots();
-        }
-    }
-
+    function clearSlot(index) { if (confirm("مسح؟")) { slotsData[index] = []; localStorage.setItem('v_slots', JSON.stringify(slotsData)); renderSlots(); } }
+    function editSlotName(index) { const name = prompt("الاسم:", slotsNames[index]); if (name) { slotsNames[index] = name; localStorage.setItem('v_slots_names', JSON.stringify(slotsNames)); renderSlots(); } }
     async function toggleFlash() {
         try {
             const track = document.querySelector('video').srcObject.getVideoTracks()[0];
@@ -406,9 +346,6 @@
             await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
         } catch (e) { alert("الفلاش غير مدعوم"); }
     }
-    
-   
-    
 </script>
 </body>
 </html>
