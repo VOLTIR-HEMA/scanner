@@ -59,19 +59,24 @@
     const listDiv = document.getElementById('userList');
     if(listDiv) listDiv.innerHTML = "⏳ جاري سحب البيانات...";
     try {
-        // بنسحب الرابط المباشر للملف (Raw) مش محتاج توكن نهائياً
-        const url = `https://raw.githubusercontent.com/VOLTIR-HEMA/Just-Scan-DB/main/users.json?t=${Date.now()}`;
-        const res = await fetch(url);
+        // لازم نسحب من الـ API عشان ناخد الـ SHA المطلوب للحفظ
+        const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?t=${Date.now()}`;
+        const res = await fetch(url, {
+            headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
+        });
         
         if (res.ok) {
-            users = await res.json();
+            const data = await res.json();
+            window.currentFileSha = data.sha; // ده اللي بيخلي الحفظ يشتغل
+            // فك التشفير مع دعم العربي
+            const content = decodeURIComponent(escape(atob(data.content))); 
+            users = JSON.parse(content);
             renderUsers(users);
         } else {
-            alert("الملف مش موجود أو الرابط فيه مشكلة");
+            alert("خطأ: " + res.status + " - غالباً التوكن اتوقف من جيتهاب");
         }
     } catch (e) { alert("خطأ في الشبكة: " + e.message); }
 }
-
     // 3. دالة الحفظ المركزية في جيتهاب
     async function syncToGitHub(updatedUsers, message) {
         const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
