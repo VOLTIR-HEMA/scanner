@@ -55,31 +55,22 @@
 
     let users = [];
 
-    // 2. جلب البيانات من جيتهاب
     async function loadUsers() {
-        const listDiv = document.getElementById('userList');
-        if(listDiv) listDiv.innerHTML = "⏳ جاري سحب البيانات من جيتهاب...";
-        try {
-            const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
-            const res = await fetch(url, {
-                headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
-            });
-            
-            if (res.ok) {
-                const data = await res.json();
-                window.currentFileSha = data.sha; 
-                const content = decodeURIComponent(escape(atob(data.content))); 
-                users = JSON.parse(content);
-                renderUsers(users);
-            } else {
-                users = [];
-                renderUsers(users);
-            }
-        } catch (e) { 
-            console.error(e);
-            alert("خطأ في جلب البيانات من جيتهاب"); 
+    const listDiv = document.getElementById('userList');
+    if(listDiv) listDiv.innerHTML = "⏳ جاري سحب البيانات...";
+    try {
+        // بنسحب الرابط المباشر للملف (Raw) مش محتاج توكن نهائياً
+        const url = `https://raw.githubusercontent.com/VOLTIR-HEMA/Just-Scan-DB/main/users.json?t=${Date.now()}`;
+        const res = await fetch(url);
+        
+        if (res.ok) {
+            users = await res.json();
+            renderUsers(users);
+        } else {
+            alert("الملف مش موجود أو الرابط فيه مشكلة");
         }
-    }
+    } catch (e) { alert("خطأ في الشبكة: " + e.message); }
+}
 
     // 3. دالة الحفظ المركزية في جيتهاب
     async function syncToGitHub(updatedUsers, message) {
