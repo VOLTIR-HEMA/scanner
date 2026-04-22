@@ -122,10 +122,13 @@
     // دالة جلب البيانات من جيتهاب (البديل للسيرفر القديم)
    async function fetchUsersFromGitHub() {
     try {
+        // سحب البيانات برابط Raw أضمن وأسرع
         const url = `https://raw.githubusercontent.com/VOLTIR-HEMA/Just-Scan-DB/main/users.json?t=${Date.now()}`;
         const res = await fetch(url);
         if (res.ok) {
-            return await res.json();
+            const data = await res.json();
+            // تأكد إن البيانات مصفوفة
+            return Array.isArray(data) ? data : null;
         }
     } catch (e) { console.error("خطأ في سحب البيانات", e); }
     return null;
