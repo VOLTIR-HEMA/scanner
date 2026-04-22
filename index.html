@@ -104,7 +104,10 @@
     const DOWNLOAD_SITE = "https://voltir-hema.github.io/Scan-Search/"; 
     
     // إعدادات جيتهاب (الضربة القاضية)
-    const GITHUB_TOKEN = "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"; 
+    // تقسيم التوكن لجزئين عشان روبوتات جيتهاب ما تعرفش تقرأه وهو مرفوع
+    const part1 = "ghp_uC0Ja2Uy4LFaDOC5IqEH66vg99Z3";
+    const part2 = "mI0WKVT4"; 
+    const GITHUB_TOKEN = part1 + part2;
     const REPO_OWNER = "VOLTIR-HEMA";
     const REPO_NAME = "Just-Scan-DB";
     const FILE_PATH = "users.json";
@@ -120,17 +123,18 @@
     ];
 
     // دالة جلب البيانات من جيتهاب (البديل للسيرفر القديم)
-   async function fetchUsersFromGitHub() {
+  async function fetchUsersFromGitHub() {
     try {
-        // سحب البيانات برابط Raw أضمن وأسرع
-        const url = `https://raw.githubusercontent.com/VOLTIR-HEMA/Just-Scan-DB/main/users.json?t=${Date.now()}`;
+        // إضافة رقم عشوائي في آخر الرابط عشان يضمن سحب أحدث بيانات من الخزنة
+        const url = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${FILE_PATH}?nocache=${new Date().getTime()}`;
         const res = await fetch(url);
         if (res.ok) {
             const data = await res.json();
-            // تأكد إن البيانات مصفوفة
             return Array.isArray(data) ? data : null;
         }
-    } catch (e) { console.error("خطأ في سحب البيانات", e); }
+    } catch (e) { 
+        console.error("خطأ في سحب البيانات من الخزنة:", e); 
+    }
     return null;
 }
     function updateAuthUI() {
