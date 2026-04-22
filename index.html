@@ -462,27 +462,50 @@
         }
 
         function renderAuthStatus() {
-            const phone = localStorage.getItem('v_phone');
-            const name = localStorage.getItem('v_name');
-            const expiry = localStorage.getItem('v_expiry');
-            const box = document.getElementById('auth-info');
+    const phone = localStorage.getItem('v_phone');
+    const name = localStorage.getItem('v_name');
+    const expiry = localStorage.getItem('v_expiry');
+    const box = document.getElementById('auth-info');
 
-            if (phone) {
-                const d = new Date(isNaN(expiry) ? expiry : parseInt(expiry));
-                box.innerHTML = `
-                    <div style="color: var(--success); font-weight: bold; margin-bottom:5px;">👤 ${name}</div>
-                    <div style="font-size: 0.8rem; color: var(--text-dim);">رقم: ${phone}</div>
-                    <div style="font-size: 0.8rem; color: var(--text-dim);">ينتهي: ${d.toLocaleDateString('ar-EG')}</div>
-                    <button onclick="logout()" style="background:none; border:none; color:var(--danger); padding:0; margin-top:10px; cursor:pointer; font-size:0.8rem;">تسجيل خروج</button>
-                `;
-            } else {
-                box.innerHTML = `
-                    <input type="tel" id="login-phone" placeholder="رقم الموبايل المسجل">
-                    <input type="password" id="login-pass" placeholder="كلمة المرور">
-                    <button onclick="handleLogin()" class="save-btn" style="margin:0;">تسجيل دخول</button>
-                `;
-            }
-        }
+    if (phone) {
+        const d = new Date(isNaN(expiry) ? expiry : parseInt(expiry));
+        box.innerHTML = `
+            <div style="background: rgba(34, 197, 94, 0.1); padding: 15px; border-radius: 12px; border: 1px solid var(--success);">
+                <div style="color: var(--success); font-weight: bold; font-size: 1.1rem;">👤 ${name}</div>
+                <div style="font-size: 0.9rem; color: var(--text-dim); margin: 5px 0;">📱 رقم: ${phone}</div>
+                <div style="font-size: 0.8rem; color: var(--warning);">⏳ ينتهي في: ${d.toLocaleDateString('ar-EG')}</div>
+                <button onclick="logout()" style="width:100%; background:var(--danger); border:none; color:white; padding:10px; border-radius:8px; margin-top:15px; cursor:pointer; font-weight:bold;">تسجيل خروج</button>
+            </div>
+        `;
+    } else {
+        box.innerHTML = `
+            <div id="auth-tabs" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+                <button onclick="showAuthTab('login')" id="tab-login" style="padding:10px; border-radius:8px; border:none; background:var(--primary); color:white;">دخول</button>
+                <button onclick="showAuthTab('register')" id="tab-register" style="padding:10px; border-radius:8px; border:none; background:var(--card-bg); color:white;">حساب جديد</button>
+            </div>
+            <div id="login-form">
+                <input type="tel" id="login-phone" placeholder="رقم الموبايل">
+                <input type="password" id="login-pass" placeholder="كلمة المرور">
+                <button onclick="handleLogin()" class="save-btn" style="margin:0;">دخول 🔑</button>
+            </div>
+            <div id="register-form" style="display:none;">
+                <input type="text" id="reg-name" placeholder="الاسم بالكامل">
+                <input type="tel" id="reg-phone" placeholder="رقم الموبايل">
+                <input type="password" id="reg-pass" placeholder="كلمة مرور قوية">
+                <button onclick="handleRegister()" class="save-btn" style="margin:0; background:var(--success);">إنشاء حساب وتفعيل تجريبي ✅</button>
+                <p style="font-size:0.7rem; color:var(--text-dim); margin-top:10px;">* الحساب الجديد يحصل على 7 أيام تجربة مجانية</p>
+            </div>
+        `;
+    }
+}
+
+// دالة للتبديل بين التسجيل والدخول
+function showAuthTab(type) {
+    document.getElementById('login-form').style.display = type === 'login' ? 'block' : 'none';
+    document.getElementById('register-form').style.display = type === 'register' ? 'block' : 'none';
+    document.getElementById('tab-login').style.background = type === 'login' ? 'var(--primary)' : 'var(--card-bg)';
+    document.getElementById('tab-register').style.background = type === 'register' ? 'var(--primary)' : 'var(--card-bg)';
+}
 
         async function handleLogin() {
             const phone = document.getElementById('login-phone').value.trim();
