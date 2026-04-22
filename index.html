@@ -345,12 +345,13 @@
     <script>
         // --- الثوابت والبيانات ---
         const WHATSAPP_RENEW = "201147534998";
+        const DB_URL = "https://just-scan-19ce1-default-rtdb.firebaseio.com/users";
         let lastScanTime = 0;
         let isFlashOn = false;
         let activeSlotIndex = null;
         let html5Scanner = null;
 
-        const DB_BASE_URL = "https://just-scan-19ce1-default-rtdb.firebaseio.com/users";
+        
 
         // دالة تحديث السحابة (Firebase)
         async function pushToCloud() {
