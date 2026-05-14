@@ -460,7 +460,10 @@ let proSlots = JSON.parse(localStorage.getItem('v_pro_slots')) || Array(5).fill(
 let proSlotNames = JSON.parse(localStorage.getItem('v_pro_slot_names')) || Array(5).fill().map((_, i) => `مشتريات ${i + 1}`);
 
 // 3. مؤشر الصنف الحالي للإرسال اليدوي
-let currentProItemIndex = 0;
+// 3. مؤشر الصنف الحالي للإرسال اليدوي
+let currentProItemIndex = 0; 
+let activeProSlotForSend = 0; // السطر الجديد الأول
+let currentProIndex = 0;      // السطر الجديد الثاني
         let configButtons = JSON.parse(localStorage.getItem('userButtons')) || [
             { name: "جديد", cmd: "f8", useEnter: true, color: "#3d60cc" },
             { name: "حفظ", cmd: "f9", useEnter: true, color: "#3d60cc" },
@@ -926,6 +929,43 @@ function updateModalContent() {
             <p>ترتيبه: ${currentProIndex + 1} من ${items.length}</p>
         `;
     }
+}
+        /**
+ * 1. دالة لتحديد الفاتورة النشطة لاستقبال الباركود
+ */
+function setActiveProSlot(index) {
+    // تحديث المؤشر العالمي للفاتورة النشطة
+    activeProSlotIndex = index;
+    
+    // رسالة تنبيه بسيطة للتأكيد
+    console.log("الفاتورة النشطة الآن هي رقم: " + (index + 1));
+    
+    // إعادة رسم القائمة لتحديث شكل الأزرار (إظهار كلمة "نشط")
+    renderProSlots();
+}
+
+/**
+ * 2. دالة لفتح واجهة الإرسال اليدوي للفاتورة المختارة
+ */
+function openManualSendControls(index) {
+    const items = proSlots[index];
+    
+    // التأكد أولاً من أن الفاتورة ليست فارغة
+    if (!items || items.length === 0) {
+        alert("⚠️ هذه الفاتورة فارغة، لا يوجد أكواد لإرسالها.");
+        return;
+    }
+
+    // تحديد الفاتورة التي سنقوم بالإرسال منها حالياً
+    activeProSlotForSend = index; 
+    currentProIndex = 0; // البدء من أول كود في القائمة
+
+    // إظهار النافذة المنبثقة (التي أضفنا تنسيقها سابقاً)
+    document.getElementById('modal-overlay').style.display = 'block';
+    document.getElementById('manual-send-modal').style.display = 'block';
+
+    // تحديث محتوى النافذة لإظهار أول كود
+    updateModalContent();
 }
     </script>
     <!-- غطاء خلفي شفاف لتعتيم الشاشة عند ظهور النافذة -->
