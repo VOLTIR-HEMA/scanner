@@ -210,7 +210,45 @@
             margin: 40px auto;
             border: 1px solid var(--border);
         }
+/* 1. غطاء شفاف مخصص لنافذة الإرسال اليدوي */
+/* يضمن تعتيم الشاشة بنسبة 80% خلف النافذة */
+.manual-send-overlay {
+    display: none; /* مخفي افتراضياً حتى يتم استدعاؤه بالجافاسكريبت */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 3000; /* قيمة عالية ليكون فوق كل العناصر الأخرى */
+}
 
+/* 2. تصميم النافذة المنبثقة للإرسال */
+.manual-send-popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* يضع النافذة في منتصف الشاشة تماماً */
+    background: #1a1a1a; /* خلفية داكنة تناسب تصميمك */
+    padding: 20px;
+    border-radius: 20px;
+    border: 2px solid #6c5ce7; /* إطار بلون مميز لتمييز نظام المشتريات */
+    z-index: 3001;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+/* 3. تنسيق نص الكود داخل النافذة */
+.manual-code-text {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #ffffff;
+    margin: 20px 0;
+    letter-spacing: 2px; /* تباعد الحروف لجعل الكود أسهل في القراءة */
+}
         input[type="text"], input[type="tel"], input[type="password"], input[type="number"] {
             width: 100%;
             padding: 14px;
@@ -297,12 +335,18 @@
         <div id="connection-status" class="status-badge status-online">متصل بالسحابة ●</div>
         <div id="result-text">في انتظار المسح...</div>
     </div>
-
-    <div style="padding: 0 15px; margin-bottom: 10px;">
-        <button id="bill-mode-btn" onclick="toggleBillPanel()" style="width: 100%; padding: 15px; background: var(--primary); border: none; border-radius: 15px; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px;">
-            📑 نظام الفواتير (أوفلاين)
-        </button>
-    </div>
+<!-- حاوية الأزرار الرئيسية -->
+<div style="padding: 0 15px; margin-bottom: 10px; display: flex; gap: 10px;">
+    <!-- الزر الأساسي (يمين) -->
+    <button id="bill-mode-btn" onclick="toggleBillPanel()" style="flex: 1; padding: 15px; background: var(--primary); border: none; border-radius: 15px; color: white; font-weight: bold; cursor: pointer;">
+        📑 الفواتير (الأساسي)
+    </button>
+    
+    <!-- زر المشتريات الاحترافي (يسار) -->
+    <button id="pro-bill-mode-btn" onclick="toggleProBillPanel()" style="flex: 1; padding: 15px; background: #6c5ce7; border: none; border-radius: 15px; color: white; font-weight: bold; cursor: pointer;">
+        🚀 المشتريات (Pro)
+    </button>
+</div>
 
     <div id="dynamic-buttons" class="buttons-grid">
     </div>
@@ -314,6 +358,40 @@
         </div>
         <div id="slots-list"></div>
     </div>
+    <!-- لوحة نظام المشتريات الاحترافي (Pro Panel) -->
+<div id="pro-bill-panel" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; overflow-y: auto; padding: 20px;">
+    
+    <!-- رأس اللوحة (العنوان وزر الإغلاق) -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0; color: #6c5ce7;">🚀 نظام المشتريات (Pro)</h2>
+        <button onclick="toggleProBillPanel()" style="background: var(--danger); border: none; color: white; padding: 10px 20px; border-radius: 10px; cursor: pointer;">إغلاق</button>
+    </div>
+
+    <!-- قائمة فواتير المشتريات (سيتم تعبئتها برمجياً بـ 5 فواتير) -->
+    <div id="pro-slots-list"></div>
+
+    <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
+
+    <!-- واجهة التحكم اليدوي في الإرسال -->
+    <div id="manual-send-controls" style="display: none; background: #1a1a1a; padding: 20px; border-radius: 15px; border: 1px solid #6c5ce7;">
+        <h3 style="margin-top: 0; color: white;">🛠️ التحكم في الإرسال</h3>
+        
+        <!-- مدخل تحديد رقم البداية -->
+        <div style="margin-bottom: 20px;">
+            <label style="color: #ccc;">بدء الإرسال من الصنف رقم:</label>
+            <input type="number" id="start-index-input" value="1" min="1" max="100" style="width: 70px; padding: 8px; border-radius: 8px; border: 1px solid #333; background: #000; color: white; margin-right: 10px;">
+        </div>
+
+        <!-- أزرار التحكم (التالي، إعادة الإرسال) -->
+        <div style="display: flex; gap: 15px;">
+            <button id="next-item-btn" style="flex: 2; padding: 15px; background: var(--success); border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 1.1em; cursor: pointer;">➡️ إرسال الصنف التالي</button>
+            <button id="retry-item-btn" style="flex: 1; padding: 15px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer;">🔁 إعادة المحاولة</button>
+        </div>
+        
+        <!-- عداد الحالة -->
+        <p id="sending-status" style="margin-top: 20px; color: #aaa; font-style: italic;">الحالة: جاهز للبدء...</p>
+    </div>
+</div>
 
     <div id="settings-modal" class="modal-overlay">
         <div class="modal-body">
@@ -374,6 +452,15 @@
         // استعادة البيانات من التخزين
         let slots = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().map(() => []);
         let slotNames = JSON.parse(localStorage.getItem('v_slot_names')) || Array(10).fill().map((_, i) => `فاتورة ${i + 1}`);
+       // --- استعادة بيانات نظام المشتريات (Pro System) ---
+// 1. مخزن فواتير المشتريات (5 فواتير)
+let proSlots = JSON.parse(localStorage.getItem('v_pro_slots')) || Array(5).fill().map(() => []);
+
+// 2. أسماء فواتير المشتريات
+let proSlotNames = JSON.parse(localStorage.getItem('v_pro_slot_names')) || Array(5).fill().map((_, i) => `مشتريات ${i + 1}`);
+
+// 3. مؤشر الصنف الحالي للإرسال اليدوي
+let currentProItemIndex = 0;
         let configButtons = JSON.parse(localStorage.getItem('userButtons')) || [
             { name: "جديد", cmd: "f8", useEnter: true, color: "#3d60cc" },
             { name: "حفظ", cmd: "f9", useEnter: true, color: "#3d60cc" },
@@ -569,31 +656,165 @@ if (user.savedBills && Array.isArray(user.savedBills) && user.savedBills.some(bi
             if(isHidden) renderSlots();
         }
 
-        function renderSlots() {
-            const list = document.getElementById('slots-list');
-            list.innerHTML = '';
-            slots.forEach((items, i) => {
-                const div = document.createElement('div');
-                div.className = 'slot-item';
-                div.innerHTML = `<div><b onclick="renameSlot(${i})">✏️ ${slotNames[i]}</b><br><small style="color:var(--text-dim)">${items.length} كود مخزن</small></div><div style="display:flex; gap:5px;"><button onclick="setActiveSlot(${i})" style="background:${activeSlotIndex===i?'var(--danger)':'var(--card-bg)'}; border:1px solid var(--border); color:white; padding:10px; border-radius:10px;">${activeSlotIndex===i?'🔴':'🎤'}</button><button onclick="sendFullSlot(${i})" style="background:var(--success); border:none; color:white; padding:10px; border-radius:10px;">📤</button><button onclick="clearSlot(${i})" style="background:none; border:1px solid var(--danger); color:var(--danger); padding:10px; border-radius:10px;">🗑️</button></div>`;
-                list.appendChild(div);
-            });
-        }
+        /**
+ * دالة عرض قائمة الفواتير
+ * تضمن ظهور 10 فواتير ثابتة في الواجهة دائماً
+ */
+/**
+ * دالة عرض قائمة الفواتير العادية (10 فواتير)
+ * تقوم برسم الواجهة الخاصة بالفواتير العشرة الأساسية
+ */
+function renderSlots() {
+    // 1. تحديد الحاوية التي ستعرض فيها الفواتير
+    const list = document.getElementById('slots-list');
+    
+    // 2. مسح المحتوى الحالي لتجنب تكرار العناصر عند التحديث
+    list.innerHTML = '';
 
-        function setActiveSlot(i) { activeSlotIndex = (activeSlotIndex === i) ? null : i; renderSlots(); }
-        function clearSlot(i) { if(confirm("تفريغ الفاتورة؟")) { slots[i]=[]; localStorage.setItem('v_slots', JSON.stringify(slots)); renderSlots(); pushToCloud(); } }
-        function renameSlot(i) { const n = prompt("الاسم الجديد:", slotNames[i]); if(n){ slotNames[i]=n; localStorage.setItem('v_slot_names', JSON.stringify(slotNames)); renderSlots(); pushToCloud(); } }
+    // 3. حلقة تكرار ثابتة من 0 إلى 9 لضمان وجود 10 صفوف
+    for (let i = 0; i < 10; i++) {
+        
+        // الحصول على محتويات الفاتورة (أو قائمة فارغة إذا لم توجد بيانات)
+        const items = slots[i] || [];
+        
+        // الحصول على اسم الفاتورة (أو اسم افتراضي إذا لم يتم تسميتها)
+        const currentName = slotNames[i] || `فاتورة ${i + 1}`;
 
-        async function sendFullSlot(i) {
-            if(slots[i].length === 0) return alert("فاضية!");
-            if(confirm(`إرسال ${slots[i].length} كود؟`)) {
-                for(let code of slots[i]) {
-                    masterSend(code + '_ent');
-                    await new Promise(r => setTimeout(r, 1000));
-                }
-                alert("✅ اكتمل الإرسال");
-            }
+        // إنشاء عنصر الـ div الخاص بكل فاتورة
+        const div = document.createElement('div');
+        div.className = 'slot-item';
+
+        // بناء هيكل الفاتورة (الاسم، عدد الأكواد، وأزرار التحكم)
+        div.innerHTML = `
+            <div>
+                <b onclick="renameSlot(${i})">✏️ ${currentName}</b>
+                <br>
+                <small style="color:var(--text-dim)">${items.length} كود مخزن</small>
+            </div>
+            
+            <div style="display:flex; gap:5px;">
+                <!-- زر تفعيل الفاتورة الحالية للمسح -->
+                <button onclick="setActiveSlot(${i})" style="background:${activeSlotIndex === i ? 'var(--danger)' : 'var(--card-bg)'}; border:1px solid var(--border); color:white; padding:10px; border-radius:10px;">
+                    ${activeSlotIndex === i ? '🔴' : '🎤'}
+                </button>
+                
+                <!-- زر الإرسال -->
+                <button onclick="sendFullSlot(${i})" style="background:var(--success); border:none; color:white; padding:10px; border-radius:10px;">📤</button>
+                
+                <!-- زر الحذف -->
+                <button onclick="clearSlot(${i})" style="background:none; border:1px solid var(--danger); color:var(--danger); padding:10px; border-radius:10px;">🗑️</button>
+            </div>
+        `;
+        
+        // إضافة العنصر إلى القائمة الرئيسية في الواجهة
+        list.appendChild(div);
+    }
+} // نهاية دالة renderSlots المستقلة
+
+/**
+ * دالة لفتح وإغلاق لوحة المشتريات (Pro Panel)
+ * وتعمل على تحديث البيانات عند الفتح
+ */
+function toggleProBillPanel() {
+    const panel = document.getElementById('pro-bill-panel');
+    
+    // فحص حالة الظهور الحالية للتبديل بين الإظهار والإخفاء
+    const isHidden = panel.style.display === 'none' || panel.style.display === '';
+    
+    if (isHidden) {
+        panel.style.display = 'block';
+        renderProSlots(); // استدعاء دالة الرسم لتحديث الفواتير
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+/**
+ * دالة رسم الـ 5 فواتير الخاصة بنظام المشتريات (Pro)
+ * تضمن ظهور 5 صفوف مخصصة للمشتريات فقط مع شريط تقدم
+ */
+function renderProSlots() {
+    const list = document.getElementById('pro-slots-list');
+    
+    // مسح المحتوى الحالي لتجنب تكرار العناصر
+    list.innerHTML = '';
+
+    // حلقة تكرار ثابتة لإنشاء 5 فواتير مشتريات
+    for (let i = 0; i < 5; i++) {
+        // الحصول على البيانات من متغير proSlots (أو قائمة فارغة)
+        const items = (typeof proSlots !== 'undefined' && proSlots[i]) ? proSlots[i] : [];
+        const currentName = (typeof proSlotNames !== 'undefined' && proSlotNames[i]) ? proSlotNames[i] : `مشتريات ${i + 1}`;
+
+        const div = document.createElement('div');
+        div.className = 'slot-item';
+
+        div.innerHTML = `
+            <div style="background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--border);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <b style="color: #6c5ce7;">✏️ ${currentName}</b>
+                        <br>
+                        <small style="color: var(--text-dim)">${items.length} / 100 صنف</small>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <!-- زر تفعيل الفاتورة للمسح بالباركود -->
+                        <button onclick="setActiveProSlot(${i})" style="background: ${typeof activeProSlotIndex !== 'undefined' && activeProSlotIndex === i ? 'var(--danger)' : '#2d3436'}; border: none; color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer;">
+                            ${typeof activeProSlotIndex !== 'undefined' && activeProSlotIndex === i ? '🔴 نشط' : '🎤 تفعيل'}
+                        </button>
+                        <!-- زر فتح واجهة الإرسال -->
+                        <button onclick="openManualSendControls(${i})" style="background: var(--success); border: none; color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer;">📤 إرسال</button>
+                    </div>
+                </div>
+                <!-- شريط تقدم بصري يوضح نسبة الامتلاء (حتى 100 صنف) -->
+                <div style="width: 100%; height: 5px; background: #333; margin-top: 10px; border-radius: 5px;">
+                    <div style="width: ${Math.min(items.length, 100)}%; height: 100%; background: #6c5ce7; border-radius: 5px;"></div>
+                </div>
+            </div>
+        `;
+        list.appendChild(div);
+    }
+}
+
+/**
+ * دوال التحكم الإضافية (تفعيل، مسح، تسمية، وإرسال)
+ */
+function setActiveSlot(i) { 
+    activeSlotIndex = (activeSlotIndex === i) ? null : i; 
+    renderSlots(); 
+}
+
+function clearSlot(i) { 
+    if(confirm("تفريغ الفاتورة؟")) { 
+        slots[i] = []; 
+        localStorage.setItem('v_slots', JSON.stringify(slots)); 
+        renderSlots(); 
+        pushToCloud(); 
+    } 
+}
+
+function renameSlot(i) { 
+    const n = prompt("الاسم الجديد:", slotNames[i]); 
+    if(n){ 
+        slotNames[i] = n; 
+        localStorage.setItem('v_slot_names', JSON.stringify(slotNames)); 
+        renderSlots(); 
+        pushToCloud(); 
+    } 
+}
+
+/**
+ * دالة إرسال الفاتورة بالكامل مع تأخير ثانية واحدة بين كل كود
+ */
+async function sendFullSlot(i) {
+    if(slots[i].length === 0) return alert("فاضية!");
+    if(confirm(`إرسال ${slots[i].length} كود؟`)) {
+        for(let code of slots[i]) {
+            masterSend(code + '_ent');
+            await new Promise(r => setTimeout(r, 1000));
         }
+        alert("✅ اكتمل الإرسال");
+    }
+}
 
         function openSettings() { document.getElementById('settings-modal').style.display='block'; renderButtonsConfig(); renderAuthStatus(); }
         function closeSettings() { document.getElementById('settings-modal').style.display='none'; }
@@ -649,6 +870,81 @@ if (user.savedBills && Array.isArray(user.savedBills) && user.savedBills.some(bi
             currentCameraMode = (currentCameraMode === "environment") ? "user" : "environment";
             startSmartScanner(currentCameraMode);
         }
+        /**
+ * دالة الإرسال اليدوي: ترسل الكود الحالي وتحدث حالته بعلامة ✅
+ */
+async function sendAndMoveToNext() {
+    // 1. الوصول لبيانات الفاتورة المفتوحة حالياً
+    const items = proSlots[activeProSlotForSend];
+    let code = items[currentProIndex];
+
+    // 2. التحقق من وجود أكواد متبقية للإرسال
+    if (currentProIndex >= items.length) {
+        alert("✅ انتهت جميع الأكواد في هذه القائمة");
+        closeSendModal();
+        return;
+    }
+
+    // 3. استدعاء دالة الإرسال الأساسية (masterSend)
+    // نرسل الكود مضافاً إليه كلمة _ent كما هو متبع في نظامك
+    masterSend(code + '_ent');
+    
+    // 4. إضافة علامة الصح ✅ للكود في المصفوفة لتمييزه
+    if (!code.includes(' ✅')) {
+        items[currentProIndex] = code + ' ✅';
+    }
+    
+    // 5. حفظ التعديلات في ذاكرة المتصفح (localStorage) بشكل دائم
+    localStorage.setItem('v_pro_slots', JSON.stringify(proSlots));
+    
+    // 6. الانتقال للمؤشر التالي (الكود الذي يليه)
+    currentProIndex++;
+
+    // 7. تحديث واجهة المستخدم
+    if (currentProIndex < items.length) {
+        updateModalContent(); // تحديث النص المعروض في النافذة المنبثقة
+    } else {
+        alert("🎉 تم إرسال آخر كود بنجاح");
+        closeSendModal();
+    }
+    
+    // إعادة رسم قائمة الفواتير الخلفية لتحديث علامات الصح فيها
+    if (typeof renderProSlots === "function") renderProSlots();
+}
+
+/**
+ * دالة لتحديث محتوى النافذة المنبثقة بالكود الجديد
+ */
+function updateModalContent() {
+    const items = proSlots[activeProSlotForSend];
+    const displayElement = document.getElementById('code-to-send-display');
+    
+    if (displayElement && items[currentProIndex]) {
+        displayElement.innerHTML = `
+            <p style="color: #6c5ce7;">الكود الحالي للإرسال:</p>
+            <h2 style="font-size: 2rem; margin: 10px 0;">${items[currentProIndex]}</h2>
+            <p>ترتيبه: ${currentProIndex + 1} من ${items.length}</p>
+        `;
+    }
+}
     </script>
+    <!-- غطاء خلفي شفاف لتعتيم الشاشة عند ظهور النافذة -->
+<div id="modal-overlay" class="modal-overlay" onclick="closeSendModal()"></div>
+
+<!-- النافذة المنبثقة للإرسال اليدوي -->
+<div id="manual-send-modal" class="manual-send-modal">
+    <!-- منطقة عرض الكود الحالي -->
+    <div id="code-to-send-display"></div>
+    
+    <!-- أزرار التحكم في الإرسال -->
+    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+        <button id="btn-next-send" onclick="sendAndMoveToNext()" style="background: var(--success); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; flex: 1; font-weight: bold;">
+            إرسال (التالي) 📤
+        </button>
+        <button onclick="closeSendModal()" style="background: #444; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer;">
+            إلغاء ❌
+        </button>
+    </div>
+</div>
 </body>
 </html>
