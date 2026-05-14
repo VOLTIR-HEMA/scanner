@@ -531,17 +531,30 @@ if (user.savedBills && Array.isArray(user.savedBills) && user.savedBills.some(bi
         function onScanSuccess(text) {
             if (Date.now() - lastScanTime < 2000) return;
             lastScanTime = Date.now();
-            if (activeSlotIndex !== null) {
-                if (slots[activeSlotIndex].length >= 30) return alert("الفاتورة ممتلئة!");
-                slots[activeSlotIndex].push(text);
-                localStorage.setItem('v_slots', JSON.stringify(slots));
-                renderSlots();
-                pushToCloud();
-                document.getElementById('result-text').innerText = `✅ تم الحفظ في ${slotNames[activeSlotIndex]}`;
-            } else {
-                masterSend(text + '_ent');
-                document.getElementById('result-text').innerText = `📤 أرسلت: ${text}`;
-            }
+            // 1. فحص إذا كانت هناك فاتورة "عادية" نشطة
+if (activeSlotIndex !== null) {
+    if (slots[activeSlotIndex].length >= 30) return alert("⚠️ الفاتورة ممتلئة!");
+    slots[activeSlotIndex].push(text);
+    localStorage.setItem('v_slots', JSON.stringify(slots));
+    renderSlots();
+    pushToCloud();
+    document.getElementById('result-text').innerText = `✅ تم الحفظ في ${slotNames[activeSlotIndex]}`;
+} 
+// 2. فحص إذا كانت هناك فاتورة "مشتريات Pro" نشطة (الإضافة الجديدة)
+else if (typeof activeProSlotIndex !== 'undefined' && activeProSlotIndex !== null) {
+    // إضافة الكود لمصفوفة المشتريات
+    proSlots[activeProSlotIndex].push(text);
+    // حفظ التعديل في الذاكرة
+    localStorage.setItem('v_pro_slots', JSON.stringify(proSlots));
+    // تحديث واجهة المشتريات (العداد 0/100)
+    renderProSlots();
+    document.getElementById('result-text').innerText = `📦 تم الإضافة للمشتريات ${activeProSlotIndex + 1}`;
+}
+// 3. إذا لم تكن أي فاتورة نشطة، يتم الإرسال المباشر للكمبيوتر
+else {
+    masterSend(text + '_ent');
+    document.getElementById('result-text').innerText = `⌨️ أرسلت: ${text}`;
+}
             if (navigator.vibrate) navigator.vibrate(100);
         }
 
