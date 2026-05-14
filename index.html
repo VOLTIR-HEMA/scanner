@@ -658,7 +658,7 @@ else {
                     <input type="tel" id="reg-phone" placeholder="رقم الموبايل">
                     <input type="text" id="reg-act" placeholder="نوع النشاط (صيدلية، مخزن...)">
                     <input type="password" id="reg-pass" placeholder="كلمة مرور جديدة">
-                    <button onclick="handleSignup()" class="save-btn" style="margin:0; background:var(--success);">إنشاء حساب (يومين تجربة) 🚀</button>
+                    <button onclick="handleSignup()" class="save-btn" style="margin:0; background:var(--success);">إنشاء حساب (اسبوع تجربة) 🚀</button>
                 </div>`;
             }
         }
@@ -705,7 +705,7 @@ else {
                     name: name,
                     password: pass,
                     activity: act,
-                    expiryDate: (Date.now() + (2 * 24 * 60 * 60 * 1000)).toString(), // يومين تجربة
+                    expiryDate: (Date.now() + (7 * 24 * 60 * 60 * 1000)).toString(), // اسبوع تجربة
                     customButtons: configButtons
                 };
 
@@ -714,7 +714,7 @@ else {
                     body: JSON.stringify(newUser)
                 });
 
-                alert("أهلاً بك! تم إنشاء حسابك بنجاح ومعاك يومين تجربة.");
+                alert("أهلاً بك! تم إنشاء حسابك بنجاح ومعاك اسبوع تجربة.");
                 localStorage.setItem('v_phone', phone);
                 localStorage.setItem('v_expiry', newUser.expiryDate);
                 localStorage.setItem('v_name', newUser.name);
