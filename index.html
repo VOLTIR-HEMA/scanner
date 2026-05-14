@@ -427,23 +427,57 @@
     document.getElementById('modal-overlay').style.display = 'none';
 }
 
+// 1. دالة تحديث محتوى النافذة بالأزرار الأربعة
 function updateModalContent() {
     const items = proSlots[activeProSlotForSend];
     const modal = document.getElementById('manual-send-modal');
-    if (modal && items && items[currentProIndex]) {
+    
+    if (modal && items) {
+        const currentCode = items[currentProIndex] || "انتهت الأصناف";
         modal.innerHTML = `
-            <div style="text-align: center; padding: 20px;">
-                <h3 style="color: #6c5ce7;">📦 إرسال صنف مشتريات</h3>
-                <div style="font-size: 28px; margin: 20px 0; background: #2d3436; padding: 15px; border-radius: 10px; border: 1px solid #6c5ce7; color: white;">
-                    ${items[currentProIndex]}
+            <div style="text-align: center; padding: 20px; color: white;">
+                <h3 style="color: #6c5ce7;">📦 إدارة إرسال المشتريات</h3>
+                
+                <div style="font-size: 24px; margin: 15px 0; background: #2d3436; padding: 15px; border-radius: 10px; border: 1px solid #6c5ce7;">
+                    ${currentCode}
                 </div>
-                <div style="display: flex; gap: 10px; justify-content: center;">
-                    <button onclick="sendAndMoveToNext()" style="background: #00b894; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold;">إرسال (التالي) ✅</button>
-                    <button onclick="closeSendModal()" style="background: #d63031; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer;">إغلاق ❌</button>
+
+                <div style="margin-bottom: 20px;">
+                    <label>الانتقال لصنف رقم: </label>
+                    <input type="number" id="goToIndex" value="${currentProIndex + 1}" min="1" max="${items.length}" 
+                           style="width: 50px; background: #353b48; color: white; border: 1px solid #6c5ce7; border-radius: 5px; text-align: center;">
+                    <button onclick="jumpToProItem()" style="background: #6c5ce7; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">انتقال</button>
                 </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button onclick="sendAndMoveToNext()" style="background: #00b894; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;">إرسال (التالي) ✅</button>
+                    <button onclick="reSendCurrent()" style="background: #f1c40f; color: #2d3436; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;">إعادة إرسال الحالي 🔄</button>
+                    <button onclick="closeSendModal()" style="background: #d63031; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; grid-column: span 2;">إغلاق النافذة ❌</button>
+                </div>
+
                 <p style="margin-top: 15px; color: #b2bec3;">صنف رقم ${currentProIndex + 1} من أصل ${items.length}</p>
             </div>
         `;
+    }
+}
+
+// 2. دالة إعادة إرسال الكود الحالي فقط
+function reSendCurrent() {
+    const items = proSlots[activeProSlotForSend];
+    if (items[currentProIndex]) {
+        masterSend(items[currentProIndex] + '_ent');
+    }
+}
+
+// 3. دالة الانتقال لرقم صنف معين
+function jumpToProItem() {
+    const newIndex = parseInt(document.getElementById('goToIndex').value) - 1;
+    const items = proSlots[activeProSlotForSend];
+    if (newIndex >= 0 && newIndex < items.length) {
+        currentProIndex = newIndex;
+        updateModalContent();
+    } else {
+        alert("رقم الصنف غير موجود!");
     }
 }
         // --- الثوابت والبيانات ---
@@ -984,18 +1018,20 @@ function updateModalContent() {
  * 1. دالة لتحديد الفاتورة النشطة لاستقبال الباركود
  */
 function setActiveProSlot(index) {
-    // إذا كان الزر المفعّل حالياً هو نفسه الذي ضغطت عليه، قم بإيقافه
+    // 1. لو ضغطت على نفس الفاتورة اللي شغالة، اطفيها
     if (activeProSlotIndex === index) {
         activeProSlotIndex = null;
+        console.log("❌ تم إيقاف تسجيل المشتريات");
     } else {
-        // وإلا، فعّل الزر الجديد وعطل الفواتير العادية لضمان الدقة
+        // 2. لو ضغطت على واحدة جديدة، شغلها واطفي أي فاتورة تانية
         activeProSlotIndex = index;
-        if (typeof activeSlotIndex !== 'undefined') activeSlotIndex = null;
+        activeSlotIndex = null; // عشان ميسجلش في الفواتير العادية في نفس الوقت
+        console.log("✅ الفاتورة النشطة الآن هي رقم: " + (index + 1));
     }
     
-    renderProSlots(); // تحديث الألوان في الواجهة فوراً
+    // 3. تحديث الألوان فوراً عشان تشوف الزرار وهو بيطفي
+    renderProSlots();
 }
-
 /**
  * 2. دالة لفتح واجهة الإرسال اليدوي للفاتورة المختارة
  */
