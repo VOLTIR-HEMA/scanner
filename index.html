@@ -403,10 +403,14 @@
                         localStorage.setItem('userButtons', JSON.stringify(configButtons));
                         renderMainButtons();
                     }
-                    if (user.savedBills) {
-                        slots = user.savedBills;
-                        localStorage.setItem('v_slots', JSON.stringify(slots));
-                    }
+                   // التأكد من أن الفواتير القادمة من السحابة تحتوي على بيانات فعلاً
+if (user.savedBills && Array.isArray(user.savedBills) && user.savedBills.some(bill => bill.length > 0)) {
+    slots = user.savedBills;
+    localStorage.setItem('v_slots', JSON.stringify(slots));
+} else {
+    // إذا كانت السحابة فارغة، نحتفظ بالفواتير الموجودة حالياً في الجهاز
+    console.log("السحابة لا تحتوي على فواتير، تم الاحتفاظ بالبيانات المحلية.");
+}
                     if (user.slotNames) {
                         slotNames = user.slotNames;
                         localStorage.setItem('v_slot_names', JSON.stringify(slotNames));
