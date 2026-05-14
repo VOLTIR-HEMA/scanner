@@ -1018,19 +1018,22 @@ function updateModalContent() {
  * 1. دالة لتحديد الفاتورة النشطة لاستقبال الباركود
  */
 function setActiveProSlot(index) {
-    // 1. لو ضغطت على نفس الفاتورة اللي شغالة، اطفيها
-    if (activeProSlotIndex === index) {
-        activeProSlotIndex = null;
-        console.log("❌ تم إيقاف تسجيل المشتريات");
+    // 1. لو الزرار اللي ضغطت عليه هو أصلاً اللي شغال.. اطفيه (خليه null)
+    if (window.activeProSlotIndex === index) {
+        window.activeProSlotIndex = null;
     } else {
-        // 2. لو ضغطت على واحدة جديدة، شغلها واطفي أي فاتورة تانية
-        activeProSlotIndex = index;
-        activeSlotIndex = null; // عشان ميسجلش في الفواتير العادية في نفس الوقت
-        console.log("✅ الفاتورة النشطة الآن هي رقم: " + (index + 1));
+        // 2. لو ضغطت على زرار جديد.. شغله واطفي أي تفعيل لفواتير تانية
+        window.activeProSlotIndex = index;
+        if (typeof activeSlotIndex !== 'undefined') {
+            window.activeSlotIndex = null; 
+        }
     }
     
-    // 3. تحديث الألوان فوراً عشان تشوف الزرار وهو بيطفي
+    // 3. أهم خطوة: إعادة رسم الواجهة عشان الألوان تتحدث فوراً
     renderProSlots();
+    
+    // تنبيه صغير في الكونسول للتأكد (اختياري)
+    console.log("الحالة الحالية للمشتريات:", window.activeProSlotIndex);
 }
 /**
  * 2. دالة لفتح واجهة الإرسال اليدوي للفاتورة المختارة
