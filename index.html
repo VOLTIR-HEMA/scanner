@@ -971,7 +971,7 @@ function updateModalContent() {
                 
                 <div style="margin: 15px 0; background: #2f3542; padding: 10px; border-radius: 10px;">
                     <label style="display: block; margin-bottom: 5px;">🔎 ابدأ من باركود معين:</label>
-                    <input type="text" id="start-barcode-input" placeholder="اكتب الباركود..." 
+                    <input type="text" id="start-barcode-input" placeholder="اكتب رقم الصنف..." 
                            style="padding: 8px; border-radius: 5px; border: 1px solid #57606f; width: 70%; text-align: center;">
                     <button onclick="jumpToBarcode()" style="padding: 8px 15px; cursor: pointer; background: #54a0ff; border: none; border-radius: 5px; color: white;">تحديد</button>
                 </div>
@@ -999,6 +999,25 @@ function updateModalContent() {
         `;
     }
 }
+        window.jumpToBarcode = function() {
+    // 1. هنجيب الرقم اللي أنت كتبته في المربع
+    const input = document.getElementById('start-barcode-input');
+    const indexNumber = parseInt(input.value);
+
+    // 2. نتأكد إن الرقم صح وموجود في الفاتورة
+    if (!isNaN(indexNumber) && indexNumber > 0 && indexNumber <= proSlots[activeProSlotForSend].length) {
+        
+        // 3. نغير الترتيب الحالي (بننقص 1 لأن الصنف رقم 1 ترتيبه في الكود 0)
+        currentProIndex = indexNumber - 1;
+        
+        // 4. نحدث شكل المربع عشان يظهر الباركود بتاع الصنف ده
+        updateModalContent();
+        
+        alert("✅ تم الانتقال للصنف رقم " + indexNumber);
+    } else {
+        alert("⚠️ يا ريس اكتب رقم صنف صح موجود في الفاتورة!");
+    }
+};
  /**
  * 1. دالة لتحديد الفاتورة النشطة لاستقبال الباركود
  */
