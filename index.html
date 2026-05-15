@@ -841,14 +841,39 @@ function renderProSlots() {
                     </div>
                     <div style="display: flex; gap: 8px;">
                         <!-- زر تفعيل الفاتورة للمسح بالباركود -->
-                        <button onclick="setActiveProSlot(${i})" style="background: ${typeof activeProSlotIndex !== 'undefined' && activeProSlotIndex === i ? 'var(--danger)' : '#2d3436'}; border: none; color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer;">
-                            ${typeof activeProSlotIndex !== 'undefined' && activeProSlotIndex === i ? '🔴 نشط' : '🎤 تفعيل'}
-                        </button>
-                        <!-- زر فتح واجهة الإرسال -->
-                        <button onclick="openManualSendControls(${i})" style="background: var(--success); border: none; color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer;">📤 إرسال</button>
-                    </div>
+                        /**
+ * عرض وإدارة خانات المشتريات (Pro Slots)
+ */
+function renderProSlots() {
+    const list = document.getElementById('pro-slots-container');
+    if (!list) return;
+    list.innerHTML = '';
+
+    for (let i = 0; i < proSlots.length; i++) {
+        const items = proSlots[i];
+        const div = document.createElement('div');
+        div.className = 'slot-card';
+        
+        // التحقق من حالة التفعيل لتغيير اللون والنص
+        const isActive = (window.activeProSlotIndex === i);
+        
+        div.innerHTML = `
+            <div style="padding: 10px; background: #1e1e1e; border-radius: 12px; border: 1px solid #333; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="margin:0;">مشتريات ${i + 1} 📝</h4>
+                    <span style="font-size: 0.8rem; color: #b2bec3;">${items.length} / 100 صنف</span>
                 </div>
-                <!-- شريط تقدم بصري يوضح نسبة الامتلاء (حتى 100 صنف) -->
+                
+                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                    <button onclick="setActiveProSlot(${i})" style="background: ${isActive ? 'var(--danger)' : '#6c5ce7'}; border: none; color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer; flex: 2;">
+                        ${isActive ? '🔴 إيقاف' : '🎤 تفعيل'}
+                    </button>
+                    
+                    <button onclick="openManualSendControls(${i})" style="background: var(--success); border: none; color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer; flex: 2;">📤 إرسال</button>
+                    
+                    <button onclick="clearProSlot(${i})" style="background: #444; border: none; color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer; flex: 1;">🗑️</button>
+                </div>
+
                 <div style="width: 100%; height: 5px; background: #333; margin-top: 10px; border-radius: 5px;">
                     <div style="width: ${Math.min(items.length, 100)}%; height: 100%; background: #6c5ce7; border-radius: 5px;"></div>
                 </div>
@@ -858,197 +883,101 @@ function renderProSlots() {
     }
 }
 
-/**
- * دوال التحكم الإضافية (تفعيل، مسح، تسمية، وإرسال)
- */
-function setActiveSlot(i) { 
-    activeSlotIndex = (activeSlotIndex === i) ? null : i; 
-    renderSlots(); 
+function setActiveProSlot(i) { 
+    window.activeProSlotIndex = (window.activeProSlotIndex === i) ? null : i; 
+    if (typeof activeSlotIndex !== 'undefined') window.activeSlotIndex = null;
+    renderProSlots(); 
 }
 
-function clearSlot(i) { 
-    if(confirm("تفريغ الفاتورة؟")) { 
-        slots[i] = []; 
-        localStorage.setItem('v_slots', JSON.stringify(slots)); 
-        renderSlots(); 
-        pushToCloud(); 
-    } 
-}
-
-function renameSlot(i) { 
-    const n = prompt("الاسم الجديد:", slotNames[i]); 
-    if(n){ 
-        slotNames[i] = n; 
-        localStorage.setItem('v_slot_names', JSON.stringify(slotNames)); 
-        renderSlots(); 
-        pushToCloud(); 
-    } 
-}
-
-/**
- * دالة إرسال الفاتورة بالكامل مع تأخير ثانية واحدة بين كل كود
- */
-async function sendFullSlot(i) {
-    if(slots[i].length === 0) return alert("فاضية!");
-    if(confirm(`إرسال ${slots[i].length} كود؟`)) {
-        for(let code of slots[i]) {
-            masterSend(code + '_ent');
-            await new Promise(r => setTimeout(r, 1000));
-        }
-        alert("✅ اكتمل الإرسال");
+function clearProSlot(i) {
+    if(confirm("🗑️ هل تريد مسح جميع الأصناف في هذه الفاتورة؟")) {
+        proSlots[i] = [];
+        localStorage.setItem('v_pro_slots', JSON.stringify(proSlots));
+        renderProSlots();
+        if (typeof pushToCloud === "function") pushToCloud();
     }
 }
 
-        function openSettings() { document.getElementById('settings-modal').style.display='block'; renderButtonsConfig(); renderAuthStatus(); }
-        function closeSettings() { document.getElementById('settings-modal').style.display='none'; }
-        
-        function renderButtonsConfig() {
-            const list = document.getElementById('buttons-config-list');
-            list.innerHTML = '';
-            configButtons.forEach((btn, i) => {
-                const d = document.createElement('div');
-                d.style = "display:flex; align-items:center; gap:5px; margin-bottom:8px; background:#222; padding:10px; border-radius:10px;";
-                d.innerHTML = `<input type="text" value="${btn.name}" oninput="configButtons[${i}].name=this.value" style="margin:0; flex:1"><input type="text" value="${btn.cmd}" oninput="configButtons[${i}].cmd=this.value" style="margin:0; flex:1"><input type="color" value="${btn.color}" oninput="configButtons[${i}].color=this.value" style="width:35px; height:40px; border:none; background:none;"><label style="font-size:0.7rem; display:flex; flex-direction:column; align-items:center; color:var(--text-dim);"><input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="configButtons[${i}].useEnter=this.checked">Ent</label><button onclick="configButtons.splice(${i},1);renderButtonsConfig()" style="background:var(--danger); border:none; color:white; border-radius:8px; padding:10px;">X</button>`;
-                list.appendChild(d);
-            });
-        }
-        
-        function addNewButtonRow() { configButtons.push({name:"جديد", cmd:"f1", color:"#3d60cc"}); renderButtonsConfig(); }
-        function saveAllAndClose() { localStorage.setItem('userButtons', JSON.stringify(configButtons)); renderMainButtons(); pushToCloud(); closeSettings(); }
-
-        function openKeyboard() { document.getElementById('keyboard-modal').style.display='block'; setTimeout(()=>document.getElementById('manual-data').focus(), 300); }
-        function closeKeyboard() { document.getElementById('keyboard-modal').style.display='none'; }
-        function sendManualData() { const v = document.getElementById('manual-data').value; if(v){ masterSend(v+'_ent'); document.getElementById('manual-data').value=''; } }
-
-        async function toggleFlash() {
-            try {
-                const track = document.querySelector('video').srcObject.getVideoTracks()[0];
-                isFlashOn = !isFlashOn;
-                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
-                document.getElementById('flash-toggle').classList.toggle('active');
-            } catch(e) { alert("الفلاش غير متاح"); }
-        }
-
-        window.onload = () => {
-            const phone = localStorage.getItem('v_phone');
-            if (!phone) {
-                document.getElementById('welcome-screen').style.display = 'flex';
-            } else {
-                syncData();
-                startSmartScanner("environment"); 
-            }
-            renderMainButtons();
-        };
-
-        async function startSmartScanner(mode) {
-            try {
-                if (html5Scanner) { await html5Scanner.stop(); }
-                html5Scanner = new Html5Qrcode("reader");
-                await html5Scanner.start({ facingMode: mode }, { fps: 25, qrbox: { width: 200, height: 150 }, aspectRatio: 1.0 }, onScanSuccess);
-            } catch (err) { console.error("Camera error", err); }
-        }
-
-        let currentCameraMode = "environment";
-        function switchCamera() {
-            currentCameraMode = (currentCameraMode === "environment") ? "user" : "environment";
-            startSmartScanner(currentCameraMode);
-        }
-        /**
- * دالة الإرسال اليدوي: ترسل الكود الحالي وتحدث حالته بعلامة ✅
- */
-async function sendAndMoveToNext() {
-    // 1. الوصول لبيانات الفاتورة المفتوحة حالياً
-    const items = proSlots[activeProSlotForSend];
-    let code = items[currentProIndex];
-
-    // 2. التحقق من وجود أكواد متبقية للإرسال
-    if (currentProIndex >= items.length) {
-        alert("✅ انتهت جميع الأكواد في هذه القائمة");
-        closeSendModal();
-        return;
-    }
-
-    // 3. استدعاء دالة الإرسال الأساسية (masterSend)
-    // نرسل الكود مضافاً إليه كلمة _ent كما هو متبع في نظامك
-    masterSend(code + '_ent');
-    
-    // 4. إضافة علامة الصح ✅ للكود في المصفوفة لتمييزه
-    if (!code.includes(' ✅')) {
-        items[currentProIndex] = code + ' ✅';
-    }
-    
-    // 5. حفظ التعديلات في ذاكرة المتصفح (localStorage) بشكل دائم
-    localStorage.setItem('v_pro_slots', JSON.stringify(proSlots));
-    
-    // 6. الانتقال للمؤشر التالي (الكود الذي يليه)
-    currentProIndex++;
-
-    // 7. تحديث واجهة المستخدم
-    if (currentProIndex < items.length) {
-        updateModalContent(); // تحديث النص المعروض في النافذة المنبثقة
-    } else {
-        alert("🎉 تم إرسال آخر كود بنجاح");
-        closeSendModal();
-    }
-    
-    // إعادة رسم قائمة الفواتير الخلفية لتحديث علامات الصح فيها
-    if (typeof renderProSlots === "function") renderProSlots();
+// الدوال اللي طلبتها (الإعدادات، الكيبورد، الفلاش، الإرسال)
+function openSettings() { document.getElementById('settings-modal').style.display='block'; renderButtonsConfig(); renderAuthStatus(); }
+function closeSettings() { document.getElementById('settings-modal').style.display='none'; }
+function renderButtonsConfig() {
+    const list = document.getElementById('buttons-config-list');
+    list.innerHTML = '';
+    configButtons.forEach((btn, i) => {
+        const d = document.createElement('div');
+        d.style = "display:flex; align-items:center; gap:5px; margin-bottom:8px; background:#222; padding:10px; border-radius:10px;";
+        d.innerHTML = `<input type="text" value="${btn.name}" oninput="configButtons[${i}].name=this.value" style="margin:0; flex:1"><input type="text" value="${btn.cmd}" oninput="configButtons[${i}].cmd=this.value" style="margin:0; flex:1"><input type="color" value="${btn.color}" oninput="configButtons[${i}].color=this.value" style="width:35px; height:40px; border:none; background:none;"><label style="font-size:0.7rem; display:flex; flex-direction:column; align-items:center; color:var(--text-dim);"><input type="checkbox" ${btn.useEnter ? 'checked' : ''} onchange="configButtons[${i}].useEnter=this.checked">Ent</label><button onclick="configButtons.splice(${i},1);renderButtonsConfig()" style="background:var(--danger); border:none; color:white; border-radius:8px; padding:10px;">X</button>`;
+        list.appendChild(d);
+    });
+}
+function addNewButtonRow() { configButtons.push({name:"جديد", cmd:"f1", color:"#3d60cc"}); renderButtonsConfig(); }
+function saveAllAndClose() { localStorage.setItem('userButtons', JSON.stringify(configButtons)); renderMainButtons(); if (typeof pushToCloud === "function") pushToCloud(); closeSettings(); }
+function openKeyboard() { document.getElementById('keyboard-modal').style.display='block'; setTimeout(()=>document.getElementById('manual-data').focus(), 300); }
+function closeKeyboard() { document.getElementById('keyboard-modal').style.display='none'; }
+function sendManualData() { const v = document.getElementById('manual-data').value; if(v){ masterSend(v+'_ent'); document.getElementById('manual-data').value=''; } }
+async function toggleFlash() {
+    try {
+        const track = document.querySelector('video').srcObject.getVideoTracks()[0];
+        isFlashOn = !isFlashOn;
+        await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+        document.getElementById('flash-toggle').classList.toggle('active');
+    } catch(e) { alert("الفلاش غير متاح"); }
 }
 
-/**
- * دالة لتحديث محتوى النافذة المنبثقة بالكود الجديد
- */
-/**
- * 2. دالة لفتح واجهة الإرسال اليدوي للفاتورة المختارة
- */
+window.onload = () => {
+    const phone = localStorage.getItem('v_phone');
+    if (!phone) { document.getElementById('welcome-screen').style.display = 'flex'; } 
+    else { if (typeof syncData === "function") syncData(); startSmartScanner("environment"); }
+    renderMainButtons();
+};
+
+async function startSmartScanner(mode) {
+    try {
+        if (html5Scanner) { await html5Scanner.stop(); }
+        html5Scanner = new Html5Qrcode("reader");
+        await html5Scanner.start({ facingMode: mode }, { fps: 25, qrbox: { width: 200, height: 150 }, aspectRatio: 1.0 }, onScanSuccess);
+    } catch (err) { console.error("Camera error", err); }
+}
+
 function openManualSendControls(index) {
     const items = proSlots[index];
-    if (!items || items.length === 0) {
-        alert("⚠️ هذه الفاتورة فارغة، لا يوجد أكواد لإرسالها.");
-        return;
-    }
-    activeProSlotForSend = index; 
-    currentProIndex = 0;
+    if (!items || items.length === 0) { alert("⚠️ الفاتورة فارغة!"); return; }
+    activeProSlotForSend = index; currentProIndex = 0;
     document.getElementById('modal-overlay').style.display = 'block';
     updateModalContent();
 }
 
-/**
- * 3. دالة إغلاق النافذة
- */
-function closeSendModal() {
-    document.getElementById('modal-overlay').style.display = 'none';
+function closeSendModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+
+async function sendAndMoveToNext() {
+    const items = proSlots[activeProSlotForSend];
+    if (currentProIndex >= items.length) { alert("✅ انتهت الأكواد"); closeSendModal(); return; }
+    let code = items[currentProIndex];
+    masterSend(code + '_ent');
+    if (!code.includes(' ✅')) items[currentProIndex] = code + ' ✅';
+    localStorage.setItem('v_pro_slots', JSON.stringify(proSlots));
+    currentProIndex++;
+    if (currentProIndex < items.length) { updateModalContent(); } 
+    else { alert("🎉 تم إرسال الكل"); closeSendModal(); }
+    renderProSlots();
 }
 
-/**
- * 4. دالة إعادة إرسال الكود الحالي
- */
 function reSendCurrent() {
     const items = proSlots[activeProSlotForSend];
-    if (items && items[currentProIndex]) {
-        masterSend(items[currentProIndex] + '_ent');
-    }
+    if (items && items[currentProIndex]) masterSend(items[currentProIndex] + '_ent');
 }
 
-/**
- * 5. دالة الانتقال لرقم صنف معين
- */
 function jumpToProItem() {
-    const inputVal = document.getElementById('goToIndex').value;
-    const newIndex = parseInt(inputVal) - 1;
-    const items = proSlots[activeProSlotForSend];
-    if (newIndex >= 0 && newIndex < items.length) {
-        currentProIndex = newIndex;
-        updateModalContent();
-    } else {
-        alert("رقم الصنف غير موجود!");
-    }
+    const val = parseInt(document.getElementById('goToIndex').value) - 1;
+    if (val >= 0 && val < proSlots[activeProSlotForSend].length) {
+        currentProIndex = val; updateModalContent();
+    } else { alert("خطأ في الرقم!"); }
 }
 </script>
 
 <div id="modal-overlay" class="modal-overlay" style="display:none;" onclick="closeSendModal()">
-    <div id="manual-send-modal" class="manual-send-modal" onclick="event.stopPropagation()">
-        </div>
+    <div id="manual-send-modal" class="manual-send-modal" onclick="event.stopPropagation()"></div>
 </div>
 
 </body>
