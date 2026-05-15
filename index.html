@@ -427,67 +427,59 @@
     document.getElementById('modal-overlay').style.display = 'none';
 }
 
-// 1. الدالة اللي بتفتح المربع وتحدد شكله (أهم واحدة عشان الزراير تظهر)
-function openManualSendControls(slotIndex) {
-    activeProSlotForSend = slotIndex;
-    currentProIndex = 0;
-    document.getElementById('modal-overlay').style.display = 'block';
-    updateModalContent(); // دي اللي هترسم الزراير الأربعة فوراً
-}
-
-// 2. دالة رسم المحتوى (الزراير الأربعة + مربع الانتقال)
+// 1. دالة تحديث محتوى النافذة بالأزرار الأربعة
 function updateModalContent() {
     const items = proSlots[activeProSlotForSend];
     const modal = document.getElementById('manual-send-modal');
+    
     if (modal && items) {
         const currentCode = items[currentProIndex] || "انتهت الأصناف";
         modal.innerHTML = `
-            <div style="text-align: center; padding: 15px; color: white;">
-                <h3 style="color: #a29bfe; margin-bottom:10px;">📦 إدارة إرسال المشتريات</h3>
-                <div style="font-size: 26px; margin: 10px 0; background: #2d3436; padding: 15px; border-radius: 10px; border: 1px solid #6c5ce7; color: #fff;">
+            <div style="text-align: center; padding: 20px; color: white;">
+                <h3 style="color: #6c5ce7;">📦 إدارة إرسال المشتريات</h3>
+                
+                <div style="font-size: 24px; margin: 15px 0; background: #2d3436; padding: 15px; border-radius: 10px; border: 1px solid #6c5ce7;">
                     ${currentCode}
                 </div>
-                <div style="margin-bottom: 15px; background: #34495e; padding: 10px; border-radius: 8px;">
-                    <label style="font-size: 13px;">بدء من صنف رقم: </label>
+
+                <div style="margin-bottom: 20px;">
+                    <label>الانتقال لصنف رقم: </label>
                     <input type="number" id="goToIndex" value="${currentProIndex + 1}" min="1" max="${items.length}" 
-                           style="width: 55px; background: #2c3e50; color: white; border: 1px solid #6c5ce7; border-radius: 5px; text-align: center;">
-                    <button onclick="jumpToProItem()" style="background: #6c5ce7; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">تعديل</button>
+                           style="width: 50px; background: #353b48; color: white; border: 1px solid #6c5ce7; border-radius: 5px; text-align: center;">
+                    <button onclick="jumpToProItem()" style="background: #6c5ce7; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">انتقال</button>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <button onclick="sendAndMoveToNext()" style="background: #00b894; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;">إرسال (التالي) ✅</button>
-                    <button onclick="reSendCurrent()" style="background: #f1c40f; color: #2d3436; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;">إعادة إرسال 🔄</button>
-                    <button onclick="closeSendModal()" style="background: #d63031; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; grid-column: span 2;">إغلاق ❌</button>
+                    <button onclick="reSendCurrent()" style="background: #f1c40f; color: #2d3436; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;">إعادة إرسال الحالي 🔄</button>
+                    <button onclick="closeSendModal()" style="background: #d63031; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; grid-column: span 2;">إغلاق النافذة ❌</button>
                 </div>
-                <p style="margin-top: 10px; font-size: 13px; color: #b2bec3;">صنف رقم ${currentProIndex + 1} من أصل ${items.length}</p>
+
+                <p style="margin-top: 15px; color: #b2bec3;">صنف رقم ${currentProIndex + 1} من أصل ${items.length}</p>
             </div>
         `;
     }
 }
 
-// 3. دالة الإرسال (إصلاح الإنتر _ent)
-function sendAndMoveToNext() {
+// 2. دالة إعادة إرسال الكود الحالي فقط
+function reSendCurrent() {
     const items = proSlots[activeProSlotForSend];
     if (items[currentProIndex]) {
-        masterSend(items[currentProIndex] + '_ent'); 
-        currentProIndex++;
-        if (currentProIndex < items.length) { updateModalContent(); } 
-        else { alert("✅ خلصت الفاتورة!"); closeSendModal(); }
+        masterSend(items[currentProIndex] + '_ent');
     }
 }
 
-// 4. دالة إعادة الإرسال والانتقال
-function reSendCurrent() { 
-    const items = proSlots[activeProSlotForSend];
-    if (items[currentProIndex]) masterSend(items[currentProIndex] + '_ent'); 
-}
+// 3. دالة الانتقال لرقم صنف معين
 function jumpToProItem() {
-    const val = parseInt(document.getElementById('goToIndex').value) - 1;
-    if (val >= 0 && val < proSlots[activeProSlotForSend].length) {
-        currentProIndex = val; updateModalContent();
+    const newIndex = parseInt(document.getElementById('goToIndex').value) - 1;
+    const items = proSlots[activeProSlotForSend];
+    if (newIndex >= 0 && newIndex < items.length) {
+        currentProIndex = newIndex;
+        updateModalContent();
+    } else {
+        alert("رقم الصنف غير موجود!");
     }
 }
-function closeSendModal() { document.getElementById('modal-overlay').style.display = 'none'; }
-        
         // --- الثوابت والبيانات ---
         const WHATSAPP_RENEW = "201147534998";
         const DB_URL = "https://just-scan-19ce1-default-rtdb.firebaseio.com/users";
@@ -841,37 +833,15 @@ function renderProSlots() {
                     </div>
                     <div style="display: flex; gap: 8px;">
                         <!-- زر تفعيل الفاتورة للمسح بالباركود -->
-                        /**
- * عرض وإدارة خانات المشتريات (Pro Slots)
- */
-function renderProSlots() {
-    const list = document.getElementById('pro-slots-container');
-    if (!list) return;
-    list.innerHTML = '';
-
-    for (let i = 0; i < proSlots.length; i++) {
-        const items = proSlots[i];
-        const div = document.createElement('div');
-        div.className = 'slot-card';
-        
-        // التحقق من حالة التفعيل لتغيير اللون والنص
-        const isActive = (window.activeProSlotIndex === i);
-        
-        div.innerHTML = `
-            <div style="padding: 10px; background: #1e1e1e; border-radius: 12px; border: 1px solid #333; margin-bottom: 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h4 style="margin:0;">مشتريات ${i + 1} 📝</h4>
-                    <span style="font-size: 0.8rem; color: #b2bec3;">${items.length} / 100 صنف</span>
-                </div>
-                
-                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                    <button onclick="setActiveProSlot(${i})" style="background: ${typeof activeProSlotIndex !== 'undefined' && activeProSlotIndex === i ? 'var(--danger)' : '#2d3436'}; border: none; color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer;">
+                        <button onclick="setActiveProSlot(${i})" style="background: ${typeof activeProSlotIndex !== 'undefined' && activeProSlotIndex === i ? 'var(--danger)' : '#2d3436'}; border: none; color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer;">
                             ${typeof activeProSlotIndex !== 'undefined' && activeProSlotIndex === i ? '🔴 نشط' : '🎤 تفعيل'}
                         </button>
+                        <!-- زر فتح واجهة الإرسال -->
                         <button onclick="openManualSendControls(${i})" style="background: var(--success); border: none; color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer;">📤 إرسال</button>
-                        <button onclick="clearProSlot(${i})" style="background: #444; border: none; color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer;">🗑️</button>
+                        <button onclick="clearProSlot(${i})" style="background: #444; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer;">🗑️</button>
                     </div>
                 </div>
+                <!-- شريط تقدم بصري يوضح نسبة الامتلاء (حتى 100 صنف) -->
                 <div style="width: 100%; height: 5px; background: #333; margin-top: 10px; border-radius: 5px;">
                     <div style="width: ${Math.min(items.length, 100)}%; height: 100%; background: #6c5ce7; border-radius: 5px;"></div>
                 </div>
@@ -889,12 +859,6 @@ function setActiveSlot(i) {
     renderSlots(); 
 }
 
-function setActiveProSlot(i) {
-    activeProSlotIndex = (typeof activeProSlotIndex !== 'undefined' && activeProSlotIndex === i) ? null : i;
-    if (typeof activeSlotIndex !== 'undefined') activeSlotIndex = null;
-    renderProSlots();
-}
-
 function clearSlot(i) { 
     if(confirm("تفريغ الفاتورة؟")) { 
         slots[i] = []; 
@@ -902,15 +866,6 @@ function clearSlot(i) {
         renderSlots(); 
         pushToCloud(); 
     } 
-}
-
-function clearProSlot(i) {
-    if(confirm("تفريغ فاتورة المشتريات؟")) {
-        proSlots[i] = [];
-        localStorage.setItem('v_pro_slots', JSON.stringify(proSlots));
-        renderProSlots();
-        if (typeof pushToCloud === "function") pushToCloud();
-    }
 }
 
 function renameSlot(i) { 
@@ -991,73 +946,144 @@ async function sendFullSlot(i) {
             currentCameraMode = (currentCameraMode === "environment") ? "user" : "environment";
             startSmartScanner(currentCameraMode);
         }
-
-/**
+        /**
  * دالة الإرسال اليدوي: ترسل الكود الحالي وتحدث حالته بعلامة ✅
  */
 async function sendAndMoveToNext() {
+    // 1. الوصول لبيانات الفاتورة المفتوحة حالياً
     const items = proSlots[activeProSlotForSend];
+    let code = items[currentProIndex];
+
+    // 2. التحقق من وجود أكواد متبقية للإرسال
     if (currentProIndex >= items.length) {
         alert("✅ انتهت جميع الأكواد في هذه القائمة");
         closeSendModal();
         return;
     }
-    let code = items[currentProIndex];
+
+    // 3. استدعاء دالة الإرسال الأساسية (masterSend)
+    // نرسل الكود مضافاً إليه كلمة _ent كما هو متبع في نظامك
     masterSend(code + '_ent');
+    
+    // 4. إضافة علامة الصح ✅ للكود في المصفوفة لتمييزه
     if (!code.includes(' ✅')) {
         items[currentProIndex] = code + ' ✅';
     }
+    
+    // 5. حفظ التعديلات في ذاكرة المتصفح (localStorage) بشكل دائم
     localStorage.setItem('v_pro_slots', JSON.stringify(proSlots));
+    
+    // 6. الانتقال للمؤشر التالي (الكود الذي يليه)
     currentProIndex++;
+
+    // 7. تحديث واجهة المستخدم
     if (currentProIndex < items.length) {
-        updateModalContent(); 
+        updateModalContent(); // تحديث النص المعروض في النافذة المنبثقة
     } else {
         alert("🎉 تم إرسال آخر كود بنجاح");
         closeSendModal();
     }
+    
+    // إعادة رسم قائمة الفواتير الخلفية لتحديث علامات الصح فيها
     if (typeof renderProSlots === "function") renderProSlots();
 }
 
+/**
+ * دالة لتحديث محتوى النافذة المنبثقة بالكود الجديد
+ */
+function updateModalContent() {
+    const items = proSlots[activeProSlotForSend];
+    const modal = document.getElementById('manual-send-modal'); // النافذة نفسها
+    
+    if (modal && items[currentProIndex]) {
+        modal.innerHTML = `
+            <div class="modal-body">
+                <h3>إرسال كود المشتريات</h3>
+                <div style="font-size: 24px; margin: 20px; color: #6c5ce7; font-weight: bold;">
+                    ${items[currentProIndex]}
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button onclick="sendAndMoveToNext()" style="background: var(--success); padding: 10px 20px; border-radius: 8px; border: none; color: white; cursor: pointer;">
+                        إرسال (التالي)
+                    </button>
+                    <button onclick="closeSendModal()" style="background: var(--danger); padding: 10px 20px; border-radius: 8px; border: none; color: white; cursor: pointer;">
+                        إغلاق
+                    </button>
+                </div>
+                <p style="margin-top: 15px;">ترتيب الصنف: ${currentProIndex + 1} من ${items.length}</p>
+            </div>
+        `;
+    }
+}
+        /**
+ * 1. دالة لتحديد الفاتورة النشطة لاستقبال الباركود
+ */
+function setActiveProSlot(index) {
+    if (window.activeProSlotIndex === index) {
+        window.activeProSlotIndex = null;
+    } else {
+        window.activeProSlotIndex = index;
+        // تصحيح السطر 1028: بنطفي الفواتير العادية لما نشغل المشتريات
+        if (typeof activeSlotIndex !== 'undefined') {
+            activeSlotIndex = null; 
+        }
+    }
+    renderProSlots();
+}
+    function clearProSlot(index) {
+    if (confirm("⚠️ هل تريد مسح أصناف فاتورة مشتريات " + (index + 1) + "؟")) {
+        proSlots[index] = [];
+        localStorage.setItem('v_pro_slots', JSON.stringify(proSlots));
+        renderProSlots();
+    }
+}
+    // 3. أهم خطوة: إعادة رسم الواجهة عشان الألوان تتحدث فوراً
+    renderProSlots();
+    
+    // تنبيه صغير في الكونسول للتأكد (اختياري)
+    console.log("الحالة الحالية للمشتريات:", window.activeProSlotIndex);
+}
+/**
+ * 2. دالة لفتح واجهة الإرسال اليدوي للفاتورة المختارة
+ */
 function openManualSendControls(index) {
     const items = proSlots[index];
+    
+    // التأكد أولاً من أن الفاتورة ليست فارغة
     if (!items || items.length === 0) {
         alert("⚠️ هذه الفاتورة فارغة، لا يوجد أكواد لإرسالها.");
         return;
     }
+
+    // تحديد الفاتورة التي سنقوم بالإرسال منها حالياً
     activeProSlotForSend = index; 
-    currentProIndex = 0;
+    currentProIndex = 0; // البدء من أول كود في القائمة
+
+    // إظهار النافذة المنبثقة (التي أضفنا تنسيقها سابقاً)
     document.getElementById('modal-overlay').style.display = 'block';
+    document.getElementById('manual-send-modal').style.display = 'block';
+
+    // تحديث محتوى النافذة لإظهار أول كود
     updateModalContent();
 }
+    </script>
+    <!-- غطاء خلفي شفاف لتعتيم الشاشة عند ظهور النافذة -->
+<div id="modal-overlay" class="modal-overlay" onclick="closeSendModal()"></div>
 
-function closeSendModal() {
-    document.getElementById('modal-overlay').style.display = 'none';
-}
-
-function reSendCurrent() {
-    const items = proSlots[activeProSlotForSend];
-    if (items && items[currentProIndex]) {
-        masterSend(items[currentProIndex] + '_ent');
-    }
-}
-
-function jumpToProItem() {
-    const inputVal = document.getElementById('goToIndex').value;
-    const newIndex = parseInt(inputVal) - 1;
-    const items = proSlots[activeProSlotForSend];
-    if (newIndex >= 0 && newIndex < items.length) {
-        currentProIndex = newIndex;
-        updateModalContent();
-    } else {
-        alert("رقم الصنف غير موجود!");
-    }
-}
-</script>
-
-<div id="modal-overlay" class="modal-overlay" style="display:none;" onclick="closeSendModal()">
-    <div id="manual-send-modal" class="manual-send-modal" onclick="event.stopPropagation()">
-        </div>
+<!-- النافذة المنبثقة للإرسال اليدوي -->
+<div id="manual-send-modal" class="manual-send-modal">
+    <!-- منطقة عرض الكود الحالي -->
+    <div id="code-to-send-display"></div>
+    
+    <!-- أزرار التحكم في الإرسال -->
+    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+        <button id="btn-next-send" onclick="sendAndMoveToNext()" style="background: var(--success); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; flex: 1; font-weight: bold;">
+            إرسال (التالي) 📤
+        </button>
+        <button onclick="closeSendModal()" style="background: #444; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer;">
+            إلغاء ❌
+        </button>
+    </div>
 </div>
-
 </body>
 </html>
