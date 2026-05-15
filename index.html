@@ -1013,7 +1013,34 @@ function setActiveProSlot(index) {
     }
     renderProSlots();
 }
+// زرع الدالة اللي الزرار بيدور عليها ومش لاقيها
+window.openManualSendControls = function(index) {
+    // 1. تحديد القائمة بناءً على الزرار اللي اتداس
+    activeProSlotForSend = index;
+    currentProIndex = 0; 
 
+    // 2. التأكد إن فيه أصناف فعلاً
+    const items = proSlots[index];
+    if (!items || items.length === 0) {
+        alert("⚠️ الفاتورة دي فاضية، مفيش حاجة تتبعت!");
+        return;
+    }
+
+    // 3. إظهار المربع اللي اسمه manual-send-controls
+    const controlPanel = document.getElementById('manual-send-controls');
+    if (controlPanel) {
+        controlPanel.style.display = 'block';
+        // نزول الشاشة للمربع عشان تشوفه لو الصفحة طويلة
+        controlPanel.scrollIntoView({ behavior: 'smooth' });
+        
+        // 4. تشغيل الدالة اللي بتملا المربع بالزراير والبيانات
+        if (typeof updateModalContent === 'function') {
+            updateModalContent();
+        }
+    } else {
+        alert("❌ مشكلة: المربع (manual-send-controls) مش موجود في الـ HTML!");
+    }
+};
 /**
  * 2. دالة مسح أصناف الفاتورة
  */
