@@ -1058,12 +1058,20 @@ function openManualSendControls(index) {
     // تحديث محتوى النافذة لإظهار أول كود
     updateModalContent();
 }
-        // دالة تفعيل الفاتورة العادية
-function setActiveSlot(i) { 
-    activeSlotIndex = (activeSlotIndex === i) ? null : i; 
-    renderSlots(); 
+        // دالة تفعيل فاتورة المشتريات (Pro)
+function setActiveProSlot(index) {
+    // لو الفاتورة اللي دوسنا عليها هي اللي شغالة أصلاً، بنلغي تفعيلها (null)
+    // لو فاتورة تانية، بنخليها هي النشطة
+    if (activeProSlotIndex === index) {
+        activeProSlotIndex = null;
+    } else {
+        activeProSlotIndex = index;
+        activeSlotIndex = null; // بنقفل أي فاتورة عادية عشان مبيحصلش تداخل
+    }
+    
+    // أهم خطوة: إعادة رسم الواجهة عشان الألوان تتحدث فوراً
+    renderProSlots();
 }
-
 // دالة مسح الفاتورة العادية
 function clearSlot(i) { 
     if(confirm("تفريغ الفاتورة؟")) { 
