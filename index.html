@@ -429,8 +429,14 @@
 
 // 1. دالة تحديث محتوى النافذة بالأزرار الأربعة
 function updateModalContent() {
-    const items = proSlots[activeProSlotForSend];
-    const modal = document.getElementById('manual-send-modal');
+    // 1. هنجيب الصنف الحالي اللي عليه الدور من فاتورة المشتريات
+const item = proSlots[activeProSlotForSend][currentProIndex];
+
+// 2. هنعرض بيانات الصنف ده في "خانة الحالة" اللي في الواجهة الجديدة
+const statusDisplay = document.getElementById('sending-status');
+if (statusDisplay) {
+    statusDisplay.innerText = `📦 الكود الحالي: ${item.code} \n (صنف رقم ${currentProIndex + 1} من أصل ${proSlots[activeProSlotForSend].length})`;
+}
     
     if (modal && items) {
         const currentCode = items[currentProIndex] || "انتهت الأصناف";
