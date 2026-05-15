@@ -585,6 +585,7 @@ else if (typeof activeProSlotIndex !== 'undefined' && activeProSlotIndex !== nul
 // 3. إذا لم تكن أي فاتورة نشطة، يتم الإرسال المباشر للكمبيوتر
 else {
     masterSend(text + '_ent');
+    playBeep();
     document.getElementById('result-text').innerText = `⌨️ أرسلت: ${text}`;
 }
             if (navigator.vibrate) navigator.vibrate(100);
