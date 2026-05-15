@@ -1049,23 +1049,8 @@ function clearProSlot(index) {
         renderProSlots();
     }
 }
-function openManualSendControls(index) {
-    const items = proSlots[index];
-    
-    // التأكد أولاً من أن الفاتورة ليست فارغة
-    if (!items || items.length === 0) {
-        alert("⚠️ هذه الفاتورة فارغة، لا يوجد أكواد لإرسالها.");
-        return;
-    }
-
-    // تحديد الفاتورة التي سنقوم بالإرسال منها حالياً
-    activeProSlotForSend = index; 
-    currentProIndex = 0; // البدء من أول كود في القائمة
-
-    // إظهار النافذة المنبثقة (التي أضفنا تنسيقها سابقاً)
-   document.getElementById('manual-send-controls').style.display = 'block';
-    // تحديث محتوى النافذة لإظهار أول كود
-    updateModalContent();
+function updateModalContent() {
+    console.log("الدالة اشتغلت والبيانات هي: ", proSlots[activeProSlotForSend][currentProIndex]);
 }
         // دالة تفعيل فاتورة المشتريات (Pro)
 function setActiveProSlot(index) {
