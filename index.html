@@ -998,92 +998,58 @@ async function sendAndMoveToNext() {
 /**
  * دالة لتحديث محتوى النافذة المنبثقة بالكود الجديد
  */
-function updateModalContent() {
-    const items = proSlots[activeProSlotForSend];
-    const modal = document.getElementById('manual-send-modal'); // النافذة نفسها
-    
-    if (modal && items[currentProIndex]) {
-        modal.innerHTML = `
-            <div class="modal-body">
-                <h3>إرسال كود المشتريات</h3>
-                <div style="font-size: 24px; margin: 20px; color: #6c5ce7; font-weight: bold;">
-                    ${items[currentProIndex]}
-                </div>
-                <div style="display: flex; gap: 10px; justify-content: center;">
-                    <button onclick="sendAndMoveToNext()" style="background: var(--success); padding: 10px 20px; border-radius: 8px; border: none; color: white; cursor: pointer;">
-                        إرسال (التالي)
-                    </button>
-                    <button onclick="closeSendModal()" style="background: var(--danger); padding: 10px 20px; border-radius: 8px; border: none; color: white; cursor: pointer;">
-                        إغلاق
-                    </button>
-                </div>
-                <p style="margin-top: 15px;">ترتيب الصنف: ${currentProIndex + 1} من ${items.length}</p>
-            </div>
-        `;
-    }
-}
-        /**
- * 1. دالة لتحديد الفاتورة النشطة لاستقبال الباركود
- */
-function setActiveProSlot(index) {
-    // 1. لو الزرار اللي ضغطت عليه هو أصلاً اللي شغال.. اطفيه (خليه null)
-    if (window.activeProSlotIndex === index) {
-        window.activeProSlotIndex = null;
-    } else {
-        // 2. لو ضغطت على زرار جديد.. شغله واطفي أي تفعيل لفواتير تانية
-        window.activeProSlotIndex = index;
-        if (typeof activeSlotIndex !== 'undefined') {
-            window.activeSlotIndex = null; 
-        }
-    }
-    
-    // 3. أهم خطوة: إعادة رسم الواجهة عشان الألوان تتحدث فوراً
-    renderProSlots();
-    
-    // تنبيه صغير في الكونسول للتأكد (اختياري)
-    console.log("الحالة الحالية للمشتريات:", window.activeProSlotIndex);
-}
 /**
  * 2. دالة لفتح واجهة الإرسال اليدوي للفاتورة المختارة
  */
 function openManualSendControls(index) {
     const items = proSlots[index];
-    
-    // التأكد أولاً من أن الفاتورة ليست فارغة
     if (!items || items.length === 0) {
         alert("⚠️ هذه الفاتورة فارغة، لا يوجد أكواد لإرسالها.");
         return;
     }
-
-    // تحديد الفاتورة التي سنقوم بالإرسال منها حالياً
     activeProSlotForSend = index; 
-    currentProIndex = 0; // البدء من أول كود في القائمة
-
-    // إظهار النافذة المنبثقة (التي أضفنا تنسيقها سابقاً)
+    currentProIndex = 0;
     document.getElementById('modal-overlay').style.display = 'block';
-    document.getElementById('manual-send-modal').style.display = 'block';
-
-    // تحديث محتوى النافذة لإظهار أول كود
     updateModalContent();
 }
-    </script>
-    <!-- غطاء خلفي شفاف لتعتيم الشاشة عند ظهور النافذة -->
-<div id="modal-overlay" class="modal-overlay" onclick="closeSendModal()"></div>
 
-<!-- النافذة المنبثقة للإرسال اليدوي -->
-<div id="manual-send-modal" class="manual-send-modal">
-    <!-- منطقة عرض الكود الحالي -->
-    <div id="code-to-send-display"></div>
-    
-    <!-- أزرار التحكم في الإرسال -->
-    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-        <button id="btn-next-send" onclick="sendAndMoveToNext()" style="background: var(--success); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; flex: 1; font-weight: bold;">
-            إرسال (التالي) 📤
-        </button>
-        <button onclick="closeSendModal()" style="background: #444; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer;">
-            إلغاء ❌
-        </button>
-    </div>
+/**
+ * 3. دالة إغلاق النافذة
+ */
+function closeSendModal() {
+    document.getElementById('modal-overlay').style.display = 'none';
+}
+
+/**
+ * 4. دالة إعادة إرسال الكود الحالي
+ */
+function reSendCurrent() {
+    const items = proSlots[activeProSlotForSend];
+    if (items && items[currentProIndex]) {
+        masterSend(items[currentProIndex] + '_ent');
+    }
+}
+
+/**
+ * 5. دالة الانتقال لرقم صنف معين
+ */
+function jumpToProItem() {
+    const inputVal = document.getElementById('goToIndex').value;
+    const newIndex = parseInt(inputVal) - 1;
+    const items = proSlots[activeProSlotForSend];
+    if (newIndex >= 0 && newIndex < items.length) {
+        currentProIndex = newIndex;
+        updateModalContent();
+    } else {
+        alert("رقم الصنف غير موجود!");
+    }
+}
+</script>
+
+<div id="modal-overlay" class="modal-overlay" style="display:none;" onclick="closeSendModal()">
+    <div id="manual-send-modal" class="manual-send-modal" onclick="event.stopPropagation()">
+        </div>
 </div>
+
 </body>
 </html>
