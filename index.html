@@ -485,8 +485,16 @@ function jumpToProItem() {
         const DB_URL = "https://just-scan-19ce1-default-rtdb.firebaseio.com/users";
         let lastScanTime = 0;
         let isFlashOn = false;
-        let activeSlotIndex = null;
-        let html5Scanner = null;
+       let activeSlotIndex = null;
+let activeProSlotIndex = null;
+let activeProSlotForSend = 0;
+let currentProIndex = 0;
+
+// المصفوفات الأساسية
+let slots = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().map(() => []);
+let proSlots = JSON.parse(localStorage.getItem('v_pro_slots')) || Array(5).fill().map(() => []);
+
+let html5Scanner = null; // ده اللي كان في سطر 489
 
         // دالة تحديث السحابة (Firebase)
         async function pushToCloud() {
@@ -1015,7 +1023,7 @@ function updateModalContent() {
         `;
     }
 }
-        /**
+ /**
  * 1. دالة لتحديد الفاتورة النشطة لاستقبال الباركود
  */
 function setActiveProSlot(index) {
@@ -1023,29 +1031,23 @@ function setActiveProSlot(index) {
         window.activeProSlotIndex = null;
     } else {
         window.activeProSlotIndex = index;
-        // تصحيح السطر 1028: بنطفي الفواتير العادية لما نشغل المشتريات
         if (typeof activeSlotIndex !== 'undefined') {
             activeSlotIndex = null; 
         }
     }
     renderProSlots();
 }
-    function clearProSlot(index) {
+
+/**
+ * 2. دالة مسح أصناف الفاتورة
+ */
+function clearProSlot(index) {
     if (confirm("⚠️ هل تريد مسح أصناف فاتورة مشتريات " + (index + 1) + "؟")) {
         proSlots[index] = [];
         localStorage.setItem('v_pro_slots', JSON.stringify(proSlots));
         renderProSlots();
     }
 }
-    // 3. أهم خطوة: إعادة رسم الواجهة عشان الألوان تتحدث فوراً
-    renderProSlots();
-    
-    // تنبيه صغير في الكونسول للتأكد (اختياري)
-    console.log("الحالة الحالية للمشتريات:", window.activeProSlotIndex);
-}
-/**
- * 2. دالة لفتح واجهة الإرسال اليدوي للفاتورة المختارة
- */
 function openManualSendControls(index) {
     const items = proSlots[index];
     
