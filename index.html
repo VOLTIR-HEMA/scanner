@@ -427,7 +427,14 @@
     document.getElementById('modal-overlay').style.display = 'none';
 }
 
+// تجهيز ملف الصوت
+const beepSound = new Audio('beep.mp3');
 
+// دالة تشغيل الصوت
+function playBeep() {
+    beepSound.currentTime = 0; // عشان يبدأ من الأول لو شغال
+    beepSound.play().catch(error => console.log("تحذير: المتصفح منع الصوت، لازم تدوس أي دوسة في الصفحة الأول."));
+}
 // 2. دالة إعادة إرسال الكود الحالي فقط
 function reSendCurrent() {
     const items = proSlots[activeProSlotForSend];
@@ -555,6 +562,7 @@ if (user.savedBills && Array.isArray(user.savedBills) && user.savedBills.some(bi
         function onScanSuccess(text) {
             if (Date.now() - lastScanTime < 2000) return;
             lastScanTime = Date.now();
+            playBeep();
             // 1. فحص إذا كانت هناك فاتورة "عادية" نشطة
 if (activeSlotIndex !== null) {
     if (slots[activeSlotIndex].length >= 30) return alert("⚠️ الفاتورة ممتلئة!");
@@ -918,12 +926,13 @@ async function sendAndMoveToNext() {
     // 1. الوصول لبيانات الفاتورة المفتوحة حالياً
     const items = proSlots[activeProSlotForSend];
     let code = items[currentProIndex];
-
+    playBeep();
     // 2. التحقق من وجود أكواد متبقية للإرسال
     if (currentProIndex >= items.length) {
         alert("✅ انتهت جميع الأكواد في هذه القائمة");
         closeSendModal();
         return;
+        
     }
 
     // 3. استدعاء دالة الإرسال الأساسية (masterSend)
