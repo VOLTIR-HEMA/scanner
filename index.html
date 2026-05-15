@@ -996,25 +996,30 @@ async function sendAndMoveToNext() {
  * دالة لتحديث محتوى النافذة المنبثقة بالكود الجديد
  */
 function updateModalContent() {
+    // 1. تحديد الصنف والقائمة
     const items = proSlots[activeProSlotForSend];
-    const modal = document.getElementById('manual-send-modal'); // النافذة نفسها
+    const item = items[currentProIndex];
     
-    if (modal && items[currentProIndex]) {
-        modal.innerHTML = `
-            <div class="modal-body">
-                <h3>إرسال كود المشتريات</h3>
+    // 2. تحديد المربع الجديد اللي هيشيل التصميم
+    const controlPanel = document.getElementById('manual-send-controls');
+    
+    if (controlPanel && item) {
+        // بنحط التصميم بتاعك بالظبط جوه المربع الجديد
+        controlPanel.innerHTML = `
+            <div class="modal-body" style="color: white; text-align: center;">
+                <h3>🛠️ التحكم في الإرسال</h3>
                 <div style="font-size: 24px; margin: 20px; color: #6c5ce7; font-weight: bold;">
-                    ${items[currentProIndex]}
+                    ${item.code || item} 
                 </div>
-                <div style="display: flex; gap: 10px; justify-content: center;">
-                    <button onclick="sendAndMoveToNext()" style="background: var(--success); padding: 10px 20px; border-radius: 8px; border: none; color: white; cursor: pointer;">
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button onclick="sendAndMoveToNext()" style="background: #2ecc71; padding: 10px 20px; border-radius: 8px; border: none; color: white; cursor: pointer;">
                         إرسال (التالي)
                     </button>
-                    <button onclick="closeSendModal()" style="background: var(--danger); padding: 10px 20px; border-radius: 8px; border: none; color: white; cursor: pointer;">
+                    <button onclick="document.getElementById('manual-send-controls').style.display='none'" style="background: #e74c3c; padding: 10px 20px; border-radius: 8px; border: none; color: white; cursor: pointer;">
                         إغلاق
                     </button>
                 </div>
-                <p style="margin-top: 15px;">ترتيب الصنف: ${currentProIndex + 1} من ${items.length}</p>
+                <p id="sending-status" style="margin-top: 15px;">ترتيب الصنف: ${currentProIndex + 1} من ${items.length}</p>
             </div>
         `;
     }
