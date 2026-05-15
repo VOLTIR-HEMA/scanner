@@ -427,79 +427,67 @@
     document.getElementById('modal-overlay').style.display = 'none';
 }
 
-// 1. دالة تحديث محتوى النافذة بالأزرار الأربعة (مصلحة)
+// 1. الدالة اللي بتفتح المربع وتحدد شكله (أهم واحدة عشان الزراير تظهر)
+function openManualSendControls(slotIndex) {
+    activeProSlotForSend = slotIndex;
+    currentProIndex = 0;
+    document.getElementById('modal-overlay').style.display = 'block';
+    updateModalContent(); // دي اللي هترسم الزراير الأربعة فوراً
+}
+
+// 2. دالة رسم المحتوى (الزراير الأربعة + مربع الانتقال)
 function updateModalContent() {
     const items = proSlots[activeProSlotForSend];
     const modal = document.getElementById('manual-send-modal');
-    
     if (modal && items) {
         const currentCode = items[currentProIndex] || "انتهت الأصناف";
         modal.innerHTML = `
-            <div style="text-align: center; padding: 20px; color: white;">
+            <div style="text-align: center; padding: 15px; color: white;">
                 <h3 style="color: #a29bfe; margin-bottom:10px;">📦 إدارة إرسال المشتريات</h3>
-                
-                <div style="font-size: 26px; margin: 15px 0; background: #2d3436; padding: 15px; border-radius: 10px; border: 1px solid #6c5ce7; color: #fff;">
+                <div style="font-size: 26px; margin: 10px 0; background: #2d3436; padding: 15px; border-radius: 10px; border: 1px solid #6c5ce7; color: #fff;">
                     ${currentCode}
                 </div>
-
-                <div style="margin-bottom: 20px; background: #34495e; padding: 10px; border-radius: 8px;">
-                    <label style="font-size: 14px;">بدء من صنف رقم: </label>
+                <div style="margin-bottom: 15px; background: #34495e; padding: 10px; border-radius: 8px;">
+                    <label style="font-size: 13px;">بدء من صنف رقم: </label>
                     <input type="number" id="goToIndex" value="${currentProIndex + 1}" min="1" max="${items.length}" 
-                           style="width: 60px; background: #2c3e50; color: white; border: 1px solid #6c5ce7; border-radius: 5px; text-align: center; padding: 5px;">
-                    <button onclick="jumpToProItem()" style="background: #6c5ce7; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; margin-right: 5px;">تعديل</button>
+                           style="width: 55px; background: #2c3e50; color: white; border: 1px solid #6c5ce7; border-radius: 5px; text-align: center;">
+                    <button onclick="jumpToProItem()" style="background: #6c5ce7; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">تعديل</button>
                 </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <button onclick="sendAndMoveToNext()" style="background: #00b894; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px;">إرسال (التالي) ✅</button>
-                    <button onclick="reSendCurrent()" style="background: #f1c40f; color: #2d3436; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px;">إعادة إرسال 🔄</button>
-                    <button onclick="closeSendModal()" style="background: #d63031; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; grid-column: span 2; margin-top: 5px;">إغلاق النافذة ❌</button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button onclick="sendAndMoveToNext()" style="background: #00b894; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;">إرسال (التالي) ✅</button>
+                    <button onclick="reSendCurrent()" style="background: #f1c40f; color: #2d3436; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;">إعادة إرسال 🔄</button>
+                    <button onclick="closeSendModal()" style="background: #d63031; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; grid-column: span 2;">إغلاق ❌</button>
                 </div>
-
-                <p style="margin-top: 15px; color: #b2bec3;">ترتيب الصنف: ${currentProIndex + 1} من ${items.length}</p>
+                <p style="margin-top: 10px; font-size: 13px; color: #b2bec3;">صنف رقم ${currentProIndex + 1} من أصل ${items.length}</p>
             </div>
         `;
     }
 }
 
-// 2. دالة الإرسال مع إصلاح مشكلة الـ Enter (_ent)
+// 3. دالة الإرسال (إصلاح الإنتر _ent)
 function sendAndMoveToNext() {
     const items = proSlots[activeProSlotForSend];
-    const currentCode = items[currentProIndex];
-
-    if (currentCode) {
-        masterSend(currentCode + '_ent'); // ✅ تم تغييرها لتبعت Enter بدل مسافة
+    if (items[currentProIndex]) {
+        masterSend(items[currentProIndex] + '_ent'); 
         currentProIndex++;
-
-        if (currentProIndex < items.length) {
-            updateModalContent();
-        } else {
-            alert("✅ تم إرسال كافة الأصناف بنجاح!");
-            closeSendModal();
-        }
+        if (currentProIndex < items.length) { updateModalContent(); } 
+        else { alert("✅ خلصت الفاتورة!"); closeSendModal(); }
     }
 }
 
-// 3. دالة إعادة إرسال الكود الحالي (المفقودة)
-function reSendCurrent() {
+// 4. دالة إعادة الإرسال والانتقال
+function reSendCurrent() { 
     const items = proSlots[activeProSlotForSend];
-    if (items && items[currentProIndex]) {
-        masterSend(items[currentProIndex] + '_ent');
-    }
+    if (items[currentProIndex]) masterSend(items[currentProIndex] + '_ent'); 
 }
-
-// 4. دالة الانتقال لرقم صنف معين (المصلحة)
 function jumpToProItem() {
-    const inputVal = document.getElementById('goToIndex').value;
-    const newIndex = parseInt(inputVal) - 1;
-    const items = proSlots[activeProSlotForSend];
-    
-    if (newIndex >= 0 && newIndex < items.length) {
-        currentProIndex = newIndex;
-        updateModalContent();
-    } else {
-        alert("رقم الصنف غير موجود!");
+    const val = parseInt(document.getElementById('goToIndex').value) - 1;
+    if (val >= 0 && val < proSlots[activeProSlotForSend].length) {
+        currentProIndex = val; updateModalContent();
     }
 }
+function closeSendModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+        
         // --- الثوابت والبيانات ---
         const WHATSAPP_RENEW = "201147534998";
         const DB_URL = "https://just-scan-19ce1-default-rtdb.firebaseio.com/users";
