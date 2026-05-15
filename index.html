@@ -481,20 +481,25 @@ function jumpToProItem() {
     }
 }
         // --- الثوابت والبيانات ---
-        const WHATSAPP_RENEW = "201147534998";
-        const DB_URL = "https://just-scan-19ce1-default-rtdb.firebaseio.com/users";
-        let lastScanTime = 0;
-        let isFlashOn = false;
-       let activeSlotIndex = null;
+        // --- الثوابت والبيانات الموحدة (ضعها مرة واحدة فقط) ---
+const WHATSAPP_RENEW = "201147534998";
+const DB_URL = "https://just-scan-19ce1-default-rtdb.firebaseio.com/users";
+let lastScanTime = 0;
+let isFlashOn = false;
+let html5Scanner = null;
+
+// تعريف متغيرات الفواتير (مرة واحدة فقط)
+let activeSlotIndex = null;
 let activeProSlotIndex = null;
 let activeProSlotForSend = 0;
 let currentProIndex = 0;
+let currentProItemIndex = 0; 
 
-// المصفوفات الأساسية
+// استعادة المصفوفات من التخزين المحلي
+let slots = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().map(() => []);
+let slotNames = JSON.parse(localStorage.getItem('v_slot_names')) || Array(10).fill().map((_, i) => `فاتورة ${i + 1}`);
 let proSlots = JSON.parse(localStorage.getItem('v_pro_slots')) || Array(5).fill().map(() => []);
-
-let html5Scanner = null; // ده اللي كان في سطر 489
-
+let proSlotNames = JSON.parse(localStorage.getItem('v_pro_slot_names')) || Array(5).fill().map((_, i) => `مشتريات ${i + 1}`);
         // دالة تحديث السحابة (Firebase)
         async function pushToCloud() {
             const phone = localStorage.getItem('v_phone');
@@ -516,20 +521,6 @@ let html5Scanner = null; // ده اللي كان في سطر 489
         }
 
         // استعادة البيانات من التخزين
-        let slots = JSON.parse(localStorage.getItem('v_slots')) || Array(10).fill().map(() => []);
-        let slotNames = JSON.parse(localStorage.getItem('v_slot_names')) || Array(10).fill().map((_, i) => `فاتورة ${i + 1}`);
-       // --- استعادة بيانات نظام المشتريات (Pro System) ---
-// 1. مخزن فواتير المشتريات (5 فواتير)
-let proSlots = JSON.parse(localStorage.getItem('v_pro_slots')) || Array(5).fill().map(() => []);
-
-// 2. أسماء فواتير المشتريات
-let proSlotNames = JSON.parse(localStorage.getItem('v_pro_slot_names')) || Array(5).fill().map((_, i) => `مشتريات ${i + 1}`);
-
-// 3. مؤشر الصنف الحالي للإرسال اليدوي
-// 3. مؤشر الصنف الحالي للإرسال اليدوي
-let currentProItemIndex = 0; 
-let activeProSlotForSend = 0; // السطر الجديد الأول
-let currentProIndex = 0;      // السطر الجديد الثاني
         let configButtons = JSON.parse(localStorage.getItem('userButtons')) || [
             { name: "جديد", cmd: "f8", useEnter: true, color: "#3d60cc" },
             { name: "حفظ", cmd: "f9", useEnter: true, color: "#3d60cc" },
@@ -1066,6 +1057,21 @@ function openManualSendControls(index) {
 
     // تحديث محتوى النافذة لإظهار أول كود
     updateModalContent();
+}
+        // دالة تفعيل الفاتورة العادية
+function setActiveSlot(i) { 
+    activeSlotIndex = (activeSlotIndex === i) ? null : i; 
+    renderSlots(); 
+}
+
+// دالة مسح الفاتورة العادية
+function clearSlot(i) { 
+    if(confirm("تفريغ الفاتورة؟")) { 
+        slots[i] = [];
+        localStorage.setItem('v_slots', JSON.stringify(slots)); 
+        renderSlots(); 
+        pushToCloud(); 
+    } 
 }
     </script>
     <!-- غطاء خلفي شفاف لتعتيم الشاشة عند ظهور النافذة -->
