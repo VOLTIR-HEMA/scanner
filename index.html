@@ -1304,22 +1304,22 @@ function toggleSettingsTab(tabId) {
 }
 
 function openEditProfileDialog() {
-    closeSettings();
+    // قفل الإعدادات فوراً عشان الـ Popup يظهر بوضوح
+    closeSettings(); 
     
-    // 2. الكود السحري ده بيدخل جوه كارت البيانات ويقشط رقم التليفون علطول!
+    // لقط رقم الهاتف من الكارت الأسود تلقائياً
     let userPhone = "";
     const authBox = document.getElementById('auth-info');
     if (authBox) {
-        // بيبحث عن كلمة "رقم: " وبياخد الأرقام اللي بعدها
         const match = authBox.innerText.match(/📱 رقم:\s*(\d+)/);
         if (match) userPhone = match[1];
     }
 
-    // تأكيد أمان: لو ملعقش الرقم لأي سبب ما يضربش خطأ
     if (!userPhone) {
         Swal.fire('تنبيه ⚠️', 'لم يتم العثور على رقم الهاتف، يرجى إعادة تسجيل الدخول.', 'error');
         return;
     }
+
     Swal.fire({
         title: '✏️ تعديل بيانات الحساب',
         html:
@@ -1335,12 +1335,9 @@ function openEditProfileDialog() {
         showCancelButton: true,
         confirmButtonText: 'تحديث البيانات',
         cancelButtonText: 'إلغاء',
-        confirmButtonColor: '#28a745',
-        cancelButtonColor: '#dc3545',
-        background: '#050505', // متناسق مع اللون الغامق لتطبيقك
-        customClass: {
-            title: 'swal-title-custom'
-        },
+        confirmButtonColor: '#22c55e',
+        cancelButtonColor: '#64748b',
+        background: '#1e293b',
         preConfirm: () => {
             return {
                 name: document.getElementById('swal-name').value,
@@ -1348,51 +1345,47 @@ function openEditProfileDialog() {
                 password: document.getElementById('swal-password').value
             }
         }
-    }).then((result) => {
+    }).then(async (result) => {
         if (result.isConfirmed) {
-    const newData = result.value;
-    
-    // 🔍 تجهيز البيانات للتحديث (تحديث الاسم والنشاط والباسورد فقط لو اتكتبوا)
-    const updatedFields = {};
-    if (newData.name) updatedFields.name = newData.name;
-    if (newData.activity) updatedFields.activity = newData.activity;
-    if (newData.password) updatedFields.password = newData.password;
+            const newData = result.value;
+            
+            // تجهيز الحقول المتغيرة فقط مثل صفحة الأدمن
+            const updatedData = {};
+            if (newData.name) updatedData.name = newData.name;
+            if (newData.activity) updatedData.activity = newData.activity;
+            if (newData.password) updatedData.password = newData.password;
 
-    // التأكد إن المستخدم كتب حاجة فعلاً قبل ما نبعت للسيرفر
-    if (Object.keys(updatedFields).length === 0) {
-        Swal.fire('تنبيه', 'لم تقم بكتابة أي بيانات لتحديثها.', 'info');
-        return;
-    }
+            if (Object.keys(updatedData).length === 0) {
+                Swal.fire('تنبيه', 'لم تقم بتغيير أي بيانات.', 'info');
+                return;
+            }
 
-    // 🚀 إرسال التحديث المباشر للفايربيز باستخدام رقم هاتف المستخدم الحالي
-    // (تأكد أن متغير phone أو حقل الهاتف الخاص بالمستخدم متاح في دالتك، مثلاً: user.phone)
-    const userPhone = user.phone;
-    
-    fetch(`https://just-scan-19ce1-default-rtdb.firebaseio.com/users/${userPhone}.json`, {
-        method: 'PATCH',
-        body: JSON.stringify(updatedFields)
-    })
-    .then(res => {
-        if (res.ok) {
-            Swal.fire({
-                title: 'تم التحديث! ✅',
-                text: 'تم حفظ بياناتك الجديدة في السحابة بنجاح.',
-                icon: 'success',
-                confirmButtonColor: '#28a745',
-                confirmButtonText: 'موافق'
-            }).then(() => {
-                // تحديث البيانات على الشاشة تلقائياً بدون ريفريش كامل
-                if(newData.name) document.getElementById('auth-info').innerHTML = document.getElementById('auth-info').innerHTML.replace(/👤 .*/, '👤 ' + newData.name);
-                location.reload(); // أو اعمل ريفريش بسيط لتحديث كامل داتا الصفحة
-            });
-        } else {
-            Swal.fire('عذراً ❌', 'فشل تحديث البيانات، تأكد من اتصالك بالإنترنت.', 'error');
+            // عرض مؤشر تحميل للمستخدم
+            Swal.fire({ title: '⏳ جاري الحفظ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+            try {
+                // إرسال طلب PATCH مباشر للفايربيز مثل صفحة الأدمن تماماً
+                const res = await fetch(`https://just-scan-19ce1-default-rtdb.firebaseio.com/users/${userPhone}.json`, {
+                    method: 'PATCH',
+                    body: JSON.stringify(updatedData)
+                });
+
+                if (res.ok) {
+                    Swal.fire({
+                        title: '✅ تم التحديث بنجاح',
+                        text: 'تم حفظ التعديلات وسيتم إعادة تحميل الصفحة لتطبيق التغييرات.',
+                        icon: 'success',
+                        confirmButtonColor: '#22c55e'
+                    }).then(() => {
+                        location.reload(); // عمل ريفريش لتحديث البيانات على الشاشة فوراً
+                    });
+                } else {
+                    Swal.fire('❌ فشل الحفظ', 'حدث خطأ أثناء الاتصال بالسيرفر.', 'error');
+                }
+            } catch (e) {
+                Swal.fire('❌ خطأ في الشبكة', e.message, 'error');
+            }
         }
-    })
-    .catch(err => {
-        Swal.fire('خطأ فني ⚠️', err.message, 'error');
-    });
-}
     });
 }
     </script>
