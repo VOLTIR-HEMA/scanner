@@ -294,23 +294,123 @@
         }
 
         .pulse { animation: pulse 2s infinite; }
+        /* تنسيق أزرار الدعم والتسويق الموحدة جوه وسم الـ style */
 
+.support-buttons-container {
+    display: flex;
+    gap: 15px; /* مسافة بين الزراير */
+    justify-content: center;
+    margin-top: 25px;
+    padding: 10px;
+    flex-wrap: wrap; /* عشان ينزلوا سطر جديد لو الموبايل صغير */
+    width: 100%;
+}
+
+/* التنسيق الأساسي للزرارين (التسويق والواتساب) */
+.btn-marketing, .btn-whatsapp {
+    color: white !important; /* لون النص أبيض */
+    padding: 12px 24px;
+    border-radius: 10px; /* زوايا دائرية شيك */
+    text-decoration: none !important; /* شيل الخط اللي تحت الكلام */
+    font-weight: bold;
+    font-size: 14px;
+    transition: 0.3s ease; /* أنيميشن ناعم لما تحرك الماوس */
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1; /* عشان ياخدوا نفس الحجم */
+    min-width: 140px; /* أقل عرض للزرار */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* ظل خفيف */
+}
+
+/* لون زرار موقع التسويق (أزرق) */
+.btn-marketing {
+    background-color: #007bff;
+}
+
+/* لون زرار الواتساب (أخضر) */
+.btn-whatsapp {
+    background-color: #25d366;
+}
+
+/* تأثير تحريك الماوس فوق الزراير */
+.btn-marketing:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px); /* يتحرك فوق سنة */
+}
+
+.btn-whatsapp:hover {
+    background-color: #1ebd58;
+    transform: translateY(-2px); /* يتحرك فوق سنة */
+}
+/* تنسيقات تبويبات الإعدادات الجديدة */
+.settings-tab-btn {
+    width: 100%;
+    background: #111;
+    color: var(--text-normal);
+    border: 1px solid var(--border);
+    padding: 15px;
+    text-align: right;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: 0.3s;
+}
+.settings-tab-btn:hover {
+    background: #1c1c1c;
+    border-color: var(--primary);
+}
+.settings-tab-content {
+    display: none; /* بتكون مخفية في الأول */
+    background: #080808;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 15px;
+    margin-top: -10px;
+    margin-bottom: 15px;
+}
+.settings-tab-btn .arrow {
+    font-size: 12px;
+    transition: transform 0.3s;
+}
+/* ستايل لما التبويب يفتح */
+.settings-tab-btn.active .arrow {
+    transform: rotate(180deg);
+    color: var(--primary);
+}
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 
     <div id="lock-screen">
-        <div class="lock-icon pulse">⚠️</div>
-        <h1 style="color: var(--danger);">عذراً، انتهى الاشتراك</h1>
-        <p id="lock-message" style="color: var(--text-dim); max-width: 300px; margin-bottom: 30px;"></p>
-        <a id="whatsapp-renewal" href="#" style="background: var(--success); color: white; padding: 15px 40px; border-radius: 15px; text-decoration: none; font-weight: bold; width: 80%;">تجديد الاشتراك الآن 💬</a>
-        <button onclick="location.reload()" style="background: none; border: 1px solid var(--border); color: var(--text-dim); margin-top: 20px; padding: 10px; border-radius: 10px;">إعادة محاولة الاتصال</button>
+    <div class="lock-icon pulse">⚠️</div>
+    <h1 style="color: var(--danger);">عذراً، انتهى الاشتراك</h1>
+    <p id="lock-message" style="color: var(--text-dim); max-width: 300px; margin-bottom: 30px;"></p>
+    
+    <div class="support-buttons-container" style="width: 100%;">
+        <a href="https://your-marketing-site.com" target="_blank" class="btn-marketing">🌐 موقعنا الرسمي</a>
+        <a id="whatsapp-renewal" href="#" target="_blank" class="btn-whatsapp">تجديد الاشتراك الآن 💬</a>
     </div>
+
+    <button onclick="location.reload()" style="background: none; border: 1px solid var(--border); color: var(--text-dim); margin-top: 20px; padding: 10px; border-radius: 10px;">إعادة محاولة الاتصال</button>
+</div>
 
     <div id="welcome-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9000; display: none; flex-direction: column; align-items: center; justify-content: center;">
         <h1 style="color: var(--primary); font-size: 3rem; margin-bottom: 0;">Just Scan</h1>
         <p style="color: var(--text-dim); margin-bottom: 40px;">Pro Dashboard v4.0</p>
         <button onclick="document.getElementById('welcome-screen').style.display='none'; openSettings();" style="background: var(--primary); color: white; border: none; padding: 18px 50px; border-radius: 15px; font-weight: bold; font-size: 1.1rem; cursor: pointer;">بدء تسجيل الدخول 🚀</button>
+    <div class="support-buttons-container" style="margin-top: 40px;">
+    <a href="https://your-marketing-site.com" target="_blank" class="btn-marketing">🌐 موقعنا الرسمي</a>
+    <a href="https://wa.me/201501113597" target="_blank" class="btn-whatsapp">💬 تواصل معنا</a>
+</div>
     </div>
 
     <div class="top-bar">
@@ -320,7 +420,7 @@
         </a>
         <div class="action-btns">
             <button class="icon-btn" onclick="toggleFlash()" id="flash-toggle">🔦</button>
-            <button class="icon-btn" onclick="switchCamera()" title="تبديل الكاميرا">🔄📷</button>
+            <button class="icon-btn" onclick="switchCamera()" title="تبديل الكاميرا">📷</button>
             <button class="icon-btn" onclick="openKeyboard()">⌨️</button>
             <button class="icon-btn" onclick="syncData(true)" style="color: var(--success);">🔄</button>
             <button class="icon-btn" onclick="openSettings()">⚙️</button>
@@ -339,12 +439,12 @@
 <div style="padding: 0 15px; margin-bottom: 10px; display: flex; gap: 10px;">
     <!-- الزر الأساسي (يمين) -->
     <button id="bill-mode-btn" onclick="toggleBillPanel()" style="flex: 1; padding: 15px; background: var(--primary); border: none; border-radius: 15px; color: white; font-weight: bold; cursor: pointer;">
-        📑 الفواتير (الأساسي)
+        فواتير المبيعات
     </button>
     
     <!-- زر المشتريات الاحترافي (يسار) -->
     <button id="pro-bill-mode-btn" onclick="toggleProBillPanel()" style="flex: 1; padding: 15px; background: #6c5ce7; border: none; border-radius: 15px; color: white; font-weight: bold; cursor: pointer;">
-        🚀 المشتريات (Pro)
+        فواتير المشتريات
     </button>
 </div>
 
@@ -363,7 +463,7 @@
     
     <!-- رأس اللوحة (العنوان وزر الإغلاق) -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin: 0; color: #6c5ce7;">🚀 نظام المشتريات (Pro)</h2>
+        <h2 style="margin: 0; color: #6c5ce7;">فواتير المشتريات</h2>
         <button onclick="toggleProBillPanel()" style="background: var(--danger); border: none; color: white; padding: 10px 20px; border-radius: 10px; cursor: pointer;">إغلاق</button>
     </div>
 
@@ -394,20 +494,43 @@
 </div>
 
     <div id="settings-modal" class="modal-overlay">
-        <div class="modal-body">
-            <h2 style="color: var(--primary); margin-top: 0;">⚙️ الإعدادات</h2>
+    <div class="modal-body" style="max-height: 90vh; overflow-y: auto; padding: 20px;">
+        <h2 style="color: var(--primary); margin-top: 0; text-align: center;">⚙️ الإعدادات</h2>
+        
+        <button type="button" class="settings-tab-btn" onclick="toggleSettingsTab('account-tab-content')">
+            👤 بيانات الحساب والاشتراك <span class="arrow">▼</span>
+        </button>
+        <div id="account-tab-content" class="settings-tab-content">
+            <div id="auth-info" style="background: #000; padding: 15px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 15px;">
+                </div>
             
-            <div id="auth-info" style="background: #000; padding: 15px; border-radius: 15px; margin-bottom: 20px; border: 1px solid var(--border);">
+            <button type="button" onclick="openEditProfileDialog()" style="width: 100%; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;">
+    ✏️ تعديل البيانات وكلمة السر
+</button>
+        </div>
+
+        <button type="button" class="settings-tab-btn" onclick="toggleSettingsTab('buttons-tab-content')">
+            ⌨️ تخصيص أزرار الاختصارات <span class="arrow">▼</span>
+        </button>
+        <div id="buttons-tab-content" class="settings-tab-content">
+            <h4 style="margin-top: 0; margin-bottom: 10px;">تخصيص الأزرار:</h4>
+            <div id="buttons-config-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px;"></div>
+            <button type="button" onclick="addNewButtonRow()" style="width: 100%; padding: 8px; background: none; border: 1px dashed var(--text-dim); color: var(--text-dim); border-radius: 8px; margin-bottom: 10px;">+ إضافة زر جديد</button>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button type="button" onclick="saveAllAndClose()" class="save-btn" style="width: 100%;">حفظ جميع التغييرات</button>
+            
+            <div class="support-buttons-container" style="margin-top: 15px; margin-bottom: 5px;">
+                <a href="https://your-marketing-site.com" target="_blank" class="btn-marketing">🌐 موقعنا الرسمي</a>
+                <a href="https://wa.me/201501113597" target="_blank" class="btn-whatsapp">💬 الدعم الفني</a>
             </div>
 
-            <h4 style="margin-bottom: 10px;">🎮 تخصيص الأزرار</h4>
-            <div id="buttons-config-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px;"></div>
-            <button onclick="addNewButtonRow()" style="width: 100%; padding: 8px; background: none; border: 1px dashed var(--text-dim); color: var(--text-dim); border-radius: 8px; margin-bottom: 20px;">+ إضافة زر جديد</button>
-
-            <button onclick="saveAllAndClose()" class="save-btn">حفظ جميع التغييرات</button>
-            <button onclick="closeSettings()" style="width: 100%; background: none; border: none; color: var(--text-dim); margin-top: 10px;">إلغاء</button>
+            <button type="button" onclick="closeSettings()" style="width: 100%; background: none; border: none; color: var(--text-dim); margin-top: 10px; cursor: pointer;">إلغاء</button>
         </div>
     </div>
+</div>
+</div>
 
     <div id="keyboard-modal" class="modal-overlay">
         <div class="modal-body" style="text-align: center;">
@@ -423,6 +546,28 @@
     <div id="manual-send-modal" class="modal-body"></div>
 </div>
     <script>
+        
+        function toggleSettingsTab(tabId) {
+    const content = document.getElementById(tabId);
+    const btn = content.previousElementSibling;
+    
+    // قفل أي تبويب تاني مفتوح عشان يفضل الشكل نظيف
+    document.querySelectorAll('.settings-tab-content').forEach(item => {
+        if(item.id !== tabId) {
+            item.style.display = 'none';
+            item.previousElementSibling.classList.remove('active');
+        }
+    });
+
+    // تبديل حالة التبويب الحالي
+    if (content.style.display === 'block') {
+        content.style.display = 'none';
+        btn.classList.remove('active');
+    } else {
+        content.style.display = 'block';
+        btn.classList.add('active');
+    }
+}
         function closeSendModal() {
     document.getElementById('modal-overlay').style.display = 'none';
 }
@@ -539,7 +684,15 @@ if (user.savedBills && Array.isArray(user.savedBills) && user.savedBills.some(bi
                     if (!isSubscribed(user.expiryDate)) showLockScreen(user.name, phone);
                     else document.getElementById('lock-screen').style.display = 'none';
                     renderAuthStatus();
-                    if (manual) alert("✅ تم تحديث البيانات من السحابة");
+                    if (manual) {
+    Swal.fire({
+        title: 'Just Scan',
+        text: 'تم تحديث البيانات من السحابة ✅',
+        icon: 'success',
+        confirmButtonText: 'موافق',
+        confirmButtonColor: '#28a745'
+    });
+}
                 }
             } catch (err) { console.error("Sync failed", err); }
         }
@@ -842,14 +995,38 @@ function clearSlot(i) {
     } 
 }
 
-function renameSlot(i) { 
-    const n = prompt("الاسم الجديد:", slotNames[i]); 
-    if(n){ 
-        slotNames[i] = n; 
-        localStorage.setItem('v_slot_names', JSON.stringify(slotNames)); 
-        renderSlots(); 
-        pushToCloud(); 
-    } 
+function renameSlot(i) {
+    Swal.fire({
+        title: 'تعديل اسم الفاتورة',
+        input: 'text',
+        inputValue: slotNames[i] ? slotNames[i] : '', // بيجيب الاسم الحالي تلقائي عشان تعدله
+        inputPlaceholder: 'اكتب الاسم الجديد هنا...',
+        showCancelButton: true,
+        confirmButtonText: 'حفظ',
+        cancelButtonText: 'إلغاء',
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#dc3545'
+    }).then((result) => {
+        // لو ضغط حفظ وكتب اسم فعلاً
+        if (result.isConfirmed && result.value) {
+            const n = result.value;
+            
+            // نفس كود الحفظ القديم بتاعك بالظبط 👇
+            slotNames[i] = n;
+            localStorage.setItem('v_slot_names', JSON.stringify(slotNames));
+            renderSlots();
+            pushToCloud();
+            
+            // تنبيه شيك وبدون روابط لتأكيد الحفظ
+            Swal.fire({
+                title: 'تم التعديل!',
+                text: 'تم تغيير اسم الفاتورة بنجاح.',
+                icon: 'success',
+                confirmButtonColor: '#28a745',
+                confirmButtonText: 'موافق'
+            });
+        }
+    });
 }
 
 /**
@@ -1103,24 +1280,130 @@ function clearSlot(i) {
         pushToCloud(); 
     } 
 }
+// 1. دالة فتح وقفل تبويبات الإعدادات بنعومة
+function toggleSettingsTab(tabId) {
+    const content = document.getElementById(tabId);
+    const btn = content.previousElementSibling;
+    
+    // قفل أي تبويب تاني مفتوح عشان يفضل الشكل نظيف
+    document.querySelectorAll('.settings-tab-content').forEach(item => {
+        if(item.id !== tabId) {
+            item.style.display = 'none';
+            item.previousElementSibling.classList.remove('active');
+        }
+    });
+
+    // تبديل حالة التبويب الحالي (لو مقفول يفتح ولو مفتوح يقفل)
+    if (content.style.display === 'block') {
+        content.style.display = 'none';
+        btn.classList.remove('active');
+    } else {
+        content.style.display = 'block';
+        btn.classList.add('active');
+    }
+}
+
+function openEditProfileDialog() {
+    closeSettings();
+    
+    // 2. الكود السحري ده بيدخل جوه كارت البيانات ويقشط رقم التليفون علطول!
+    let userPhone = "";
+    const authBox = document.getElementById('auth-info');
+    if (authBox) {
+        // بيبحث عن كلمة "رقم: " وبياخد الأرقام اللي بعدها
+        const match = authBox.innerText.match(/📱 رقم:\s*(\d+)/);
+        if (match) userPhone = match[1];
+    }
+
+    // تأكيد أمان: لو ملعقش الرقم لأي سبب ما يضربش خطأ
+    if (!userPhone) {
+        Swal.fire('تنبيه ⚠️', 'لم يتم العثور على رقم الهاتف، يرجى إعادة تسجيل الدخول.', 'error');
+        return;
+    }
+    Swal.fire({
+        title: '✏️ تعديل بيانات الحساب',
+        html:
+            '<div style="text-align: right; margin-bottom: 5px; font-weight: bold; color: #fff;">الاسم الجديد:</div>' +
+            '<input id="swal-name" class="swal2-input" placeholder="اكتب اسمك هنا" style="direction:rtl; margin-top:0; margin-bottom:15px; color:#fff; background:#111; border:1px solid #333;">' +
+            
+            '<div style="text-align: right; margin-bottom: 5px; font-weight: bold; color: #fff;">اسم النشاط التجاري:</div>' +
+            '<input id="swal-activity" class="swal2-input" placeholder="مثلاً: مخزن الأمل" style="direction:rtl; margin-top:0; margin-bottom:15px; color:#fff; background:#111; border:1px solid #333;">' +
+            
+            '<div style="text-align: right; margin-bottom: 5px; font-weight: bold; color: #fff;">كلمة السر الجديدة:</div>' +
+            '<input id="swal-password" type="password" class="swal2-input" placeholder="اتركها فارغة إذا لم ترد تغييرها" style="direction:rtl; margin-top:0; color:#fff; background:#111; border:1px solid #333;">',
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'تحديث البيانات',
+        cancelButtonText: 'إلغاء',
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#dc3545',
+        background: '#050505', // متناسق مع اللون الغامق لتطبيقك
+        customClass: {
+            title: 'swal-title-custom'
+        },
+        preConfirm: () => {
+            return {
+                name: document.getElementById('swal-name').value,
+                activity: document.getElementById('swal-activity').value,
+                password: document.getElementById('swal-password').value
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+    const newData = result.value;
+    
+    // 🔍 تجهيز البيانات للتحديث (تحديث الاسم والنشاط والباسورد فقط لو اتكتبوا)
+    const updatedFields = {};
+    if (newData.name) updatedFields.name = newData.name;
+    if (newData.activity) updatedFields.activity = newData.activity;
+    if (newData.password) updatedFields.password = newData.password;
+
+    // التأكد إن المستخدم كتب حاجة فعلاً قبل ما نبعت للسيرفر
+    if (Object.keys(updatedFields).length === 0) {
+        Swal.fire('تنبيه', 'لم تقم بكتابة أي بيانات لتحديثها.', 'info');
+        return;
+    }
+
+    // 🚀 إرسال التحديث المباشر للفايربيز باستخدام رقم هاتف المستخدم الحالي
+    // (تأكد أن متغير phone أو حقل الهاتف الخاص بالمستخدم متاح في دالتك، مثلاً: user.phone)
+    const userPhone = user.phone;
+    
+    fetch(`https://just-scan-19ce1-default-rtdb.firebaseio.com/users/${userPhone}.json`, {
+        method: 'PATCH',
+        body: JSON.stringify(updatedFields)
+    })
+    .then(res => {
+        if (res.ok) {
+            Swal.fire({
+                title: 'تم التحديث! ✅',
+                text: 'تم حفظ بياناتك الجديدة في السحابة بنجاح.',
+                icon: 'success',
+                confirmButtonColor: '#28a745',
+                confirmButtonText: 'موافق'
+            }).then(() => {
+                // تحديث البيانات على الشاشة تلقائياً بدون ريفريش كامل
+                if(newData.name) document.getElementById('auth-info').innerHTML = document.getElementById('auth-info').innerHTML.replace(/👤 .*/, '👤 ' + newData.name);
+                location.reload(); // أو اعمل ريفريش بسيط لتحديث كامل داتا الصفحة
+            });
+        } else {
+            Swal.fire('عذراً ❌', 'فشل تحديث البيانات، تأكد من اتصالك بالإنترنت.', 'error');
+        }
+    })
+    .catch(err => {
+        Swal.fire('خطأ فني ⚠️', err.message, 'error');
+    });
+}
+    });
+}
     </script>
     <!-- غطاء خلفي شفاف لتعتيم الشاشة عند ظهور النافذة -->
 <div id="modal-overlay" class="modal-overlay" onclick="closeSendModal()"></div>
 
 <!-- النافذة المنبثقة للإرسال اليدوي -->
 <div id="manual-send-modal" class="manual-send-modal">
-    <!-- منطقة عرض الكود الحالي -->
+    <!--  عرض الكود الحالي -->
     <div id="code-to-send-display"></div>
     
-    <!-- أزرار التحكم في الإرسال -->
-    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-        <button id="btn-next-send" onclick="sendAndMoveToNext()" style="background: var(--success); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; flex: 1; font-weight: bold;">
-            إرسال (التالي) 📤
-        </button>
-        <button onclick="closeSendModal()" style="background: #444; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer;">
-            إلغاء ❌
-        </button>
-    </div>
 </div>
 </body>
 </html>
