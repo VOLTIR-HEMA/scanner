@@ -1229,7 +1229,7 @@ function updateModalContent() {
         `;
     }
 }
-      window.jumpToBarcode = function() {
+        window.jumpToBarcode = function() {
     // 1. هنجيب الرقم اللي أنت كتبته في المربع
     const input = document.getElementById('start-barcode-input');
     const indexNumber = parseInt(input.value);
@@ -1246,60 +1246,6 @@ function updateModalContent() {
         alert("✅ تم الانتقال للصنف رقم " + indexNumber);
     } else {
         alert("⚠️ يا ريس اكتب رقم صنف صح موجود في الفاتورة!");
-    }
-};
-
-// 🔄 دالة إعادة إرسال الأخير الأصلية (تم تنظيف المسافة فقط)
-window.resendLastItem = function() {
-    const items = proSlots[activeProSlotForSend];
-    if (!items || items.length === 0) return alert("لا توجد أصناف لإعادة إرسالها!");
-
-    const currentItem = items[currentProIndex];
-    // تنظيف المسافة من أطراف الباركود تماماً
-    const barcode = (currentItem.code || currentItem).toString().trim();
-
-    if (typeof sendBarcodeToSystem === 'function') {
-        sendBarcodeToSystem(barcode);
-    } else {
-        const activeInput = document.activeElement;
-        if (activeInput && (activeInput.tagName === 'INPUT' || activeInput.tagName === 'TEXTAREA')) {
-            activeInput.value = barcode;
-            activeInput.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter', keyCode: 13 }));
-        }
-    }
-    
-    const statusText = document.getElementById('sending-status');
-    if (statusText) {
-        const originalText = statusText.innerText;
-        statusText.innerText = "🔄 تم إعادة إرسال الباركود حالاً!";
-        setTimeout(() => { statusText.innerText = originalText; }, 1000);
-    }
-};
-
-// 🚀 دالة إرسال التالي الأصلية (تم تنظيف المسافة فقط)
-window.sendAndMoveToNext = function() {
-    const items = proSlots[activeProSlotForSend];
-    if (!items || items.length === 0) return;
-
-    const currentItem = items[currentProIndex];
-    // تنظيف المسافة من أطراف الباركود تماماً
-    const barcode = (currentItem.code || currentItem).toString().trim();
-
-    if (typeof sendBarcodeToSystem === 'function') {
-        sendBarcodeToSystem(barcode);
-    } else {
-        const activeInput = document.activeElement;
-        if (activeInput && (activeInput.tagName === 'INPUT' || activeInput.tagName === 'TEXTAREA')) {
-            activeInput.value = barcode;
-            activeInput.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter', keyCode: 13 }));
-        }
-    }
-
-    if (currentProIndex < items.length - 1) {
-        currentProIndex++;
-        updateModalContent();
-    } else {
-        alert("🎉 تم إرسال آخر صنف بنجاح.");
     }
 };
  /**
