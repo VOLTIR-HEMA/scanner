@@ -798,20 +798,44 @@ else {
         }
 
         async function handleLogin() {
-            const phone = document.getElementById('login-phone').value.trim();
-            const pass = document.getElementById('login-pass').value.trim();
-            if (!phone || !pass) return alert("اكمل البيانات");
-            try {
-                const res = await fetch(`${DB_URL}/${phone}.json`);
-                const user = await res.json();
-                if (user && user.password === pass) {
-                    localStorage.setItem('v_phone', phone);
-                    localStorage.setItem('v_expiry', user.expiryDate);
-                    localStorage.setItem('v_name', user.name);
-                    location.reload();
-                } else alert("بيانات غلط!");
-            } catch (e) { alert("خطأ في الاتصال بالسيرفر"); }
+    const phone = document.getElementById('login-phone').value.trim();
+    const pass = document.getElementById('login-pass').value.trim();
+    if (!phone || !pass) return alert("اكمل البيانات");
+    
+    try {
+        const res = await fetch(`${DB_URL}/${phone}.json`);
+        const user = await res.json();
+        
+        if (user && user.password === pass) {
+            // 🛡️ أولاً: التأكد من حالة الحظر (التعطيل)
+            if (user.isBanned === true || user.isBanned === "true") {
+                return alert("🚫 هذا الحساب معطل مؤقتاً، يرجى مراجعة الإدارة.");
+            }
+
+            // 📱 ثانياً: فحص عدد الأجهزة المفتوحة حالياً
+            const currentSessions = user.activeSessions || 0;
+            if (currentSessions >= 2) {
+                return alert("❌ عفواً! هذا الحساب مفتوح على جهازين بالفعل. يرجى تسجيل الخروج من أحدهما أولاً.");
+            }
+
+            // تفعيل الـ Session الجديد وزيادة العداد في السيرفر فوراً
+            await fetch(`${DB_URL}/${phone}/activeSessions.json`, {
+                method: 'PUT',
+                body: JSON.stringify(currentSessions + 1)
+            });
+
+            // حفظ البيانات محلياً والدخول
+            localStorage.setItem('v_phone', phone);
+            localStorage.setItem('v_expiry', user.expiryDate);
+            localStorage.setItem('v_name', user.name);
+            location.reload();
+        } else { 
+            alert("بيانات غلط!"); 
         }
+    } catch (e) { 
+        alert("خطأ في الاتصال بالسيرفر"); 
+    }
+}
 
         // دالة إنشاء الحساب الجديدة
         async function handleSignup() {
@@ -849,7 +873,26 @@ else {
             } catch (e) { alert("حدث خطأ أثناء التسجيل"); }
         }
 
-        function logout() { if(confirm("خروج؟")) { localStorage.clear(); location.reload(); } }
+         async function logout() {
+    if (confirm("خروج؟")) {
+        const phone = localStorage.getItem('v_phone');
+        if (phone) {
+            try {
+                // جلب العداد الحالي ونقص منه 1 بأمان
+                const res = await fetch(`${DB_URL}/${phone}/activeSessions.json`);
+                const currentSessions = await res.json() || 0;
+                const newSessions = currentSessions > 0 ? currentSessions - 1 : 0;
+                
+                await fetch(`${DB_URL}/${phone}/activeSessions.json`, {
+                    method: 'PUT',
+                    body: JSON.stringify(newSessions)
+                });
+            } catch (e) { console.log("خطأ أثناء تحديث الجلسات"); }
+        }
+        localStorage.clear();
+        location.reload();
+    }
+}
 
         function toggleBillPanel() {
             const p = document.getElementById('bill-panel');
@@ -1388,6 +1431,29 @@ function openEditProfileDialog() {
         }
     });
 }
+// 🔄 تنقيص عداد الأجهزة تلقائياً لو العميل قفل التطبيق فجأة بدون تسجيل خروج
+window.addEventListener('beforeunload', function (e) {
+    const phone = localStorage.getItem('v_phone');
+    if (phone) {
+        const url = `${DB_URL}/${phone}/activeSessions.json`;
+        
+        // جلب العداد الحالي بطريقة سريعة ومضمونة الاستمرار أثناء إغلاق الصفحة
+        fetch(url)
+            .then(res => res.json())
+            .then(currentSessions => {
+                const sessions = currentSessions || 0;
+                const newSessions = sessions > 0 ? sessions - 1 : 0;
+                
+                // إضافة keepalive لضمان وصول الطلب للسيرفر حتى بعد قفل المتصفح
+                fetch(url, {
+                    method: 'PUT',
+                    body: JSON.stringify(newSessions),
+                    keepalive: true
+                });
+            }).catch(err => console.log(err));
+    }
+});
+
     </script>
     <!-- غطاء خلفي شفاف لتعتيم الشاشة عند ظهور النافذة -->
 <div id="modal-overlay" class="modal-overlay" onclick="closeSendModal()"></div>
