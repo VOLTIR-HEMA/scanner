@@ -485,7 +485,7 @@
         <!-- أزرار التحكم (التالي، إعادة الإرسال) -->
         <div style="display: flex; gap: 15px;">
             <button id="next-item-btn" style="flex: 2; padding: 15px; background: var(--success); border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 1.1em; cursor: pointer;">➡️ إرسال الصنف التالي</button>
-            <button id="retry-item-btn" style="flex: 1; padding: 15px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer;">🔁 إعادة المحاولة</button>
+            <button id="retry-item-btn" onclick="reSendCurrent()" style="flex: 1; padding: 15px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer;">🔁 إعادة المحاولة</button>
         </div>
         
         <!-- عداد الحالة -->
@@ -580,11 +580,37 @@ function playBeep() {
     beepSound.currentTime = 0; // عشان يبدأ من الأول لو شغال
     beepSound.play().catch(error => console.log("تحذير: المتصفح منع الصوت، لازم تدوس أي دوسة في الصفحة الأول."));
 }
-// 2. دالة إعادة إرسال الكود الحالي فقط
+// 2. دالة إعادة إرسال الكود الحالي فقط بدون مسافات (إنتر فقط)
 function reSendCurrent() {
     const items = proSlots[activeProSlotForSend];
-    if (items[currentProIndex]) {
-        masterSend(items[currentProIndex] + '_ent');
+    
+    if (items && items.length > 0) {
+        // التأكد من أن العداد في النطاق الصحيح
+        if (currentProIndex >= items.length) {
+            currentProIndex = items.length - 1;
+        }
+        
+        const currentBarcode = items[currentProIndex];
+        
+        if (currentBarcode) {
+            // إرسال الباركود الصافي مباشرة بدون أي مسافات
+            masterSend(currentBarcode.trim());
+            
+            // إرسال أمر الإنتر متبوعاً بعده بـ 150 ملي ثانية
+            setTimeout(() => { 
+                masterSend('enter'); 
+            }, 150);
+            
+            // تحديث نص الحالة للتأكيد
+            const statusText = document.getElementById('sending-status');
+            if (statusText) {
+                statusText.innerText = `🔄 أُعيد إرسال الصنف رقم ${currentProIndex + 1}: ${currentBarcode}`;
+            }
+        } else {
+            alert("الصنف الحالي فارغ أو غير موجود!");
+        }
+    } else {
+        alert("لا يوجد صنف متاح لإعادة إرساله!");
     }
 }
 
@@ -1146,7 +1172,7 @@ async function sendFullSlot(i) {
 async function sendAndMoveToNext() {
     // 1. الوصول لبيانات الفاتورة المفتوحة حالياً
     const items = proSlots[activeProSlotForSend];
-    let code = items[currentProIndex];
+    let code = (items[currentProIndex].code || items[currentProIndex]).toString().trim();
     playBeep();
     // 2. التحقق من وجود أكواد متبقية للإرسال
     if (currentProIndex >= items.length) {
@@ -1211,7 +1237,7 @@ function updateModalContent() {
                 </div>
 
                 <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                    <button onclick="sendAndMoveToNext()" style="background: #10ac84; padding: 12px 20px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; flex: 1;">
+                    <button onclick="()" style="background: #10ac84; padding: 12px 20px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; flex: 1;">
                         🚀 إرسال (التالي)
                     </button>
                     <button onclick="resendLastItem()" style="background: #ee5253; padding: 12px 20px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; flex: 1;">
