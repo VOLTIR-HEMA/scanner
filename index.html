@@ -1249,62 +1249,52 @@ function updateModalContent() {
     }
 };
 
-// 🔄 دالة إعادة إرسال الأخير (تعمل مع الصوت وتنظيف المسافات)
+// 🔄 دالة إعادة إرسال الأخير الأصلية (تم تنظيف المسافة فقط)
 window.resendLastItem = function() {
     const items = proSlots[activeProSlotForSend];
-    if (!items || items.length === 0) return alert("لا توجد أصناف!");
-    
-    // جلب الصنف الحالي بدون تقديم المؤشر
-    let code = items[currentProIndex];
-    if (typeof playBeep === 'function') playBeep();
+    if (!items || items.length === 0) return alert("لا توجد أصناف لإعادة إرسالها!");
 
-    const barcode = (code.code || code).toString().trim();
+    const currentItem = items[currentProIndex];
+    // تنظيف المسافة من أطراف الباركود تماماً
+    const barcode = (currentItem.code || currentItem).toString().trim();
 
     if (typeof sendBarcodeToSystem === 'function') {
         sendBarcodeToSystem(barcode);
     } else {
         const activeInput = document.activeElement;
-        if (activeInput) {
+        if (activeInput && (activeInput.tagName === 'INPUT' || activeInput.tagName === 'TEXTAREA')) {
             activeInput.value = barcode;
             activeInput.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter', keyCode: 13 }));
         }
     }
-
+    
     const statusText = document.getElementById('sending-status');
     if (statusText) {
         const originalText = statusText.innerText;
-        statusText.innerText = "🔄 تم إعادة إرسال الباركود!";
+        statusText.innerText = "🔄 تم إعادة إرسال الباركود حالاً!";
         setTimeout(() => { statusText.innerText = originalText; }, 1000);
     }
 };
 
-// 🚀 دالة الإرسال (التالي) الأصلية (تعمل مع الصوت وتنظيف المسافات)
+// 🚀 دالة إرسال التالي الأصلية (تم تنظيف المسافة فقط)
 window.sendAndMoveToNext = function() {
     const items = proSlots[activeProSlotForSend];
     if (!items || items.length === 0) return;
 
-    if (currentProIndex >= items.length) {
-        alert("✅ انتهت جميع الأكواد في هذه القائمة");
-        if (typeof closeSendModal === 'function') closeSendModal();
-        return;
-    }
+    const currentItem = items[currentProIndex];
+    // تنظيف المسافة من أطراف الباركود تماماً
+    const barcode = (currentItem.code || currentItem).toString().trim();
 
-    let code = items[currentProIndex];
-    if (typeof playBeep === 'function') playBeep();
-
-    const barcode = (code.code || code).toString().trim();
-    
     if (typeof sendBarcodeToSystem === 'function') {
         sendBarcodeToSystem(barcode);
     } else {
         const activeInput = document.activeElement;
-        if (activeInput) {
+        if (activeInput && (activeInput.tagName === 'INPUT' || activeInput.tagName === 'TEXTAREA')) {
             activeInput.value = barcode;
             activeInput.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter', keyCode: 13 }));
         }
     }
 
-    // الانتقال للصنف التالي وتحديث المربع
     if (currentProIndex < items.length - 1) {
         currentProIndex++;
         updateModalContent();
