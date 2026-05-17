@@ -580,51 +580,114 @@ function playBeep() {
     beepSound.currentTime = 0; // عشان يبدأ من الأول لو شغال
     beepSound.play().catch(error => console.log("تحذير: المتصفح منع الصوت، لازم تدوس أي دوسة في الصفحة الأول."));
 }
-// 2. دالة إعادة إرسال الكود الحالي فقط بدون مسافات (إنتر فقط)
-function reSendCurrent() {
+function sendNextProItem() {
     const items = proSlots[activeProSlotForSend];
-    
-    if (items && items.length > 0) {
-        // التأكد من أن العداد في النطاق الصحيح
-        if (currentProIndex >= items.length) {
-            currentProIndex = items.length - 1;
-        }
+    if (!items || items.length === 0) {
+        alert("الفاتورة الحالية فارغة ولا يوجد بها أصناف لإرسالها!");
+        return;
+    }
+
+    // التأكد من أن العداد في نطاق المصفوفة المتاحة
+    if (currentProIndex < items.length) {
+        const barcode = items[currentProIndex];
         
-        const currentBarcode = items[currentProIndex];
-        
-        if (currentBarcode) {
-            // إرسال الباركود الصافي مباشرة بدون أي مسافات
-            masterSend(currentBarcode.trim());
+        if (barcode) {
+            // إرسال الباركود الصافي بدون مسافات مخفية
+            masterSend(barcode.trim());
             
-            // إرسال أمر الإنتر متبوعاً بعده بـ 150 ملي ثانية
+            // إرسال أمر الإنتر الصافي متبوعاً بـ 150 ملي ثانية
             setTimeout(() => { 
                 masterSend('enter'); 
             }, 150);
             
-            // تحديث نص الحالة للتأكيد
+            // تحديث واجهة المستخدم بالصنف الحالي
             const statusText = document.getElementById('sending-status');
             if (statusText) {
-                statusText.innerText = `🔄 أُعيد إرسال الصنف رقم ${currentProIndex + 1}: ${currentBarcode}`;
+                statusText.innerText = `✅ أُرسل الصنف رقم ${currentProIndex + 1}: ${barcode}`;
             }
-        } else {
-            alert("الصنف الحالي فارغ أو غير موجود!");
+
+            // زيادة العداد للانتقال للصنف التالي في المرة القادمة
+            currentProIndex++;
+            
+            // تحديث حقل الإدخال ليعكس الرقم الجديد المتوقع
+            const indexInput = document.getElementById('start-index-input');
+            if (indexInput) {
+                indexInput.value = currentProIndex + 1;
+            }
         }
     } else {
-        alert("لا يوجد صنف متاح لإعادة إرساله!");
+        const statusText = document.getElementById('sending-status');
+        if (statusText) statusText.innerText = "🎉 تم إرسال جميع أصناف الفاتورة بنجاح!";
+        alert("قضى الأمر! تم إرسال كل الأصناف الموجودة في هذه الفاتورة.");
     }
 }
 
-// 3. دالة الانتقال لرقم صنف معين
-function jumpToProItem() {
-    const newIndex = parseInt(document.getElementById('goToIndex').value) - 1;
+// 2. دالة إعادة إرسال الكود الحالي فقط (إنتر فقط وبدون مسافات)
+function reSendCurrent() {
     const items = proSlots[activeProSlotForSend];
-    if (newIndex >= 0 && newIndex < items.length) {
-        currentProIndex = newIndex;
-        updateModalContent();
+    if (!items || items.length === 0) {
+        alert("لا يوجد أصناف متوفرة لإعادة إرسالها!");
+        return;
+    }
+
+    // لتجنب المشاكل، لو العداد تخطى الطول نرجعه لآخر عنصر
+    let targetIndex = currentProIndex;
+    if (targetIndex >= items.length) {
+        targetIndex = items.length - 1;
+    }
+    
+    // في حالة الإرسال التلقائي المسبق، العنصر الفعلي الحالي هو (currentProIndex - 1)
+    // نتحقق من العنصر المراد إعادة إرساله
+    if (targetIndex >= 0) {
+        const currentBarcode = items[targetIndex];
+        if (currentBarcode) {
+            // إرسال صريح بدون مسافات
+            masterSend(currentBarcode.trim());
+            
+            setTimeout(() => { 
+                masterSend('enter'); 
+            }, 150);
+            
+            const statusText = document.getElementById('sending-status');
+            if (statusText) {
+                statusText.innerText = `🔄 أُعيد إرسال الصنف رقم ${targetIndex + 1}: ${currentBarcode}`;
+            }
+        }
     } else {
-        alert("رقم الصنف غير موجود!");
+        alert("لم يتم إرسال أي صنف بعد ليعاد إرساله!");
     }
 }
+// 3. دالة الانتقال لرقم صنف معين يدوياً
+function jumpToProItem() {
+    const indexInput = document.getElementById('start-index-input');
+    if (!indexInput) return;
+    
+    const newIndex = parseInt(indexInput.value) - 1;
+    const items = proSlots[activeProSlotForSend];
+    
+    if (items && newIndex >= 0 && newIndex <= items.length) {
+        currentProIndex = newIndex;
+        const statusText = document.getElementById('sending-status');
+        if (statusText) {
+            statusText.innerText = `🛠️ تم تحويل مؤشر الإرسال إلى الصنف رقم: ${newIndex + 1}`;
+        }
+    } else {
+        alert("رقم الصنف المدخل غير صحيح أو خارج نطاق الفاتورة!");
+    }
+}
+
+// 4. ربط الأزرار بالدوال عند تحميل الصفحة لضمان عملها بدون توقف
+document.addEventListener("DOMContentLoaded", function() {
+    const nextBtn = document.getElementById('next-item-btn');
+    if (nextBtn) {
+        nextBtn.onclick = sendNextProItem;
+    }
+    
+    const startIndexInput = document.getElementById('start-index-input');
+    if (startIndexInput) {
+        startIndexInput.onchange = jumpToProItem;
+    }
+});
         // --- الثوابت والبيانات ---
         // --- الثوابت والبيانات الموحدة (ضعها مرة واحدة فقط) ---
 const WHATSAPP_RENEW = "201147534998";
