@@ -485,7 +485,7 @@
         <!-- أزرار التحكم (التالي، إعادة الإرسال) -->
         <div style="display: flex; gap: 15px;">
             <button id="next-item-btn" style="flex: 2; padding: 15px; background: var(--success); border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 1.1em; cursor: pointer;">➡️ إرسال الصنف التالي</button>
-            <button id="retry-item-btn" onclick="reSendCurrent()" style="flex: 1; padding: 15px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer;">🔁 إعادة المحاولة</button>
+           <button id="retry-item-btn" onclick="reSendCurrent()" style="flex: 1; padding: 15px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer;">🔁 إعادة المحاولة</button>
         </div>
         
         <!-- عداد الحالة -->
@@ -580,114 +580,66 @@ function playBeep() {
     beepSound.currentTime = 0; // عشان يبدأ من الأول لو شغال
     beepSound.play().catch(error => console.log("تحذير: المتصفح منع الصوت، لازم تدوس أي دوسة في الصفحة الأول."));
 }
+// 1. دالة إرسال الصنف التالي (المسؤولة عن زر التالي)
 function sendNextProItem() {
     const items = proSlots[activeProSlotForSend];
-    if (!items || items.length === 0) {
-        alert("الفاتورة الحالية فارغة ولا يوجد بها أصناف لإرسالها!");
-        return;
-    }
-
-    // التأكد من أن العداد في نطاق المصفوفة المتاحة
-    if (currentProIndex < items.length) {
+    if (items && currentProIndex < items.length) {
         const barcode = items[currentProIndex];
         
-        if (barcode) {
-            // إرسال الباركود الصافي بدون مسافات مخفية
-            masterSend(barcode.trim());
-            
-            // إرسال أمر الإنتر الصافي متبوعاً بـ 150 ملي ثانية
-            setTimeout(() => { 
-                masterSend('enter'); 
-            }, 150);
-            
-            // تحديث واجهة المستخدم بالصنف الحالي
-            const statusText = document.getElementById('sending-status');
-            if (statusText) {
-                statusText.innerText = `✅ أُرسل الصنف رقم ${currentProIndex + 1}: ${barcode}`;
-            }
+        // تم التعديل هنا: trim لإزالة أي مسافة مخفية، وإرسال enter صافي مستقل
+        masterSend(barcode.trim());
+        setTimeout(() => { masterSend('enter'); }, 150);
 
-            // زيادة العداد للانتقال للصنف التالي في المرة القادمة
-            currentProIndex++;
-            
-            // تحديث حقل الإدخال ليعكس الرقم الجديد المتوقع
-            const indexInput = document.getElementById('start-index-input');
-            if (indexInput) {
-                indexInput.value = currentProIndex + 1;
-            }
-        }
+        document.getElementById('sending-status').innerText = `✅ أرسل: ${barcode}`;
+        
+        currentProIndex++;
+        document.getElementById('start-index-input').value = currentProIndex + 1;
     } else {
-        const statusText = document.getElementById('sending-status');
-        if (statusText) statusText.innerText = "🎉 تم إرسال جميع أصناف الفاتورة بنجاح!";
-        alert("قضى الأمر! تم إرسال كل الأصناف الموجودة في هذه الفاتورة.");
+        document.getElementById('sending-status').innerText = "🎉 تم إرسال كافة الأصناف!";
+        alert("انتهت الأصناف في هذه القائمة.");
     }
 }
 
-// 2. دالة إعادة إرسال الكود الحالي فقط (إنتر فقط وبدون مسافات)
+// 2. دالة إعادة إرسال الكود الحالي فقط
 function reSendCurrent() {
     const items = proSlots[activeProSlotForSend];
-    if (!items || items.length === 0) {
-        alert("لا يوجد أصناف متوفرة لإعادة إرسالها!");
-        return;
-    }
+    if (items && items.length > 0) {
+        // نحدد الصنف الفعلي اللي واقف عليه المؤشر حالياً
+        let targetIndex = currentProIndex - 1;
+        if (targetIndex < 0) targetIndex = 0;
+        if (targetIndex >= items.length) targetIndex = items.length - 1;
 
-    // لتجنب المشاكل، لو العداد تخطى الطول نرجعه لآخر عنصر
-    let targetIndex = currentProIndex;
-    if (targetIndex >= items.length) {
-        targetIndex = items.length - 1;
-    }
-    
-    // في حالة الإرسال التلقائي المسبق، العنصر الفعلي الحالي هو (currentProIndex - 1)
-    // نتحقق من العنصر المراد إعادة إرساله
-    if (targetIndex >= 0) {
         const currentBarcode = items[targetIndex];
         if (currentBarcode) {
-            // إرسال صريح بدون مسافات
+            // trim عشان يطير أي مسافة مخفية، وتبعث الـ enter مستقل بعد 150 ملي ثانية
             masterSend(currentBarcode.trim());
-            
-            setTimeout(() => { 
-                masterSend('enter'); 
-            }, 150);
-            
-            const statusText = document.getElementById('sending-status');
-            if (statusText) {
-                statusText.innerText = `🔄 أُعيد إرسال الصنف رقم ${targetIndex + 1}: ${currentBarcode}`;
+            setTimeout(() => { masterSend('enter'); }, 150);
+
+            if(document.getElementById('sending-status')) {
+                document.getElementById('sending-status').innerText = `🔄 إعادة إرسال: ${currentBarcode}`;
             }
         }
     } else {
-        alert("لم يتم إرسال أي صنف بعد ليعاد إرساله!");
-    }
-}
-// 3. دالة الانتقال لرقم صنف معين يدوياً
-function jumpToProItem() {
-    const indexInput = document.getElementById('start-index-input');
-    if (!indexInput) return;
-    
-    const newIndex = parseInt(indexInput.value) - 1;
-    const items = proSlots[activeProSlotForSend];
-    
-    if (items && newIndex >= 0 && newIndex <= items.length) {
-        currentProIndex = newIndex;
-        const statusText = document.getElementById('sending-status');
-        if (statusText) {
-            statusText.innerText = `🛠️ تم تحويل مؤشر الإرسال إلى الصنف رقم: ${newIndex + 1}`;
-        }
-    } else {
-        alert("رقم الصنف المدخل غير صحيح أو خارج نطاق الفاتورة!");
+        alert("لا يوجد صنف لإعادة إرساله!");
     }
 }
 
-// 4. ربط الأزرار بالدوال عند تحميل الصفحة لضمان عملها بدون توقف
-document.addEventListener("DOMContentLoaded", function() {
-    const nextBtn = document.getElementById('next-item-btn');
-    if (nextBtn) {
-        nextBtn.onclick = sendNextProItem;
-    }
+// 3. دالة الانتقال لرقم صنف معين
+function jumpToProItem() {
+    const inputEl = document.getElementById('goToIndex') || document.getElementById('start-index-input');
+    if(!inputEl) return;
     
-    const startIndexInput = document.getElementById('start-index-input');
-    if (startIndexInput) {
-        startIndexInput.onchange = jumpToProItem;
+    const newIndex = parseInt(inputEl.value) - 1;
+    const items = proSlots[activeProSlotForSend];
+    if (items && newIndex >= 0 && newIndex < items.length) {
+        currentProIndex = newIndex;
+        if(document.getElementById('sending-status')) {
+            document.getElementById('sending-status').innerText = `🛠️ تم ضبط المؤشر عند الصنف رقم: ${newIndex + 1}`;
+        }
+    } else {
+        alert("رقم الصنف غير موجود!");
     }
-});
+}
         // --- الثوابت والبيانات ---
         // --- الثوابت والبيانات الموحدة (ضعها مرة واحدة فقط) ---
 const WHATSAPP_RENEW = "201147534998";
@@ -1235,7 +1187,7 @@ async function sendFullSlot(i) {
 async function sendAndMoveToNext() {
     // 1. الوصول لبيانات الفاتورة المفتوحة حالياً
     const items = proSlots[activeProSlotForSend];
-    let code = (items[currentProIndex].code || items[currentProIndex]).toString().trim();
+    let code = items[currentProIndex];
     playBeep();
     // 2. التحقق من وجود أكواد متبقية للإرسال
     if (currentProIndex >= items.length) {
@@ -1300,7 +1252,7 @@ function updateModalContent() {
                 </div>
 
                 <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                    <button onclick="()" style="background: #10ac84; padding: 12px 20px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; flex: 1;">
+                    <button onclick="sendAndMoveToNext()" style="background: #10ac84; padding: 12px 20px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; flex: 1;">
                         🚀 إرسال (التالي)
                     </button>
                     <button onclick="resendLastItem()" style="background: #ee5253; padding: 12px 20px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; flex: 1;">
