@@ -21,18 +21,45 @@
         .btn-save { background: #22c55e; color: white; }
         .btn-close { background: #64748b; color: white; }
         .btn-action { background: #3b82f6; color: white; font-size: 0.8em; }
+    /* استايلات العدادات الإحصائية الجديدة */
+        .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: var(--card); border: 1px solid #334155; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .stat-card h4 { margin: 0 0 5px 0; color: #64748b; font-size: 0.9em; }
+        .stat-card div { font-size: 1.8em; font-weight: bold; color: var(--primary); }
+        /* أزرار الفلترة */
+        .filter-btn { padding: 6px 12px; background: #334155; border: none; color: white; border-radius: 6px; cursor: pointer; font-size: 0.85em; font-weight: bold; transition: 0.2s; }
+        .filter-btn.active { background: var(--primary); color: #0f172a; }
+        /* أزرار الكارت الجديدة */
+        .btn-whatsapp { background: #25d366; color: white; font-size: 0.8em; text-decoration: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; }
+        .btn-ban { background: #f97316; color: white; font-size: 0.8em; }
     </style>
 </head>
 <body>
 
 <div class="container">
-   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <h2 style="margin: 0;">🛡️ إدارة المشتركين</h2>
-    <div style="display: flex; gap: 10px;">
-        <button id="refreshBtn" onclick="loadUsers()" class="btn btn-action" style="background: #28a745; padding: 8px 15px;">🔄 تحديث البيانات</button>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0;">🛡️ إدارة المشتركين</h2>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="openAddUserModal()" class="btn" style="background: #3b82f6; color: white; padding: 8px 15px;">➕ إضافة مستخدم</button>
+            <button id="refreshBtn" onclick="loadUsers()" class="btn btn-action" style="background: #28a745; padding: 8px 15px;">🔄 تحديث البيانات</button>
+        </div>
     </div>
-</div>
-    <input type="text" id="searchInput" onkeyup="filterUsers()" placeholder="🔍 ابحث بالاسم أو الرقم..." style="margin-bottom: 20px;">
+
+    <div class="stats-container">
+        <div class="stat-card"><h4>إجمالي المشتركين</h4><div id="stat-total">0</div></div>
+        <div class="stat-card"><h4>المشتركين النشطين</h4><div id="stat-active" style="color: #22c55e;">0</div></div>
+        <div class="stat-card"><h4>الاشتراكات المنتهية</h4><div id="stat-expired" style="color: #ef4444;">0</div></div>
+    </div>
+
+    <input type="text" id="searchInput" onkeyup="filterUsers()" placeholder="🔍 ابحث بالاسم أو الرقم..." style="margin-bottom: 15px;">
+    
+    <div style="display: flex; gap: 8px; margin-bottom: 20px; align-items: center;">
+        <span style="font-size: 0.9em; color: #64748b;">عرض حسب الصلاحية:</span>
+        <button id="filter-all" onclick="setFilter('all')" class="filter-btn active">الكل</button>
+        <button id="filter-active" onclick="setFilter('active')" class="filter-btn">النشطين فقط</button>
+        <button id="filter-expired" onclick="setFilter('expired')" class="filter-btn">المنتهيين فقط</button>
+    </div>
+
     <div id="userList"></div>
 </div>
 
@@ -43,6 +70,8 @@
 <script>
     const DB_URL = "https://just-scan-19ce1-default-rtdb.firebaseio.com/users";
     let users = [];
+
+    let currentFilter = 'all'; // لمتابعة الفلتر المختار حالياً
 
     async function loadUsers() {
         const listDiv = document.getElementById('userList');
@@ -55,7 +84,11 @@
             if (res.ok) {
                 const data = await res.json();
                 users = data ? Object.keys(data).map(key => ({ ...data[key], phone: key })) : [];
-                renderUsers(users);
+                
+                // 📊 تحديث لوحة العدادات الإحصائية فوراً عند التحميل
+                calculateStats(users);
+                
+                filterUsers(); // تشغيل الفلترة والعرض المظبوط
             } else { alert("خطأ في جلب البيانات"); }
         } catch (e) { alert("خطأ في الشبكة: " + e.message); }
         refreshBtn.disabled = false;
@@ -82,26 +115,53 @@
         if(btnElement) { btnElement.innerText = originalText; btnElement.disabled = false; }
     }
 
+    function calculateStats(allUsers) {
+        let active = 0, expired = 0;
+        allUsers.forEach(u => {
+            const isBanned = u.isBanned === true || u.isBanned === "true";
+            const expiry = new Date(parseInt(u.expiryDate) || 0);
+            const isExpired = (expiry - Date.now()) <= 0;
+            
+            if (isBanned || isExpired) { expired++; } else { active++; }
+        });
+        document.getElementById('stat-total').innerText = allUsers.length;
+        document.getElementById('stat-active').innerText = active;
+        document.getElementById('stat-expired').innerText = expired;
+    }
+
     function renderUsers(data) {
         const container = document.getElementById('userList');
         if(!container) return;
         container.innerHTML = '';
+        
+        if(data.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:#64748b;">🚫 لا توجد بيانات مطابقة للبحث أو الفلتر</div>';
+            return;
+        }
+
         data.forEach(user => {
-            const expiry = new Date(parseInt(user.expiryDate));
+            const isBanned = user.isBanned === true || user.isBanned === "true";
+            const expiry = new Date(parseInt(user.expiryDate) || 0);
             const daysLeft = Math.ceil((expiry - Date.now()) / (1000 * 60 * 60 * 24));
-            const statusColor = daysLeft > 0 ? '#22c55e' : '#ef4444';
+            
+            let statusText = daysLeft > 0 ? 'باقي ' + daysLeft + ' يوم' : 'منتهي';
+            let statusColor = daysLeft > 0 ? '#22c55e' : '#ef4444';
+            
+            // لو الحساب محظور نغير حالته علطول
+            if(isBanned) { statusText = "🚫 محظور"; statusColor = "#f97316"; }
 
             container.innerHTML += `
-                <div class="user-row">
+                <div class="user-row" style="${isBanned ? 'border-color: #f97316; opacity: 0.85;' : ''}">
                     <div class="user-info-brief">
-                        <b>${user.name}</b>
+                        <b>${user.name} ${isBanned ? '<span style="color:#f97316; font-size:0.8em;">(حساب معطل)</span>' : ''}</b>
                         <span>📱 ${user.phone} | 🏢 ${user.activity || 'بدون نشاط'}</span>
                     </div>
-                    <div style="text-align: left;">
+                    <div style="text-align: left; display: flex; align-items: center; gap: 8px;">
                         <span class="status-pill" style="border: 1px solid ${statusColor}; color: ${statusColor}">
-                            ${daysLeft > 0 ? 'باقي ' + daysLeft + ' يوم' : 'منتهي'}
+                            ${statusText}
                         </span>
-                        <button class="btn btn-action" style="margin-right:10px;" onclick="openCard('${user.phone}')">تعديل البطاقة ⚙️</button>
+                        <a href="https://wa.me/${user.phone.startsWith('2') ? user.phone : '2' + user.phone}" target="_blank" class="btn-whatsapp" title="تواصل واتساب">💬 مراسلة</a>
+                        <button class="btn btn-action" onclick="openCard('${user.phone}')">تعديل البطاقة ⚙️</button>
                     </div>
                 </div>`;
         });
@@ -113,11 +173,19 @@
         const content = document.getElementById('modalData');
         if(!modal || !content) return;
         
+        const isBanned = user.isBanned === true || user.isBanned === "true";
+        // قراءة عدد الأجهزة المفتوحة حالياً (لو مش موجودة بنعتبرها 0)
+        const activeSessions = user.activeSessions || 0;
+        
         content.innerHTML = `
             <h3>🪪 بطاقة: ${user.name}</h3>
+            <div style="background: #0f172a; padding: 10px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #334155; text-align: center;">
+                📱 الأجهزة المتصلة حالياً: <b style="color: var(--primary); font-size: 1.2em;">${activeSessions} / 2</b>
+                <button class="btn" style="background: #64748b; padding: 3px 8px; font-size: 0.85em; margin-right: 10px;" onclick="resetDevices(this, '${user.phone}')">🔄 تصفير الأجهزة</button>
+            </div>
             <label>الاسم:</label> <input type="text" id="m-name" value="${user.name}">
             <label>النشاط:</label> <input type="text" id="m-act" value="${user.activity || ''}">
-            <label>الباسورد:</label> <input type="text" id="m-pass" value="${user.password}">
+            <label>الباسورد:</label> <input type="text" id="m-pass" value="${user.password || ''}">
             <button class="btn btn-save" style="width:100%" onclick="saveFullUpdate(this, '${user.phone}')">حفظ التغييرات الأساسية</button>
             <hr style="border:0; border-top:1px solid #334155; margin:15px 0;">
             <label>➕ إضافة أيام محددة:</label>
@@ -130,8 +198,13 @@
                 <button class="btn btn-action" onclick="setPreset(this, '${user.phone}', 90)">3 شهور</button>
                 <button class="btn btn-action" onclick="setPreset(this, '${user.phone}', 180)">6 شهور</button>
                 <button class="btn btn-action" onclick="setPreset(this, '${user.phone}', 365)">سنة جديدة</button>
+                
+                <button class="btn btn-ban" style="background: ${isBanned ? '#22c55e' : '#f97316'}" onclick="toggleBanUser(this, '${user.phone}', ${isBanned})">
+                    ${isBanned ? '🔓 تفعيل الحساب' : '🚫 تعطيل الحساب'}
+                </button>
+                
                 <button class="btn btn-action" style="background:#ef4444" onclick="deleteUser(this, '${user.phone}')">حذف الحساب</button>
-                <button class="btn btn-close" onclick="closeCard()">إغلاق</button>
+                <button class="btn btn-close" style="grid-column: span 2;" onclick="closeCard()">إغلاق</button>
             </div>
         `;
         modal.style.display = 'block';
@@ -180,10 +253,128 @@
         }
     }
 
+    // 🔍 دالة الفلترة والبحث المدمجة والمطورة
     function filterUsers() {
         const term = document.getElementById('searchInput').value.toLowerCase();
-        const filtered = users.filter(u => u.name.toLowerCase().includes(term) || u.phone.includes(term));
+        
+        const filtered = users.filter(u => {
+            // أولاً: تطبيق فلتر البحث بالاسم أو الرقم
+            const matchesSearch = u.name.toLowerCase().includes(term) || u.phone.includes(term);
+            if (!matchesSearch) return false;
+            
+            // ثانياً: تطبيق فلاتر الأزرار (نشط / منتهي)
+            const isBanned = u.isBanned === true || u.isBanned === "true";
+            const expiry = new Date(parseInt(u.expiryDate) || 0);
+            const isExpired = (expiry - Date.now()) <= 0;
+            
+            if (currentFilter === 'active') {
+                return !isBanned && !isExpired;
+            } else if (currentFilter === 'expired') {
+                return isBanned || isExpired;
+            }
+            return true; // في حالة 'all' (الكل)
+        });
+        
         renderUsers(filtered);
+    }
+
+    // لتغيير لون زرار الفلتر النشط حالياً واختيار التصنيف
+    function setFilter(filterType) {
+        currentFilter = filterType;
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`filter-${filterType}`).classList.add('active');
+        filterUsers();
+    }
+
+    // 🚫 دالة حظر / إلغاء حظر المستخدم
+    async function toggleBanUser(btn, phone, isBanned) {
+        const confirmMsg = isBanned ? "هل تريد إلغاء حظر هذا الحساب وتفعيله؟" : "هل تريد تعطيل هذا الحساب؟ لن يتمكن العميل من الدخول.";
+        if(confirm(confirmMsg)) {
+            await updateSingleUser(phone, { isBanned: !isBanned }, btn);
+        }
+    }
+
+    // 🔄 دالة تصفير الأجهزة النشطة (activeSessions) لليوزر
+    async function resetDevices(btn, phone) {
+        if(confirm("هل تريد تصفير الأجهزة النشطة لهذا الحساب؟ سيتمكن من تسجيل الدخول من جديد.")) {
+            await updateSingleUser(phone, { activeSessions: 0 }, btn);
+        }
+    }
+
+    // ➕ فتح كارت منبثق لإنشاء مستخدم جديد تماماً
+    function openAddUserModal() {
+        const modal = document.getElementById('userModal');
+        const content = document.getElementById('modalData');
+        if(!modal || !content) return;
+        
+        content.innerHTML = `
+            <h3>➕ إضافة مشترك جديد يدوياً</h3>
+            <label>رقم الهاتف (سيكون هو الحساب والرقم السري لاحقاً):</label> 
+            <input type="text" id="add-phone" placeholder="مثال: 01147534998">
+            <label>اسم المشترك:</label> 
+            <input type="text" id="add-name" placeholder="اكتب اسم العميل">
+            <label>اسم النشاط التجاري:</label> 
+            <input type="text" id="add-act" placeholder="مثال: صيدلية، مخزن...">
+            <label>كلمة السر:</label> 
+            <input type="text" id="add-pass" placeholder="اكتب كلمة سر الحساب">
+            <label>مدة تفعيل الحساب الأولية:</label>
+            <select id="add-duration">
+                <option value="30">شهر واحد</option>
+                <option value="90">3 شهور</option>
+                <option value="180">6 شهور</option>
+                <option value="365">سنة كاملة</option>
+                <option value="7">فترة تجريبية (7 أيام)</option>
+            </select>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn btn-save" style="width:100%" onclick="saveNewUser(this)">🚀 إنشاء الحساب وتفعيله</button>
+                <button class="btn btn-close" onclick="closeCard()">إلغاء</button>
+            </div>
+        `;
+        modal.style.display = 'block';
+    }
+
+    // حفظ العميل الجديد في قاعدة البيانات
+    async function saveNewUser(btn) {
+        const phone = document.getElementById('add-phone').value.trim();
+        const name = document.getElementById('add-name').value.trim();
+        const activity = document.getElementById('add-act').value.trim();
+        const password = document.getElementById('add-pass').value.trim();
+        const days = parseInt(document.getElementById('add-duration').value);
+
+        if(!phone || !name || !password) {
+            return alert("❌ برجاء ملء الحقول الأساسية: الرقم، الاسم، والباسورد.");
+        }
+
+        btn.innerText = "⏳ جاري الإنشاء...";
+        btn.disabled = true;
+
+        // حساب تاريخ انتهاء الاشتراك بناءً على المدة المختارة
+        const expiryDate = (Date.now() + (days * 24 * 60 * 60 * 1000)).toString();
+
+        const newUserPayload = {
+            name: name,
+            activity: activity,
+            password: password,
+            expiryDate: expiryDate,
+            isBanned: false,
+            activeSessions: 0 // بيبدأ بـ 0 أجهزة مفتوحة
+        };
+
+        try {
+            const res = await fetch(`${DB_URL}/${phone}.json`, {
+                method: 'PUT',
+                body: JSON.stringify(newUserPayload)
+            });
+
+            if(res.ok) {
+                alert("🎉 تم إنشاء الحساب المشترك وتفعيله بنجاح!");
+                closeCard();
+                loadUsers();
+            } else { alert("❌ فشل الاتصال بالسيرفر أثناء الحفظ."); }
+        } catch(e) { alert("❌ خطأ فني: " + e.message); }
+        
+        btn.disabled = false;
+        btn.innerText = "🚀 إنشاء الحساب وتفعيله";
     }
 
     window.onload = loadUsers;
