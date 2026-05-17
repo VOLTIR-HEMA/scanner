@@ -1229,7 +1229,7 @@ function updateModalContent() {
         `;
     }
 }
-        window.jumpToBarcode = function() {
+       window.jumpToBarcode = function() {
     // 1. هنجيب الرقم اللي أنت كتبته في المربع
     const input = document.getElementById('start-barcode-input');
     const indexNumber = parseInt(input.value);
@@ -1246,6 +1246,63 @@ function updateModalContent() {
         alert("✅ تم الانتقال للصنف رقم " + indexNumber);
     } else {
         alert("⚠️ يا ريس اكتب رقم صنف صح موجود في الفاتورة!");
+    }
+};
+
+// 🔄 دالة إعادة إرسال الأخير (تم تفعيلها وإجبارها على حذف أي مسافات زائدة)
+window.resendLastItem = function() {
+    const items = proSlots[activeProSlotForSend];
+    if (!items || items.length === 0) return alert("لا توجد أصناف لإعادة إرسالها!");
+
+    const currentItem = items[currentProIndex];
+    // إجبار الكود على قراءة النص وحذف أي مسافات فارغة من أطرافه باستخدام .trim()
+    const barcode = (currentItem.code || currentItem).toString().trim();
+
+    // تشغيل الإرسال الفوري للأخير وننزل إنتر وراه مباشرة
+    if (typeof sendBarcodeToSystem === 'function') {
+        sendBarcodeToSystem(barcode);
+    } else {
+        const activeInput = document.activeElement;
+        if (activeInput && (activeInput.tagName === 'INPUT' || activeInput.tagName === 'TEXTAREA')) {
+            activeInput.value = barcode; // وضع الكود صافي بدون مسافة
+            activeInput.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter', keyCode: 13 }));
+        }
+    }
+    
+    // تأثير بصري سريع للتأكيد للمستخدم في الواجهة
+    const statusText = document.getElementById('sending-status');
+    if (statusText) {
+        const originalText = statusText.innerText;
+        statusText.innerText = "🔄 تم إعادة إرسال الباركود حالاً!";
+        setTimeout(() => { statusText.innerText = originalText; }, 1000);
+    }
+};
+        // 🚀 دالة إرسال التالي (المعدلة والممسوح منها المسافة تماماً)
+window.sendAndMoveToNext = function() {
+    const items = proSlots[activeProSlotForSend];
+    if (!items || items.length === 0) return;
+
+    const currentItem = items[currentProIndex];
+    // تنظيف الباركود من أي مسافات خفية نهائياً
+    const barcode = (currentItem.code || currentItem).toString().trim();
+
+    // إرسال الكود فوراً ومباشرة وراه إنتر بدون مسافات
+    if (typeof sendBarcodeToSystem === 'function') {
+        sendBarcodeToSystem(barcode);
+    } else {
+        const activeInput = document.activeElement;
+        if (activeInput && (activeInput.tagName === 'INPUT' || activeInput.tagName === 'TEXTAREA')) {
+            activeInput.value = barcode;
+            activeInput.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter', keyCode: 13 }));
+        }
+    }
+
+    // الانتقال للصنف التالي لو متاح
+    if (currentProIndex < items.length - 1) {
+        currentProIndex++;
+        updateModalContent();
+    } else {
+        alert("🎉 تم إرسال آخر صنف بنجاح.");
     }
 };
  /**
